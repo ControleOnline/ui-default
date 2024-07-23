@@ -1,0 +1,21 @@
+{
+  "name": "@controleonline/ui-default",
+  "version": "1.0.263",
+  "author": "ControleOnline",
+  "description": "ControleOnline Default Quasar UI Component",
+  "license": "MIT",
+  "main": "src/index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ControleOnline/conline-quasar-ui"
+  },
+  "bugs": "",
+  "homepage": "https://www.controleonline.com/devs/plugins",
+  "browserslist": [
+    "last 1 version, not dead, ie >= 11"
+  ],
+  "dependencies": {
+    "@controleonline/quasar-legacy-ui": "*"
+  }
+}
