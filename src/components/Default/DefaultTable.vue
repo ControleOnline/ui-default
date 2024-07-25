@@ -387,6 +387,17 @@
               @loadData="loadData"
             />
             <q-space v-if="headerActionsComponent()"></q-space>
+
+            
+            <template v-if="configs.status">
+              <template v-for="status in configs.status">
+                <Status
+                  :componentProps="{ context: status }"
+                ></Status>
+              </template>
+              <q-space></q-space>
+            </template>
+
             <template v-if="configs.categories">
               <template v-for="category in configs.categories">
                 <Categories
@@ -889,6 +900,9 @@ import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
 import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
+import Status from "@controleonline/ui-default/src/components/Default/Status/Button";
+
+
 
 export default {
   props: {
@@ -909,6 +923,7 @@ export default {
     DefaultForm,
     ExtraFields,
     Categories,
+    Status,
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
