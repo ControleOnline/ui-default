@@ -386,9 +386,15 @@
               @saved="saved"
               @loadData="loadData"
             />
-
             <q-space v-if="headerActionsComponent()"></q-space>
-
+            <template v-if="configs.categories">
+              <template v-for="category in configs.categories">
+                <Categories
+                  :componentProps="{ context: category }"
+                ></Categories>
+              </template>
+              <q-space></q-space>
+            </template>
             <DefaultFilters
               v-if="this.configs.filters"
               :configs="configs"
@@ -882,6 +888,7 @@ import * as DefaultFiltersMethods from "@controleonline/ui-default/src/component
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
+import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
 
 export default {
   props: {
@@ -901,6 +908,7 @@ export default {
   components: {
     DefaultForm,
     ExtraFields,
+    Categories,
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
