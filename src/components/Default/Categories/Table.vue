@@ -13,7 +13,6 @@ export default {
       required: true,
     },
   },
-
   computed: {
     ...mapGetters({
       myCompany: "people/currentCompany",
@@ -47,7 +46,6 @@ export default {
       company: "/people/" + this.myCompany.id,
     };
     this.$store.commit("categories" + "/SET_FILTERS", filters);
-    console.log(this.context);
     this.loaded = true;
   },
   methods: {

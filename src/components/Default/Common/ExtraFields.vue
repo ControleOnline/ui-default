@@ -20,13 +20,12 @@
         </q-toolbar>
       </q-card-section>
       <q-card-section class="row items-center no-wrap">
-        <FieldsTypes  :context="context" />
+        <FieldsTypes :context="context" />
       </q-card-section>
     </q-card>
   </q-dialog>
 </template>
 <script>
-import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import FieldsTypes from "@controleonline/ui-common/src/components/Fields/types";
 
 export default {
@@ -36,7 +35,6 @@ export default {
       required: true,
     },
   },
-
   components: {
     FieldsTypes,
   },
@@ -50,7 +48,6 @@ export default {
       openFields: false,
     };
   },
-
   watch: {},
   methods: {},
 };
