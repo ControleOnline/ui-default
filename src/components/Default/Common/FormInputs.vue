@@ -5,8 +5,8 @@
   <q-input
     :disable="editable == false"
     outlined
+    dense
     v-if="inputType == 'date-range'"
-    filled
     v-model="data"
     mask="##/##/####"
     :rules="['validateBRDate']"
