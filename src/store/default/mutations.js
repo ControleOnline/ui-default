@@ -3,39 +3,39 @@ import Filters from "@controleonline/ui-default/src/utils/filters";
 
 export default {
   [types.SET_ERROR](state, error) {
-    Object.assign(state, { error });
+    state.error = error;
   },
 
   [types.SET_ISLOADING](state, isLoading = true) {
-    Object.assign(state, { isLoading: isLoading });
+    state.isLoading = isLoading;
   },
 
   [types.SET_ISSAVING](state, isSaving = true) {
-    Object.assign(state, { isSaving: isSaving });
+    state.isSaving = isSaving;
   },
 
   [types.SET_ISLOADINGLIST](state, isLoadingList = true) {
-    Object.assign(state, { isLoadingList: isLoadingList });
+    state.isLoadingList = isLoadingList;
   },
 
   [types.SET_VIOLATIONS](state, violations) {
-    Object.assign(state, { violations });
+    state.violations = violations;
   },
 
   [types.SET_TOTALITEMS](state, totalItems) {
-    Object.assign(state, { totalItems });
+    state.totalItems = totalItems;
   },
 
   [types.SET_ITEMS](state, items) {
-    Object.assign(state, { items });
+    state.items = items;
   },
 
   [types.SET_ITEM](state, item) {
-    Object.assign(state, { item });
+    state.item = item;
   },
 
   [types.SET_COLUMNS](state, columns) {
-    Object.assign(state, { columns });
+    state.columns = columns;
   },
 
   [types.SET_FILTERS](state, filters) {
@@ -44,18 +44,18 @@ export default {
       state.resourceEndpoint
     );
     persistentFilter.setFilters(filters);
-    Object.assign(state, { filters });
+    state.filters = filters;
   },
 
-  [types.SET_REROURCE_ENDPOINT](state, resourceEndpoint) {
-    Object.assign(state, { resourceEndpoint });
+  [types.SET_RESOURCE_ENDPOINT](state, resourceEndpoint) {
+    state.resourceEndpoint = resourceEndpoint;
   },
 
   [types.SET_SELECTED](state, selected) {
-    Object.assign(state, { selected });
+    state.selected = selected;
   },
   [types.SET_RELOAD](state, reload) {
-    Object.assign(state, { reload });
+    state.reload = reload;
   },
   [types.SET_VISIBLECOLUMNS](state, visibleColumns) {
     const persistentFilter = new Filters(
@@ -63,6 +63,6 @@ export default {
       state.resourceEndpoint
     );
     persistentFilter.setVisibleColumns(visibleColumns);
-    Object.assign(state, { visibleColumns });
+    state.visibleColumns = visibleColumns;
   },
 };
