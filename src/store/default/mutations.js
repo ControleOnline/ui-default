@@ -1,7 +1,6 @@
 import * as types from "./mutation_types";
 import Filters from "@controleonline/ui-default/src/utils/filters";
 
-
 export default {
   [types.SET_ERROR](state, error) {
     Object.assign(state, { error });
@@ -40,8 +39,10 @@ export default {
   },
 
   [types.SET_FILTERS](state, filters) {
-    // console.log('Setting filters:', filters);
-    const persistentFilter = new Filters(this.$router.currentRoute.value.name, state.resourceEndpoint);
+    const persistentFilter = new Filters(
+      this.$router.currentRoute.value.name,
+      state.resourceEndpoint
+    );
     persistentFilter.setFilters(filters);
     Object.assign(state, { filters });
   },
@@ -57,7 +58,10 @@ export default {
     Object.assign(state, { reload });
   },
   [types.SET_VISIBLECOLUMNS](state, visibleColumns) {
-    const persistentFilter = new Filters(this.$router.currentRoute.value.name, state.resourceEndpoint);
+    const persistentFilter = new Filters(
+      this.$router.currentRoute.value.name,
+      state.resourceEndpoint
+    );
     persistentFilter.setVisibleColumns(visibleColumns);
     Object.assign(state, { visibleColumns });
   },
