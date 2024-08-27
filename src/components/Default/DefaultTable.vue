@@ -388,12 +388,9 @@
             />
             <q-space v-if="headerActionsComponent()"></q-space>
 
-            
             <template v-if="configs.status">
               <template v-for="status in configs.status">
-                <Status
-                  :componentProps="{ context: status }"
-                ></Status>
+                <Status :componentProps="{ context: status }"></Status>
               </template>
               <q-space></q-space>
             </template>
@@ -407,21 +404,25 @@
               <q-space></q-space>
             </template>
             <DefaultFilters
-              v-if="this.configs.filters"
+              v-if="configs.filters"
               :configs="configs"
               @loadData="loadData"
             >
             </DefaultFilters>
-            <q-space></q-space>
+            <q-space
+              v-if="configs.filters && configs.controls != false"
+            ></q-space>
             <ExtraFields
-              v-if="this.configs.extraFields"
+              v-if="configs.extraFields"
               :configs="configs"
               @loadData="loadData"
             >
             </ExtraFields>
-            <q-space v-if="this.configs.extraFields"></q-space>
+            <q-space
+              v-if="configs.extraFields && configs.controls != false"
+            ></q-space>
             <q-btn
-              v-if="isTableView"
+              v-if="isTableView && configs.controls != false"
               @click="toggleView"
               class="q-pa-xs btn-primary"
               label=""
@@ -433,7 +434,7 @@
               </q-tooltip>
             </q-btn>
             <q-btn
-              v-else
+              v-else-if="configs.controls != false"
               @click="toggleView"
               class="q-pa-xs btn-primary"
               label=""
@@ -444,7 +445,13 @@
                 {{ $translate(configs.store, "cards", "tooltip") }}
               </q-tooltip>
             </q-btn>
-            <q-btn class="q-pa-xs btn-primary" label="" dense icon="view_week">
+            <q-btn
+              v-if="configs.controls != false"
+              class="q-pa-xs btn-primary"
+              label=""
+              dense
+              icon="view_week"
+            >
               <q-tooltip>
                 {{ $translate(configs.store, "config_columns", "tooltip") }}
               </q-tooltip>
@@ -476,6 +483,7 @@
             </q-btn>
 
             <q-btn
+              v-if="configs.controls != false"
               class="q-pa-xs btn-primary"
               label=""
               dense
@@ -901,8 +909,6 @@ import isEqual from "lodash/isEqual";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
 import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
 import Status from "@controleonline/ui-default/src/components/Default/Status/Button";
-
-
 
 export default {
   props: {
