@@ -1,6 +1,9 @@
 <template>
-  <label v-if="labelType != 'stack-label'">
+  <label v-if="labelType != 'stack-label' && store">
     {{ $translate(store, label, "input") }}
+  </label>
+  <label v-else-if="labelType != 'stack-label'">
+    {{ label }}
   </label>
   <q-input
     :disable="editable == false"

@@ -6,7 +6,7 @@
         :inputType="field.fieldType"
         :rules="field.rules"
         :labelType="'outer-label'"
-        :label="field.label"
+        :label="field.field_name"
         :initialValue="extraData.data[field.id]"
         @changed="
           (value) => {
