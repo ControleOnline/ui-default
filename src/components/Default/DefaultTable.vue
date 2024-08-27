@@ -340,7 +340,7 @@
               :size="configs.title.icon.size || '24px'"
               :class="configs.title.icon.class || 'q-mr-sm'"
             />
-            {{ $translate(configs.store, "header", "title") }}
+            {{ $translate(configs.context ||configs.store, "header", "title") }}
           </h3>
           <DefaultSearch
             :configs="configs"
