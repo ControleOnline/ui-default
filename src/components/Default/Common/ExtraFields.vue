@@ -2,7 +2,7 @@
   <q-btn
     class="q-pa-xs btn-primary"
     dense
-    icon="variable_add"
+    icon="add"
     @click="openFields = true"
   >
     <q-tooltip>
