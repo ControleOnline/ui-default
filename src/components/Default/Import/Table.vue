@@ -1,5 +1,6 @@
 <template>
   <DefaultTable :configs="configs" v-if="loaded" />
+  
 </template>
 <script>
 import DefaultTable from "@controleonline/ui-default/src/components/Default/DefaultTable";
@@ -20,6 +21,7 @@ export default {
     }),
     configs() {
       return {
+        "full-height": false,
         companyParam: false,
         store: "imports",
         add: false,
