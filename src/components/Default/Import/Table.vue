@@ -1,6 +1,5 @@
 <template>
-  <DefaultTable :configs="configs" v-if="loaded" />
-  
+  <DefaultTable :configs="configs" />
 </template>
 <script>
 import DefaultTable from "@controleonline/ui-default/src/components/Default/DefaultTable";
@@ -33,18 +32,14 @@ export default {
     },
   },
   data() {
-    return {
-      loaded: false,
-    };
+    return {};
   },
-  created() {
+  beforeCreated() {
     let filters = {
       context: this.config.context,
       company: "/people/" + this.config.people.id,
     };
     this.$store.commit("imports" + "/SET_FILTERS", filters);
-    this.loaded = true;
-    console.log(this.config);
   },
   methods: {
     ...mapActions({}),
