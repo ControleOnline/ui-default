@@ -421,6 +421,18 @@
             <q-space
               v-if="configs.extraFields && configs.controls != false"
             ></q-space>
+
+            <Imports
+              v-if="configs.import"
+              :config="configs.import"
+              @loadData="loadData"
+            >
+            </Imports>
+            <q-space
+              v-if="configs.import && configs.controls != false"
+            ></q-space>
+            
+
             <q-btn
               v-if="isTableView && configs.controls != false"
               @click="toggleView"
@@ -909,6 +921,8 @@ import isEqual from "lodash/isEqual";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
 import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
 import Status from "@controleonline/ui-default/src/components/Default/Status/Button";
+import Imports from "@controleonline/ui-default/src/components/Default/Import/Button";
+
 
 export default {
   props: {
@@ -935,6 +949,7 @@ export default {
     FormInputs,
     DefaultSearch,
     DefaultFilters,
+    Imports,
   },
 
   data() {
