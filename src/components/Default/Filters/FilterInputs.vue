@@ -1,6 +1,6 @@
 <template>
     <label v-if="labelType != 'stack-label'">
-        {{ $translate(configs.store, column.label, 'input') }}
+        {{ $tt(configs.store, 'input', column.label) }}
     </label>
     <DateRangeInput :initialRange="colFilter[column.key || column.name]" @changedDateInput="changedDateInput"
         :labelType="labelType" v-if="column.inputType == 'date-range'" :column="column" :configs="configs" />
@@ -13,7 +13,7 @@
         }" @focus="this.$emit('focus', $event)" @blur="fireBlur" />
 
     <q-input outlined v-else dense  :stack-label="labelType" :type:="inputType" :prefix="prefix" :sufix="sufix"
-        :label="labelType != 'stack-label' ? '' : $translate(configs.store, column.label, 'input')"
+        :label="labelType != 'stack-label' ? '' : $tt(configs.store, 'input', column.label)"
         v-model="colFilter[column.key || column.name]" @focus="this.$emit('focus', $event)"
         @blur="sendFilterColumn(column.key || column.name); this.$emit('blur', $event)"
         @keydown.enter="sendFilterColumn(column.key || column.name); sendFilter()">

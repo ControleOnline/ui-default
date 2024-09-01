@@ -1,6 +1,6 @@
 <template>
   <label v-if="labelType != 'stack-label' && store">
-    {{ $translate(store, label, "input") }}
+    {{ $tt(store, "input", label) }}
   </label>
   <label v-else-if="labelType != 'stack-label'">
     {{ label }}

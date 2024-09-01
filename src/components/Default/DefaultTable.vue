@@ -170,7 +170,7 @@
               @click="editItem(props.row)"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "edit", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "edit") }}
               </q-tooltip>
             </q-btn>
             <q-btn
@@ -184,7 +184,7 @@
               @click="openConfirm(props.row)"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "delete", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "delete") }}
               </q-tooltip>
             </q-btn>
             <component
@@ -298,7 +298,7 @@
                   "
                 />
 
-                {{ $translate(configs.store, column.label, "input") }}
+                {{ $tt(configs.store, "input", column.label) }}
                 <q-icon
                   v-if="column.sortable"
                   :name="
@@ -340,7 +340,13 @@
               :size="configs.title.icon.size || '24px'"
               :class="configs.title.icon.class || 'q-mr-sm'"
             />
-            {{ $translate(configs.context ||configs.store, "header", "title") }}
+            {{
+              $tt(
+                configs.context || configs.store,
+                "title",
+                configs.context || configs.store
+              )
+            }}
           </h3>
           <DefaultSearch
             :configs="configs"
@@ -364,7 +370,7 @@
               @click="editItem({})"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "add", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "add") }}
               </q-tooltip>
             </q-btn>
             <q-space></q-space>
@@ -431,7 +437,6 @@
             <q-space
               v-if="configs.import && configs.controls != false"
             ></q-space>
-            
 
             <q-btn
               v-if="isTableView && configs.controls != false"
@@ -442,7 +447,7 @@
               icon="menu"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "table", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "table") }}
               </q-tooltip>
             </q-btn>
             <q-btn
@@ -454,7 +459,7 @@
               icon="dashboard"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "cards", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "cards") }}
               </q-tooltip>
             </q-btn>
             <q-btn
@@ -465,7 +470,7 @@
               icon="view_week"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "config_columns", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "config_columns") }}
               </q-tooltip>
               <!-- Menu de configuração de colunas -->
               <q-menu v-model="showColumnMenu">
@@ -479,7 +484,7 @@
                         v-model="
                           toogleVisibleColumns[column.key || column.name]
                         "
-                        :label="$translate(configs.store, column.name, 'input')"
+                        :label="$tt(configs.store, 'input', column.name)"
                         @click="saveVisibleColumns"
                       />
                     </q-item-section>
@@ -504,10 +509,10 @@
             >
               <q-tooltip>
                 {{
-                  $translate(
+                  $tt(
                     configs.store,
-                    props.inFullscreen ? "minimize" : "maximize",
-                    "tooltip"
+                    "tooltip",
+                    props.inFullscreen ? "minimize" : "maximize"
                   )
                 }}
               </q-tooltip>
@@ -521,7 +526,7 @@
               v-if="configs.export"
             >
               <q-tooltip>
-                {{ $translate(configs.store, "export", "tooltip") }}
+                {{ $tt(configs.store, "tooltip", "export") }}
               </q-tooltip>
             </q-btn>
           </q-toolbar>
@@ -625,7 +630,7 @@
                 <q-item v-if="!column.isIdentity">
                   <q-item-section>
                     <q-item-label>{{
-                      $translate(configs.store, column.label, "input")
+                      $tt(configs.store, "input", column.label)
                     }}</q-item-label>
                   </q-item-section>
                   <q-item-section side>
@@ -772,7 +777,7 @@
                     @click="editItem(props.row)"
                   >
                     <q-tooltip>
-                      {{ $translate(configs.store, "edit", "tooltip") }}
+                      {{ $tt(configs.store, "tooltip", "edit") }}
                     </q-tooltip>
                   </q-btn>
                   <q-btn
@@ -786,7 +791,7 @@
                     @click="openConfirm(props.row)"
                   >
                     <q-tooltip>
-                      {{ $translate(configs.store, "delete", "tooltip") }}
+                      {{ $tt(configs.store, "tooltip", "delete") }}
                     </q-tooltip>
                   </q-btn>
                   <component
@@ -857,7 +862,7 @@
       <q-card class="q-pa-md full-width default-form">
         <q-card-section class="row items-center">
           <label class="text-h5">{{
-            $translate(configs.store, item?.id ? "edit" : "add", "title")
+            $tt(configs.store, "title", item?.id ? "edit" : "add")
           }}</label>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
@@ -878,7 +883,7 @@
       <q-card class="q-pa-md full-width">
         <q-card-section class="row items-center">
           <label class="text-h5">{{
-            $translate(configs.store, "msg_delete", "title")
+            $tt(configs.store, "title", "msg_delete")
           }}</label>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
@@ -888,14 +893,14 @@
           <div class="flex q-pt-md">
             <q-btn
               class="q-py-sm q-px-md text-capitalize btn-primary"
-              :label="$translate(configs.store, 'cancel', 'btn')"
+              :label="$tt(configs.store, 'btn', 'cancel')"
               v-close-popup
             >
             </q-btn>
             <q-space></q-space>
             <q-btn
               class="q-py-sm q-px-md text-capitalize btn-primary"
-              :label="$translate(configs.store, 'confirm', 'btn')"
+              :label="$tt(configs.store, 'btn', 'confirm')"
               @click="confirmDelete"
               :loading="isSaving"
             >
@@ -922,7 +927,6 @@ import ExtraFields from "@controleonline/ui-default/src/components/Default/Commo
 import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
 import Status from "@controleonline/ui-default/src/components/Default/Status/Button";
 import Imports from "@controleonline/ui-default/src/components/Default/Import/Button";
-
 
 export default {
   props: {
@@ -1473,17 +1477,17 @@ export default {
             this.items = items;
             //this.tableKey++;
             this.$q.notify({
-              message: this.$translate(
+              message: this.$tt(
                 this.configs.store,
-                "success",
-                "message"
+                "message",
+                "success"
               ),
               position: "bottom",
               type: "positive",
             });
           } else {
             this.$q.notify({
-              message: this.$translate(this.configs.store, "error", "message"),
+              message: this.$tt(this.configs.store, "message", "error"),
               position: "bottom",
               type: "negative",
             });

@@ -3,24 +3,24 @@
         <q-tooltip v-if="countFilters > 0">{{ countFilters }}
 
             {{
-                $translate(configs.store, 'applyed', 'tooltip')
+                $tt(configs.store, 'tooltip', 'applyed')
             }}
         </q-tooltip>
         <q-tooltip v-else> {{
-            $translate(configs.store, 'filters', 'tooltip')
+            $tt(configs.store, 'tooltip', 'filters')
         }}</q-tooltip>
         <q-badge color="negative" v-if="countFilters > 0" floating>{{ countFilters }}</q-badge>
     </q-btn>
     <q-btn class="q-pa-xs btn-primary" dense icon-right="filter_alt_off"
         @click="() => { clearFilters(); openFilters = false; }">
-        <q-tooltip> {{ $translate(configs.store, 'clear', 'tooltip') }} </q-tooltip>
+        <q-tooltip> {{ $tt(configs.store, 'tooltip', 'clear') }} </q-tooltip>
     </q-btn>
     <q-dialog v-model="openFilters" :class="{ 'full-height': isFullHeight() }" :position="position">
         <q-card class="">
             <q-card-section class="row col-12 q-pa-sm">
                 <q-toolbar class="">
                     <q-toolbar-title class="">{{
-                        $translate(configs.store, 'filters', 'title')
+                        $tt(configs.store, 'title', 'filters')
                     }}</q-toolbar-title>
                     <q-btn no-caps flat v-close-popup round dense icon="close" />
                 </q-toolbar>
@@ -47,11 +47,11 @@
                     <q-btn class="float-right q-pa-sm btn-primary" dense icon-right="filter_alt_off"
                         @click="() => { clearFilters(); openFilters = false; }">
                         <q-tooltip> {{
-                            $translate(configs.store, 'clear', 'title')
+                            $tt(configs.store, 'title', 'clear')
                         }} </q-tooltip>
                     </q-btn>
                     <q-btn class="float-right q-pa-sm q-mr-md btn-primary" style="width:calc(100% - 56px)"
-                        :label="$translate(configs.store, 'filter', 'btn')" dense icon-right="search" @click="() => {
+                        :label="$tt(configs.store, 'btn', 'filter')" dense icon-right="search" @click="() => {
                             applyFilters(filters);
                             sendFilter();
                             openFilters = false;

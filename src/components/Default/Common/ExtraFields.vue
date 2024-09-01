@@ -6,7 +6,7 @@
     @click="openFields = true"
   >
     <q-tooltip>
-      {{ $translate(configs.store, "extra", "tooltip") }}
+      {{ $tt(configs.store, "tooltip", "extra") }}
     </q-tooltip>
   </q-btn>
   <q-dialog v-model="openFields" full-width>
@@ -14,7 +14,7 @@
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">
           <q-toolbar-title class="">{{
-            $translate(configs.store, "filters", "title")
+            $tt(configs.store, "title", "filters")
           }}</q-toolbar-title>
           <q-btn no-caps flat v-close-popup round dense icon="close" />
         </q-toolbar>

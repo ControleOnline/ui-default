@@ -46,7 +46,7 @@
         :loading="isSaving"
         icon="save"
         type="submit"
-        :label="$translate(configs.store, 'save', 'btn')"
+        :label="$tt(configs.store, 'btn', 'save')"
         size="md"
         class="q-mt-md btn-primary"
       />
@@ -242,7 +242,7 @@ export default {
         .dispatch(this.configs.store + "/save", p)
         .then((item) => {
           this.$q.notify({
-            message: this.$translate(this.configs.store, "success", "message"),
+            message: this.$tt(this.configs.store, "message", "success"),
             position: "bottom",
             type: "positive",
           });
@@ -251,7 +251,7 @@ export default {
         .catch((error) => {
           this.$emit("error", error);
           this.$q.notify({
-            message: this.$translate(this.configs.store, "error", "message"),
+            message: this.$tt(this.configs.store, "message", "error"),
             position: "bottom",
             type: "negative",
           });

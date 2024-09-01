@@ -1,7 +1,7 @@
 <template>
     <q-input outlined class="q-pa-xs" v-if="configs.search != false" borderless dense @keyup.enter="onSearch" v-model="search"
         :placeholder="
-        $translate(configs.store, 'search', 'input')
+        $tt(configs.store, 'input', 'search')
         ">
         <template v-slot:append>
             <q-btn flat icon="search" @click="onSearch"></q-btn>

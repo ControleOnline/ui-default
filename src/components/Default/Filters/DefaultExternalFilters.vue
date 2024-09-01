@@ -6,7 +6,7 @@
     <q-card class="full-width">
       <!--
             <q-card-section class="row col-12 q-pa-sm q-pl-lg">
-                <q-title class="">{{ $translate(configs.store, 'filters', 'title') }}</q-title>
+                <q-title class="">{{ $tt(configs.store, 'title', 'filters') }}</q-title>
             </q-card-section>
             -->
       <q-card-section class="row col-12 q-pa-sm">
@@ -41,7 +41,7 @@
         <div :class="'q-pa-sm flex col items-end justify-end'">
           <q-btn
             class="q-pa-sm q-mr-md btn-search btn-primary"
-            :label="$translate(configs.store, 'filter', 'btn')"
+            :label="$tt(configs.store, 'btn', 'filter')"
             dense
             icon-right="search"
             @click="sendFilter"
@@ -58,7 +58,7 @@
             "
           >
             <q-tooltip>
-              {{ $translate(configs.store, "clear", "tooltip") }}
+              {{ $tt(configs.store, "tooltip", "clear") }}
             </q-tooltip>
           </q-btn>
         </div>

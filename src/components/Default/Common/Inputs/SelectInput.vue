@@ -20,7 +20,7 @@
       labelType != 'stack-label'
         ? ''
         : store
-        ? $translate(store, label, 'input')
+        ? $tt(store, 'input', label)
         : label
     "
     v-model="data"

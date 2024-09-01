@@ -7,10 +7,10 @@
         <q-spinner v-if="scope.isUploading"  class="q-uploader__spinner loading-primary" />
         <q-btn flat dense rounded v-if="scope.canAddFiles" type="a" icon="add_box" class="btn-primary">
           <q-uploader-add-trigger />
-          <q-tooltip>{{ $translate(store, 'select', 'tooltip') }}</q-tooltip>
+          <q-tooltip>{{ $tt(store, 'tooltip', 'select') }}</q-tooltip>
         </q-btn>
         <q-btn v-if="scope.isUploading" round dense flat icon="clear" color="negative" @click="scope.abort">
-          <q-tooltip>{{ $translate(store, 'cancel', 'tooltip') }}</q-tooltip>
+          <q-tooltip>{{ $tt(store, 'tooltip', 'cancel') }}</q-tooltip>
         </q-btn>
       </div>
     </template>
@@ -18,8 +18,8 @@
     <template v-slot:list="scope">
       <div class="row items-center" style="min-height: 100%">
         <div v-if="scope.files.length == 0" class="text-center text-camelcase" style="min-width: 100%; min-height: 100%">
-          <span class="text-bold text-uppercase">{{ $translate(store, 'upload_area', 'tooltip') }}</span>
-          <br>{{ $translate(store, 'upload_description', 'tooltip') }}
+          <span class="text-bold text-uppercase">{{ $tt(store, 'tooltip', 'upload_area') }}</span>
+          <br>{{ $tt(store, 'tooltip', 'upload_description') }}
         </div>
 
         <q-list separator v-if="scope.files.length > 0" style="min-width: 100%">
@@ -30,7 +30,7 @@
               </q-item-label>
 
               <q-item-label caption>
-                {{ $translate(store, 'status', 'tooltip') }}
+                {{ $tt(store, 'tooltip', 'status') }}
                 : {{ file.__status }}
               </q-item-label>
 
@@ -130,7 +130,7 @@ export default {
 
       if (this.showError) {
         this.$q.notify({
-          message: this.$translate(this.store, response.error, 'message'),
+          message: this.$tt(this.store, 'message', response.error),
           position: 'bottom',
           type: 'negative',
         });

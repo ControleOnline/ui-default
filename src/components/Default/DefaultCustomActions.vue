@@ -9,7 +9,7 @@
               <q-icon size="sm" :name="itm.icon"></q-icon>
             </q-item-section>
             <q-item-section>
-              {{ $translate(itm.store || configs.store, itm.title, 'menu') }}
+              {{ $tt(itm.store || configs.store, 'menu', itm.title) }}
             </q-item-section>
           </q-item>
         </template>
