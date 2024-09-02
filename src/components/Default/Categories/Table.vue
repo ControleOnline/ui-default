@@ -1,5 +1,5 @@
 <template>
-  <DefaultTable :configs="configs" v-if="loaded" />
+  <DefaultTable :configs="configs" :key="store + '_' + context" v-if="loaded" />
 </template>
 <script>
 import DefaultTable from "@controleonline/ui-default/src/components/Default/DefaultTable";
@@ -46,7 +46,12 @@ export default {
       company: "/people/" + this.myCompany.id,
     };
     this.$store.commit("categories" + "/SET_FILTERS", filters);
-    this.loaded = true;
+  },
+  mounted() {
+    // Renderiza o DefaultTable filho dentro do HTML dinâmico
+    this.$nextTick(() => {
+      this.loaded = true;
+    });
   },
   methods: {
     ...mapActions({}),

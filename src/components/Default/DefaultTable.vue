@@ -393,22 +393,8 @@
               @loadData="loadData"
             />
             <q-space v-if="headerActionsComponent()"></q-space>
+            <ToolBar :configs="configs" />
 
-            <template v-if="configs.status">
-              <template v-for="status in configs.status">
-                <Status :componentProps="{ context: status }"></Status>
-              </template>
-              <q-space></q-space>
-            </template>
-
-            <template v-if="configs.categories">
-              <template v-for="category in configs.categories">
-                <Categories
-                  :componentProps="{ context: category }"
-                ></Categories>
-              </template>
-              <q-space></q-space>
-            </template>
             <DefaultFilters
               v-if="configs.filters"
               :configs="configs"
@@ -417,25 +403,6 @@
             </DefaultFilters>
             <q-space
               v-if="configs.filters && configs.controls != false"
-            ></q-space>
-            <ExtraFields
-              v-if="configs.extraFields"
-              :configs="configs"
-              @loadData="loadData"
-            >
-            </ExtraFields>
-            <q-space
-              v-if="configs.extraFields && configs.controls != false"
-            ></q-space>
-
-            <Imports
-              v-if="configs.import"
-              :config="configs.import"
-              @loadData="loadData"
-            >
-            </Imports>
-            <q-space
-              v-if="configs.import && configs.controls != false"
             ></q-space>
 
             <q-btn
@@ -923,10 +890,8 @@ import Filters from "@controleonline/ui-default/src/utils/filters";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
-import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
-import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
-import Status from "@controleonline/ui-default/src/components/Default/Status/Button";
-import Imports from "@controleonline/ui-default/src/components/Default/Import/Button";
+
+import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 
 export default {
   props: {
@@ -945,15 +910,12 @@ export default {
 
   components: {
     DefaultForm,
-    ExtraFields,
-    Categories,
-    Status,
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
     DefaultSearch,
     DefaultFilters,
-    Imports,
+    ToolBar,
   },
 
   data() {
@@ -1477,11 +1439,7 @@ export default {
             this.items = items;
             //this.tableKey++;
             this.$q.notify({
-              message: this.$tt(
-                this.configs.store,
-                "message",
-                "success"
-              ),
+              message: this.$tt(this.configs.store, "message", "success"),
               position: "bottom",
               type: "positive",
             });
