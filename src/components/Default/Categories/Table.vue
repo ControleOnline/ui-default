@@ -48,7 +48,6 @@ export default {
     this.$store.commit("categories" + "/SET_FILTERS", filters);
   },
   mounted() {
-    // Renderiza o DefaultTable filho dentro do HTML dinâmico
     this.$nextTick(() => {
       this.loaded = true;
     });
