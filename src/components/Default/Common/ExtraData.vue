@@ -3,10 +3,10 @@
     <div :class="(field.formClass || getFilterSize()) + ' q-pa-xs'">
       <FormInputs
         :editable="true"
-        :inputType="field.fieldType"
+        :inputType="field.type"
         :rules="field.rules"
         :labelType="'outer-label'"
-        :label="field.field_name"
+        :label="field.name"
         :initialValue="extraData.data[field.id]"
         @changed="
           (value) => {
