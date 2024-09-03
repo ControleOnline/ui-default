@@ -2,12 +2,9 @@
   <DefaultTable :configs="configs" :key="store + '_' + context" v-if="loaded" />
 </template>
 <script>
-
 import { mapActions, mapGetters } from "vuex";
 export default {
-  components: {
-
-  },
+  components: {},
   props: {
     context: {
       required: true,
@@ -20,6 +17,7 @@ export default {
     configs() {
       return {
         store: "categories",
+        "full-height": false,
         add: true,
         selection: false,
         filters: true,

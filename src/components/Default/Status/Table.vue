@@ -21,6 +21,7 @@ export default {
     configs() {
       return {
         store: "status",
+        "full-height": false,
         add: true,
         selection: false,
         filters: true,
