@@ -886,7 +886,6 @@ import DefaultSearch from "@controleonline/ui-default/src/components/Default/Fil
 import DefaultFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultFilters";
 import FilterInputs from "@controleonline/ui-default/src/components/Default/Filters/FilterInputs";
 import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
-import Filters from "@controleonline/ui-default/src/utils/filters";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
