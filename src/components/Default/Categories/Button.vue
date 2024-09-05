@@ -6,22 +6,16 @@
     @click="openModal = true"
   >
     <q-tooltip>
-      {{
-        $t(componentProps.context + ".btn.categories_" + componentProps.context)
-      }}
+      {{ $tt(componentProps.context, "btn", "categories") }}
     </q-tooltip>
   </q-btn>
   <q-dialog v-model="openModal" maximized>
     <q-card class="">
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">
-          <q-toolbar-title class="">{{
-            $t(
-              componentProps.context +
-                ".title.categories_" +
-                componentProps.context
-            )
-          }}</q-toolbar-title>
+          <q-toolbar-title class="">
+            {{ $tt(componentProps.context, "title", "categories") }}
+          </q-toolbar-title>
           <q-btn
             class="btn-primary"
             no-caps
