@@ -1,5 +1,4 @@
 import { api } from "@controleonline/../../src/boot/api";
-import SubmissionError from "@controleonline/ui-default/src/error/SubmissionError";
 import * as types from "@controleonline/ui-default/src/store/default/mutation_types";
 
 export const getItems = ({ commit, getters }, params = {}) => {
@@ -13,12 +12,8 @@ export const getItems = ({ commit, getters }, params = {}) => {
       return data["hydra:member"];
     })
     .catch((e) => {
-      if (e instanceof SubmissionError) {
-        commit(types.SET_VIOLATIONS, e.errors);
-        commit(types.SET_ERROR, e.errors._error);
-        return;
-      }
       commit(types.SET_ERROR, e.message);
+      throw e;
     })
     .finally((e) => {
       commit(types.SET_ISLOADING, false);
@@ -34,18 +29,13 @@ export const get = ({ commit, getters }, id) => {
       return data;
     })
     .catch((e) => {
-      if (e instanceof SubmissionError) {
-        commit(types.SET_VIOLATIONS, e.errors);
-        commit(types.SET_ERROR, e.errors._error);
-        return;
-      }
       commit(types.SET_ERROR, e.message);
+      throw e;
     })
     .finally((e) => {
       commit(types.SET_ISLOADING, false);
     });
 };
-
 
 export const save = ({ commit, getters }, params) => {
   let id = params.id;
@@ -63,12 +53,8 @@ export const save = ({ commit, getters }, params) => {
       return data;
     })
     .catch((e) => {
-      if (e instanceof SubmissionError) {
-        commit(types.SET_VIOLATIONS, e.errors);
-        commit(types.SET_ERROR, e.errors._error);
-        return;
-      }
       commit(types.SET_ERROR, e.message);
+      throw e;
     })
     .finally((e) => {
       commit(types.SET_ISSAVING, false);
@@ -87,12 +73,8 @@ export const remove = ({ commit, getters }, id) => {
       return data;
     })
     .catch((e) => {
-      if (e instanceof SubmissionError) {
-        commit(types.SET_VIOLATIONS, e.errors);
-        commit(types.SET_ERROR, e.errors._error);
-        return;
-      }
       commit(types.SET_ERROR, e.message);
+      throw e;
     })
     .finally((e) => {
       commit(types.SET_ISSAVING, false);

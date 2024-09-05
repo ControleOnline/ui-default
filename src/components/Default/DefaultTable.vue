@@ -1450,6 +1450,14 @@ export default {
             });
           }
         })
+        .catch((error) => {
+          this.$emit("error", error);
+          this.$q.notify({
+            message: this.$tt(this.configs.store, "message", "error"),
+            position: "bottom",
+            type: "negative",
+          });
+        })
         .finally(() => {
           this.editing = [];
           this.saveEditing[index] = {

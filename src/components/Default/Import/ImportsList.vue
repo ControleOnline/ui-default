@@ -394,7 +394,7 @@ export default {
 
       let endpoint = `import /${id}`;
       return api.fetch(endpoint, options).catch((e) => {
-        if (e instanceof SubmissionError) throw new Error(e.errors._error);
+        if (e instanceof Error) throw new Error(e.errors._error);
 
         throw new Error(e.message);
       });
