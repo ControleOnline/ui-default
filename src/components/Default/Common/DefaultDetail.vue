@@ -14,7 +14,6 @@
 </template>
 
 <script>
-import DefaultForm from "@controleonline/ui-default/src/components/Default/Common/DefaultForm";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -43,9 +42,7 @@ export default {
       required: true,
     },
   },
-  components: {
-    DefaultForm,
-  },
+  components: {},
   data() {
     return {
       data: null,

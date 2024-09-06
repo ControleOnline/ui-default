@@ -57,6 +57,8 @@
                 "
                 :is="tableColumnComponent(column.key || column.name).component"
                 :row="props.row"
+                :configs="configs"
+                @saved="saved"
                 @loadData="loadData"
               />
             </template>
@@ -192,6 +194,8 @@
               :is="tableActionsComponent()"
               :componentProps="tableActionsProps()"
               :row="props.row"
+              :configs="configs"
+              @saved="saved"
               @loadData="loadData"
             />
           </q-td>
@@ -389,6 +393,7 @@
               :is="headerActionsComponent()"
               :componentProps="headerActionsProps()"
               :row="props.row"
+              :configs="configs"
               @saved="saved"
               @loadData="loadData"
             />
@@ -539,6 +544,8 @@
                             .component
                         "
                         :row="props.row"
+                        :configs="configs"
+                        @saved="saved"
                         @loadData="loadData"
                       />
                     </template>
@@ -613,6 +620,8 @@
                             .component
                         "
                         :row="props.row"
+                        :configs="configs"
+                        @saved="saved"
                         @loadData="loadData"
                       />
                     </template>
@@ -766,6 +775,8 @@
                     :is="tableActionsComponent()"
                     :componentProps="tableActionsProps()"
                     :row="props.row"
+                    :configs="configs"
+                    @saved="saved"
                     @loadData="loadData"
                   />
                 </div>
@@ -880,7 +891,6 @@
 </template>
 
 <script>
-import DefaultForm from "@controleonline/ui-default/src/components/Default/Common/DefaultForm";
 import DefaultExternalFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultExternalFilters";
 import DefaultSearch from "@controleonline/ui-default/src/components/Default/Filters/DefaultSearch";
 import DefaultFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultFilters";
@@ -908,7 +918,6 @@ export default {
   },
 
   components: {
-    DefaultForm,
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
