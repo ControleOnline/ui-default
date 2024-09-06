@@ -2,12 +2,12 @@
   <div
     v-if="configsLoaded"
     :class="
-      (configs['full-height'] == false ? '' : 'full-height') +
-      ' full-width default-table'
+      (configs['full-height'] == false ? '' : 'full') +
+      'full-height full-width default-table'
     "
   >
     <div
-      class="q-gutter-sm"
+      class="q-gutter-sm full-height"
       v-if="
         $q.screen.gt.sm && configs.filters && configs.externalFilters != false
       "
@@ -19,7 +19,7 @@
     </div>
     <q-table
       :grid="isTableView"
-      class="default-table"
+      class="default-table full-height"
       dense
       :rows="items"
       :loading="isLoading"
@@ -1498,7 +1498,7 @@ export default {
           elements = document?.querySelectorAll(".fullscreen .q-table__middle");
         else if (typeof this.$el.querySelectorAll === "function")
           elements = this.$el?.querySelectorAll(
-            ".default-table.full-height .q-table__middle"
+            ".default-table.full .q-table__middle"
           );
 
         if (elements.length == 0) {

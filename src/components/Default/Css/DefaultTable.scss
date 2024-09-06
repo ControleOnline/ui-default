@@ -191,7 +191,7 @@
 }
 
 @media only screen and (min-width: 1024px) {
-  .default-table.full-height .q-table__bottom {
+  .default-table.full .q-table__bottom {
     position: fixed !important;
     z-index: 9;
   }
