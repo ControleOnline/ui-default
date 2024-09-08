@@ -1,29 +1,55 @@
 <template>
   <template v-if="configs.status">
     <template v-for="status in configs.status">
-      <Status :componentProps="{ context: status }" />
+      <DefaultButtonDialog
+        :configs="{
+          icon: 'settings',
+          store: 'status',
+          context: status,
+          component: component.Status,
+        }"
+      />
     </template>
   </template>
   <q-space v-if="configs.status && configs.controls != false" />
-
   <template v-if="configs.categories">
     <template v-for="category in configs.categories">
-      <Categories :componentProps="{ context: category }" />
+      <DefaultButtonDialog
+        :configs="{
+          icon: 'person',
+          store: 'category',
+          context: category,
+          component: component.Categories,
+        }"
+      />
     </template>
   </template>
   <q-space v-if="configs.categories && configs.controls != false" />
-
-  <ExtraFields
+  <DefaultButtonDialog
     v-if="configs.extraFields"
-    :configs="configs"
+    :configs="{
+      ...configs.extraFields,
+      ...{
+        icon: 'settings',
+        store: 'extraFields',
+        component: component.ExtraFields,
+      },
+    }"
     @loadData="loadData"
   />
 
   <q-space v-if="configs.extraFields && configs.controls != false" />
 
-  <Imports
+  <DefaultButtonDialog
     v-if="configs.import"
-    :config="configs.import"
+    :configs="{
+      ...configs.import,
+      ...{
+        icon: 'attachment',
+        store: 'imports',
+        component: component.Imports,
+      },
+    }"
     @loadData="loadData"
   />
 
@@ -31,17 +57,15 @@
 </template>
 
 <script>
+import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
+import Categories from "@controleonline/ui-default/src/components/Default/Categories";
+import Status from "@controleonline/ui-default/src/components/Default/Status";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
-import Categories from "@controleonline/ui-default/src/components/Default/Categories/Button";
-import Status from "@controleonline/ui-default/src/components/Default/Status/Button";
-import Imports from "@controleonline/ui-default/src/components/Default/Import/Button";
+import Imports from "@controleonline/ui-default/src/components/Default/Import";
 
 export default {
   components: {
-    ExtraFields,
-    Categories,
-    Status,
-    Imports,
+    DefaultButtonDialog,
   },
   props: {
     row: Object,
@@ -52,7 +76,14 @@ export default {
   },
 
   data() {
-    return {};
+    return {
+      component: {
+        Categories,
+        Status,
+        ExtraFields,
+        Imports,
+      },
+    };
   },
   created() {},
   methods: {},
