@@ -29,7 +29,7 @@
       </q-card-section>
       <q-card-section class="row q-pa-md">
         <component
-          :context="configs.context"
+          :context="configs.context || configs.store"
           :configs="configs"
           :is="configs.component"
         />

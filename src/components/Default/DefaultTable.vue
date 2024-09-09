@@ -51,11 +51,10 @@
             ]"
           >
             <template v-if="tableColumnComponent(column.key || column.name)">
-              <component
-                :componentProps="
-                  tableColumnComponent(column.key || column.name).props
+              <DefaultComponent
+                :componentConfig="
+                  tableColumnComponent(column.key || column.name)
                 "
-                :is="tableColumnComponent(column.key || column.name).component"
                 :row="props.row"
                 :configs="configs"
                 @saved="saved"
@@ -189,10 +188,8 @@
                 {{ $tt(configs.store, "tooltip", "delete") }}
               </q-tooltip>
             </q-btn>
-            <component
-              v-if="tableActionsComponent()"
-              :is="tableActionsComponent()"
-              :componentProps="tableActionsProps()"
+            <DefaultComponent
+              :componentConfig="tableActionsComponent()"
               :row="props.row"
               :configs="configs"
               @saved="saved"
@@ -388,10 +385,8 @@
             <q-space
               v-if="$q.screen.gt.sm == false && configs.selection"
             ></q-space>
-            <component
-              v-if="headerActionsComponent()"
-              :is="headerActionsComponent()"
-              :componentProps="headerActionsProps()"
+            <DefaultComponent
+              :componentConfig="headerActionsComponent()"
               :row="props.row"
               :configs="configs"
               @saved="saved"
@@ -535,13 +530,9 @@
                     <template
                       v-if="tableColumnComponent(column.key || column.name)"
                     >
-                      <component
-                        :componentProps="
-                          tableColumnComponent(column.key || column.name).props
-                        "
-                        :is="
+                      <DefaultComponent
+                        :componentConfig="
                           tableColumnComponent(column.key || column.name)
-                            .component
                         "
                         :row="props.row"
                         :configs="configs"
@@ -611,13 +602,9 @@
                     <template
                       v-if="tableColumnComponent(column.key || column.name)"
                     >
-                      <component
-                        :componentProps="
-                          tableColumnComponent(column.key || column.name).props
-                        "
-                        :is="
+                      <DefaultComponent
+                        :componentConfig="
                           tableColumnComponent(column.key || column.name)
-                            .component
                         "
                         :row="props.row"
                         :configs="configs"
@@ -770,10 +757,8 @@
                       {{ $tt(configs.store, "tooltip", "delete") }}
                     </q-tooltip>
                   </q-btn>
-                  <component
-                    v-if="tableActionsComponent()"
-                    :is="tableActionsComponent()"
-                    :componentProps="tableActionsProps()"
+                  <DefaultComponent
+                    :componentConfig="tableActionsComponent()"
                     :row="props.row"
                     :configs="configs"
                     @saved="saved"
@@ -899,7 +884,7 @@ import FormInputs from "@controleonline/ui-default/src/components/Default/Common
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
-
+import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 
 export default {
@@ -924,6 +909,7 @@ export default {
     DefaultSearch,
     DefaultFilters,
     ToolBar,
+    DefaultComponent,
   },
 
   data() {
@@ -1197,23 +1183,16 @@ export default {
       }
     },
     headerActionsComponent() {
-      return this.configs.components?.headerActions?.component;
+      return this.configs.components?.headerActions;
     },
-    headerActionsProps() {
-      return this.configs.components?.headerActions?.props;
-    },
-
     tableColumnComponent(name) {
       if (this.configs.components?.customColumns)
         return this.configs.components?.customColumns[name];
     },
-
     tableActionsComponent() {
-      return this.configs.components?.tableActions?.component;
+      return this.configs.components?.tableActions;
     },
-    tableActionsProps() {
-      return this.configs.components?.tableActions?.props;
-    },
+
     error(error) {
       this.$emit("error", error);
     },
