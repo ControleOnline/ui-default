@@ -35,6 +35,9 @@ export default {
   },
   methods: {
     ...mapActions({}),
+    click(){
+
+    },
     saved(data, editIndex) {
       this.$emit("saved", data, editIndex);
     },

@@ -2,14 +2,18 @@
   <q-btn
     class="q-pa-xs btn-primary"
     dense
+    :disable="configs.disable"
     :icon="configs.icon"
-    @click="openModal = true"
+    @click="
+      $emit('click', $event);
+      openModal = true;
+    "
   >
     <q-tooltip>
-      {{ $tt(configs.store, "btn", configs.store) }}
+      {{ $tt(configs.store, "btn", configs.label || configs.store) }}
     </q-tooltip>
   </q-btn>
-  <q-dialog v-model="openModal" maximized>
+  <q-dialog v-model="openModal" :full-width="configs['full-width']">
     <q-card class="">
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">
@@ -31,7 +35,11 @@
         <component
           :context="configs.context || configs.store"
           :configs="configs"
+          :data="row"
+          :index="configs.index"
           :is="configs.component"
+          @saved="saved"
+          @error="error"
         />
       </q-card-section>
     </q-card>
@@ -40,7 +48,9 @@
 <script>
 export default {
   props: {
-    configs: {},
+    configs: { default: {} },
+    row: { default: {} },
+
   },
   computed: {},
   created() {},
@@ -50,6 +60,17 @@ export default {
     };
   },
   watch: {},
-  methods: {},
+  methods: {
+    error(data) {
+      this.$emit("error", data);
+    },
+    saved(data, editIndex) {
+      this.openModal = false;
+      this.$emit("saved", data, editIndex);
+    },
+    loadData() {
+      this.$emit("loadData");
+    },
+  },
 };
 </script>

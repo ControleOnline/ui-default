@@ -160,28 +160,29 @@
             </template>
           </q-td>
           <q-td class="q-gutter-sm text-right">
-            <q-btn
+            <DefaultButtonDialog
               v-if="configs.editable != false"
-              dense
-              icon="edit"
-              class="btn-primary"
-              :disable="
-                isLoading || addModal || deleteModal || editing.length > 0
-              "
+              :configs="{
+                'full-width': columns.length >= 16,
+                icon: 'edit',
+                store: configs.store,
+                label: 'edit',
+                index: editIndex,
+                disable: isLoading || deleteModal || editing.length > 0,
+                component: getDefaultForm(),
+              }"
+              :row="props.row"
               @click="editItem(props.row)"
-            >
-              <q-tooltip>
-                {{ $tt(configs.store, "tooltip", "edit") }}
-              </q-tooltip>
-            </q-btn>
+              @saved="saved"
+              @error="error"
+            />
+
             <q-btn
               v-if="configs.delete != false"
               dense
               icon="delete"
               class="btn-danger"
-              :disable="
-                isLoading || addModal || deleteModal || editing.length > 0
-              "
+              :disable="isLoading || deleteModal || editing.length > 0"
               @click="openConfirm(props.row)"
             >
               <q-tooltip>
@@ -359,22 +360,22 @@
       <template v-slot:top-right="props">
         <div class="table-toolbar">
           <q-toolbar class="q-gutter-sm">
-            <q-btn
-              v-if="configs.add != false"
-              class="q-pa-xs btn-positive"
-              dense
-              label=""
-              icon="add"
-              :disable="
-                isLoading || addModal || deleteModal || editing.length > 0
-              "
+            <DefaultButtonDialog
+              v-if="configs.editable != false"
+              :configs="{
+                'full-width': columns.length >= 16,
+                icon: 'add',
+                store: configs.store,
+                label: 'add',
+                index: editIndex,
+                disable: isLoading || deleteModal || editing.length > 0,
+                component: getDefaultForm(),
+              }"
               @click="editItem({})"
-            >
-              <q-tooltip>
-                {{ $tt(configs.store, "tooltip", "add") }}
-              </q-tooltip>
-            </q-btn>
-            <q-space></q-space>
+              @saved="saved"
+              @error="error"
+            />
+            <q-space v-if="configs.editable != false"></q-space>
 
             <q-checkbox
               dense
@@ -729,28 +730,28 @@
             <q-card-section>
               <q-item-section side class="">
                 <div class="row justify-end q-gutter-sm">
-                  <q-btn
+                  <DefaultButtonDialog
                     v-if="configs.editable != false"
-                    dense
-                    icon="edit"
-                    class="btn-primary"
-                    :disable="
-                      isLoading || addModal || deleteModal || editing.length > 0
-                    "
+                    :configs="{
+                      'full-width': columns.length >= 16,
+                      icon: 'edit',
+                      store: configs.store,
+                      label: 'edit',
+                      index: editIndex,
+                      disable: isLoading || deleteModal || editing.length > 0,
+                      component: getDefaultForm(),
+                    }"
+                    :row="props.row"
                     @click="editItem(props.row)"
-                  >
-                    <q-tooltip>
-                      {{ $tt(configs.store, "tooltip", "edit") }}
-                    </q-tooltip>
-                  </q-btn>
+                    @saved="saved"
+                    @error="error"
+                  />
                   <q-btn
                     v-if="configs.delete != false"
                     dense
                     icon="delete"
                     class="btn-danger"
-                    :disable="
-                      isLoading || addModal || deleteModal || editing.length > 0
-                    "
+                    :disable="isLoading || deleteModal || editing.length > 0"
                     @click="openConfirm(props.row)"
                   >
                     <q-tooltip>
@@ -821,27 +822,7 @@
         </div>
       </template>
     </q-table>
-    <q-dialog v-model="addModal" :full-width="columns.length >= 16">
-      <q-card class="q-pa-md full-width default-form">
-        <q-card-section class="row items-center">
-          <label class="text-h5">{{
-            $tt(configs.store, "title", item?.id ? "edit" : "add")
-          }}</label>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
-        <q-separator></q-separator>
-        <q-card-section>
-          <DefaultForm
-            :configs="configs"
-            @saved="saved"
-            @error="error"
-            :data="item"
-            :index="editIndex"
-          />
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+
     <q-dialog v-model="deleteModal">
       <q-card class="q-pa-md full-width">
         <q-card-section class="row items-center">
@@ -885,6 +866,9 @@ import * as DefaultFiltersMethods from "@controleonline/ui-default/src/component
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent";
+import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
+import DefaultForm from "@controleonline/ui-default/src/components/Default/Common/DefaultForm";
+
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 
 export default {
@@ -903,6 +887,7 @@ export default {
   },
 
   components: {
+    DefaultButtonDialog,
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
@@ -933,7 +918,6 @@ export default {
       saveEditing: [],
       deleteModal: false,
       deleteItem: {},
-      addModal: false,
       selectAll: false,
       sortedColumn: null,
       sortDirection: null,
@@ -1071,6 +1055,9 @@ export default {
       if (typeof column.style == "function") return column.style(row);
       return "";
     },
+    getDefaultForm() {
+      return DefaultForm;
+    },
     discoverySelected() {
       if (!this.configs.selection) return;
       let selectedRows = [];
@@ -1197,7 +1184,6 @@ export default {
       this.$emit("error", error);
     },
     saved(data, editIndex) {
-      this.addModal = false;
       let items = this.$copyObject(this.items);
       if (editIndex >= 0) items[editIndex] = data;
       else items.push(data);
@@ -1214,7 +1200,6 @@ export default {
     editItem(item) {
       const index = this.items.findIndex((i) => i["@id"] === item["@id"]);
       this.item = this.$copyObject(item);
-      this.addModal = true;
       this.editIndex = index;
     },
     confirmDelete() {
