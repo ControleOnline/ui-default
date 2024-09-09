@@ -18,7 +18,7 @@
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">
           <q-toolbar-title class="">
-            {{ $tt(configs.store, "title", configs.store) }}
+            {{ $tt(configs.store, "title", configs.label || configs.store) }}
           </q-toolbar-title>
           <q-btn
             class="btn-primary"
@@ -50,7 +50,6 @@ export default {
   props: {
     configs: { default: {} },
     row: { default: {} },
-
   },
   computed: {},
   created() {},
