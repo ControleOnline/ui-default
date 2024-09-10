@@ -394,7 +394,7 @@
               @loadData="loadData"
             />
             <q-space v-if="headerActionsComponent()"></q-space>
-            <ToolBar :configs="configs" />
+            <ToolBar :configs="configs" :columns="columns"/>
 
             <DefaultFilters
               v-if="configs.filters"

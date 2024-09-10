@@ -13,7 +13,7 @@
       {{ $tt(configs.store, "btn", configs.label || configs.store) }}
     </q-tooltip>
   </q-btn>
-  <q-dialog v-model="openModal" :full-width="configs['full-width']">
+  <q-dialog v-model="openModal" :full-width="configs['full-width'] != false">
     <q-card class="">
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">

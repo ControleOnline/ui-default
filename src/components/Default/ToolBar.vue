@@ -1,4 +1,12 @@
 <template>
+  <template v-for="column in columns">
+    <template v-if="configs.columns">
+      <template v-if="configs.columns[column.name]?.store">
+        <DefaultButtonDialog :configs="configs.columns[column.name]" />
+      </template>
+    </template>
+  </template>
+
   <template v-if="configs.status">
     <template v-for="status in configs.status">
       <DefaultButtonDialog
@@ -17,7 +25,7 @@
       <DefaultButtonDialog
         :configs="{
           icon: 'person',
-          store: 'category',
+          store: 'categories',
           context: category,
           component: component.Categories,
         }"
@@ -72,6 +80,10 @@ export default {
     configs: {
       type: Object,
       required: true,
+    },
+    columns: {
+      type: Object,
+      default: [],
     },
   },
 
