@@ -99,6 +99,9 @@
                   )
                 "
               >
+                <template v-if="column.icon">
+                  <q-icon :name="column.icon" />
+                </template>
                 <template v-if="column.inputType == 'icon'">
                   <q-icon :name="formatData(column, props.row, true)" />
                 </template>
