@@ -77,8 +77,8 @@
     :mask="mask || inputType == 'float' ? '#,##' : mask"
     :fill-mask="inputType == 'float' || inputType == 'number' ? 0 : ''"
   >
-    <template v-slot:before v-if="icon">
-      <q-icon name="icon" />
+    <template v-slot:before v-if="inputType == 'icon'">
+      <q-icon :name="data" />
     </template>
   </q-input>
 </template>

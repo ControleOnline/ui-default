@@ -52,6 +52,7 @@
 
 <script>
 import * as DefaultFiltersMethods from '@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js';
+import { ENTRYPOINT } from "app/config/entrypoint";
 
 export default {
   props: {
@@ -83,7 +84,7 @@ export default {
     endpoint: {
       type: String,
       required: false,
-      default: () => `${this.$entrypoint}/media_objects`
+      default: () => `${ENTRYPOINT}/media_objects`
     },
     showError: {
       type: Boolean,

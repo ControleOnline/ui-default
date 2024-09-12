@@ -99,6 +99,9 @@
                   )
                 "
               >
+                <template v-if="column.inputType == 'icon'">
+                  <q-icon :name="formatData(column, props.row, true)" />
+                </template>
                 {{ column.prefix }} {{ formatData(column, props.row, false) }}
                 {{ column.sufix }}
                 <q-icon
@@ -394,7 +397,7 @@
               @loadData="loadData"
             />
             <q-space v-if="headerActionsComponent()"></q-space>
-            <ToolBar :configs="configs" :columns="columns"/>
+            <ToolBar :configs="configs" :columns="columns" />
 
             <DefaultFilters
               v-if="configs.filters"
