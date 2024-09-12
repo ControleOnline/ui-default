@@ -175,7 +175,7 @@
                 label: 'edit',
                 index: editIndex,
                 disable: isLoading || deleteModal || editing.length > 0,
-                component: getDefaultForm(),
+                component: this.$components.DefaultForm,
               }"
               :row="props.row"
               @click="editItem(props.row)"
@@ -375,7 +375,7 @@
                 label: 'add',
                 index: editIndex,
                 disable: isLoading || deleteModal || editing.length > 0,
-                component: getDefaultForm(),
+                component: this.$components.DefaultForm,
               }"
               @click="editItem({})"
               @saved="saved"
@@ -745,7 +745,7 @@
                       label: 'edit',
                       index: editIndex,
                       disable: isLoading || deleteModal || editing.length > 0,
-                      component: getDefaultForm(),
+                      component: this.$components.DefaultForm,
                     }"
                     :row="props.row"
                     @click="editItem(props.row)"
@@ -873,7 +873,6 @@ import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
-import DefaultForm from "@controleonline/ui-default/src/components/Default/Common/DefaultForm";
 
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 
@@ -1061,9 +1060,7 @@ export default {
       if (typeof column.style == "function") return column.style(row);
       return "";
     },
-    getDefaultForm() {
-      return DefaultForm;
-    },
+
     discoverySelected() {
       if (!this.configs.selection) return;
       let selectedRows = [];
