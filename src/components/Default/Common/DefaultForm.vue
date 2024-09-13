@@ -7,7 +7,7 @@
             column.isIdentity != true &&
             showFormColumn[column.key || column.name]
           "
-          :class="(column.formClass || getFilterSize()) + ' q-pa-xs'"
+          :class="getFilterSize(column)"
         >
           <FormInputs
             :editable="isEditable(column)"
@@ -186,7 +186,7 @@ export default {
       this.showFormColumn = columns;
     },
 
-    getFilterSize() {
+    getFilterSize(column) {
       let size = 0;
       let number = this.columns.length;
 
@@ -199,12 +199,13 @@ export default {
       }
 
       return (
-        "col-xs-12 col-sm-4 col-md-" +
-        size +
-        " col-lg-" +
-        size +
-        " col-xl-" +
-        size
+        (column.formClass ||
+          "col-xs-12 col-sm-4 col-md-" +
+            size +
+            " col-lg-" +
+            size +
+            " col-xl-" +
+            size) + " q-pa-xs"
       );
     },
     changedExtraData(data) {
