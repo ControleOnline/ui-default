@@ -25,7 +25,7 @@
             <div class="row items-center justify-end">
               <q-btn
                 v-close-popup
-                label="Close"
+                :label="$tt(store, 'btn', 'apply')"
                 @click="this.$emit('apply')"
                 class="btn-primary"
                 flat
@@ -70,15 +70,31 @@
     @keydown="this.$emit('keydown', $event)"
     :prefix="prefix"
     :sufix="sufix"
-    @blur="this.$emit('blur', $event)"
+    @blur="inputType == 'color' ? '' : this.$emit('blur', $event)"
     :label="labelType == 'stack-label' ? label : ''"
     :rules="rules"
     :reverse-fill-mask="inputType == 'float' || inputType == 'number'"
     :mask="mask || inputType == 'float' ? '#,##' : mask"
     :fill-mask="inputType == 'float' || inputType == 'number' ? 0 : ''"
   >
-    <template v-slot:before v-if="inputType == 'icon'">
+    <template v-slot:append v-if="inputType == 'icon'">
       <q-icon :name="data" />
+    </template>
+    <template v-slot:append v-if="inputType == 'color'">
+      <q-icon name="colorize" class="cursor-pointer">
+        <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+          <q-color v-model="data"> </q-color>
+          <div class="row items-center justify-end">
+            <q-btn
+              v-close-popup
+              :label="$tt(store, 'btn', 'apply')"
+              @click="this.$emit('apply')"
+              class="btn-primary"
+              flat
+            />
+          </div>
+        </q-popup-proxy>
+      </q-icon>
     </template>
   </q-input>
 </template>
