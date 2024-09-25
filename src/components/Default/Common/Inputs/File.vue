@@ -5,6 +5,8 @@
     @blur="this.$emit('blur', $event)"
   >
     <img v-if="item?.id" :src="getImage()" :alt="label" class="default-image" />
+    <div class="upload-icon" v-if="editable" @click="this.open = true">📤</div>
+
     <UploadForm
       :open="open"
       :multiple="multiple"
@@ -82,6 +84,7 @@ export default {
 .image-upload-wrapper {
   position: relative; /* Para posicionar o ícone sobre a imagem */
   cursor: pointer; /* Indica que a imagem é clicável */
+  min-height: 80px;
 }
 
 .default-image {

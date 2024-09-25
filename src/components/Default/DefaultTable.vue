@@ -78,6 +78,7 @@
             <File
               v-else-if="column.inputType == 'file'"
               :disable="column.editable == false"
+              :editable="column.editable"
               :accept="column.accept"
               :item="formatData(column, props.row, true)"
             />
@@ -141,7 +142,7 @@
 
             <template v-else>
               <FormInputs
-              :column="column"
+                :column="column"
                 :prefix="column.prefix"
                 :sufix="column.sufix"
                 :editable="column.editable"
@@ -688,7 +689,7 @@
 
                     <template v-else>
                       <FormInputs
-                      :column="column"
+                        :column="column"
                         :editable="column.editable"
                         :prefix="column.prefix"
                         :sufix="column.sufix"
