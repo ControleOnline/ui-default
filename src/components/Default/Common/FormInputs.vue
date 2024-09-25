@@ -201,10 +201,7 @@ export default {
       this.data = value;
       setTimeout(() => {
         this.key++;
-        console.log(this.data);
-
       }, 1000);
-
     },
     formatDateToBR(dateISO) {
       if (!dateISO) return "";
