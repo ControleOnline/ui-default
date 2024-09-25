@@ -1,11 +1,16 @@
 <template>
-  <div class="image-upload-wrapper" @click="triggerFileUpload">
-    <img :src="getImage()" alt="Imagetipo ou Foto" class="default-image" />
-    <div class="upload-icon">📤</div>
+  <div
+    class="image-upload-wrapper"
+    @click="openUpload"
+    @blur="this.$emit('blur', $event)"
+  >
+    <img v-if="item?.id" :src="getImage()" :alt="label" class="default-image" />
     <UploadForm
-          @click="onFileChange"
-          accept="image/*"
-        />
+      :open="open"
+      :multiple="multiple"
+      :accept="accept"
+      :style="{ display: 'none' }"
+    />
   </div>
 </template>
 
@@ -22,18 +27,52 @@ export default {
     item: {
       required: true,
     },
+    disable: {
+      required: false,
+    },
+    multiple: {
+      required: false,
+      default: false,
+    },
+    editable: {
+      required: false,
+    },
+    store: {
+      required: false,
+    },
+    labelType: {
+      required: false,
+    },
+    label: {
+      required: false,
+    },
+    filters: {
+      required: false,
+    },
+    accept: {
+      required: false,
+      default: () => ".jpg, .pdf, image/*",
+    },
   },
   data() {
-    return {};
+    return { open: false };
   },
   computed: {
     ...mapGetters({}),
   },
-  created() {},
+  created() {
+    console.log(this.item);
+  },
   methods: {
     ...mapActions({}),
+    openUpload() {
+      if (!this.disable) this.open = true;
+      setTimeout(() => {
+        this.open = false;
+      }, 300);
+    },
     getImage() {
-      return ENTRYPOINT + "/files/download/" + this.item?.image?.id;
+      return ENTRYPOINT + "/files/download/" + this.item?.id;
     },
   },
 };

@@ -10,6 +10,7 @@
           :class="getFilterSize(column)"
         >
           <FormInputs
+            :column="column"
             :editable="isEditable(column)"
             :prefix="column.prefix"
             :sufix="column.sufix"

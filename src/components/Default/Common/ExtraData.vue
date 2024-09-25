@@ -2,6 +2,7 @@
   <template v-for="(field, index) in extraFields" :key="key">
     <div :class="(field.formClass || getFilterSize()) + ' q-pa-xs'">
       <FormInputs
+        :column="{}"
         :editable="true"
         :inputType="field.type"
         :rules="field.rules"

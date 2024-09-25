@@ -5,11 +5,26 @@
   <label v-else-if="labelType != 'stack-label'">
     {{ label }}
   </label>
+  <File
+    v-if="inputType == 'file'"
+    :item="data"
+    :accept="column.accept"
+    :disable="editable == false"
+    :editable="editable"
+    :store="store"
+    :labelType="labelType"
+    :label="label"
+    multiple
+    :filters="filters"
+    @update="this.$emit('update', $event)"
+    @blur="this.$emit('blur', $event)"
+  />
+
   <q-input
     :disable="editable == false"
     outlined
     dense
-    v-if="inputType == 'date-range'"
+    v-else-if="inputType == 'date-range'"
     v-model="data"
     mask="##/##/####"
     :rules="['validateBRDate']"
@@ -100,15 +115,18 @@
 </template>
 <script>
 import SelectInput from "../Common/Inputs/SelectInput";
+import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
 
 export default {
   components: {
     SelectInput,
+    File,
   },
   props: {
     editable: {
       type: Boolean,
     },
+    column: {},
     prefix: {},
     sufix: {},
     inputType: {

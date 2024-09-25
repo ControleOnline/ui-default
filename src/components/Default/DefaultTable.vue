@@ -65,7 +65,7 @@
               class="btn-primary"
               v-else-if="column.to && props.row[column.key || column.name]"
               @click="verifyClick(column, props.row)"
-              :icon:="column.icon"
+              :icon="column.icon"
               >{{
                 this.format(
                   column,
@@ -74,6 +74,13 @@
                 )
               }}
             </q-btn>
+
+            <File
+              v-else-if="column.inputType == 'file'"
+              :disable="column.editable == false"
+              :accept="column.accept"
+              :item="formatData(column, props.row, true)"
+            />
 
             <template
               v-else-if="editingInit(items.indexOf(props.row), column) != true"
@@ -105,10 +112,14 @@
                 <template v-if="column.inputType == 'icon'">
                   <q-icon :name="formatData(column, props.row, true)" />
                 </template>
-                {{ column.prefix }} {{ formatData(column, props.row, false) }}
+                {{ column.prefix }}
+
+                {{ formatData(column, props.row, false) }}
+
                 {{ column.sufix }}
                 <q-icon
                   v-if="
+                    column.inputType != 'image' &&
                     column.editable != false &&
                     !isSaving &&
                     showEdit[items.indexOf(props.row)] &&
@@ -130,6 +141,7 @@
 
             <template v-else>
               <FormInputs
+              :column="column"
                 :prefix="column.prefix"
                 :sufix="column.sufix"
                 :editable="column.editable"
@@ -553,7 +565,7 @@
                         column.to && props.row[column.key || column.name]
                       "
                       @click="verifyClick(column, props.row)"
-                      :icon:="column.icon"
+                      :icon="column.icon"
                     >
                       {{
                         this.format(
@@ -567,7 +579,7 @@
                         )
                       }}
                     </q-btn>
-                    <span v-else :icon:="column.icon">
+                    <span v-else :icon="column.icon">
                       {{
                         this.format(
                           column,
@@ -625,7 +637,7 @@
                         column.to && props.row[column.key || column.name]
                       "
                       @click="verifyClick(column, props.row)"
-                      :icon:="column.icon"
+                      :icon="column.icon"
                       >{{
                         this.format(
                           column,
@@ -676,6 +688,7 @@
 
                     <template v-else>
                       <FormInputs
+                      :column="column"
                         :editable="column.editable"
                         :prefix="column.prefix"
                         :sufix="column.sufix"
@@ -873,7 +886,7 @@ import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
-
+import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 
 export default {
@@ -900,6 +913,7 @@ export default {
     DefaultFilters,
     ToolBar,
     DefaultComponent,
+    File,
   },
 
   data() {
