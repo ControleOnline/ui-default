@@ -80,7 +80,13 @@
               :disable="column.editable == false"
               :editable="column.editable"
               :accept="column.accept"
-              :item="formatData(column, props.row, true)"
+              :data="formatData(column, props.row, true)"
+              :index="items.indexOf(props.row)"
+              @save="
+                (value, index) => {
+                  this.save(index, items[index], column, value['@id']);
+                }
+              "
             />
 
             <template
@@ -612,7 +618,20 @@
                 v-for="(column, index) in columns"
                 :key="column.key || column.name"
               >
-                <q-item v-if="!column.isIdentity">
+                <File
+                  v-if="column.inputType == 'file' && !column.isIdentity"
+                  :disable="column.editable == false"
+                  :editable="column.editable"
+                  :accept="column.accept"
+                  :data="formatData(column, props.row, true)"
+                  :index="items.indexOf(props.row)"
+                  @save="
+                    (value, index) => {
+                      this.save(index, items[index], column, value['@id']);
+                    }
+                  "
+                />
+                <q-item v-else-if="!column.isIdentity">
                   <q-item-section>
                     <q-item-label>{{
                       $tt(configs.store, "input", column.label)

@@ -1,6 +1,6 @@
 <template>
   <q-btn
-    class="q-pa-xs btn-primary"
+    :class="configs.class || 'q-pa-xs btn-primary'"
     dense
     :disable="configs.disable"
     :icon="configs.icon"
@@ -19,7 +19,7 @@
       }}
     </q-tooltip>
   </q-btn>
-  <q-dialog v-model="openModal" :full-width="configs['full-width'] != false">
+  <q-dialog v-model="openModal" :full-width="configs['full-width'] != false" :full-height="configs['full-height'] == true">
     <q-card class="">
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">
@@ -51,6 +51,7 @@
           :index="configs.index"
           :is="configs.component"
           @saved="saved"
+          @save="save"
           @error="error"
         />
       </q-card-section>
@@ -78,6 +79,10 @@ export default {
     saved(data, editIndex) {
       this.openModal = false;
       this.$emit("saved", data, editIndex);
+    },
+    save(data) {
+      this.openModal = false;
+      this.$emit("save", data, this.configs.index);
     },
     loadData() {
       this.$emit("loadData");

@@ -1,32 +1,33 @@
 <template>
-  <div
-    class="image-upload-wrapper"
-    @click="openUpload"
-    @blur="this.$emit('blur', $event)"
-  >
-    <img v-if="item?.id" :src="getImage()" :alt="label" class="default-image" />
-    <div class="upload-icon" v-if="editable" @click="this.open = true">📤</div>
-
-    <UploadForm
-      :open="open"
-      :multiple="multiple"
-      :accept="accept"
-      :style="{ display: 'none' }"
+  <div class="image-upload-wrapper" @blur="this.$emit('blur', $event)">
+    <img
+      v-if="data && data['@id']"
+      :src="getImage(data)"
+      :alt="label"
+      class="default-image"
+    />
+    <DefaultButtonDialog
+      :configs="configs"
+      :row="data"
+      v-if="editable"
+      @save="save"
     />
   </div>
 </template>
 
 <script>
-import UploadForm from "@controleonline/ui-default/src/components/Default/Common/Inputs/UploadInput.vue";
 import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
+import FileExplorer from "@controleonline/ui-common/src/components/Common/FileExplorer";
+import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 
 export default {
   components: {
-    UploadForm,
+    FileExplorer,
+    DefaultButtonDialog,
   },
   props: {
-    item: {
+    data: {
       required: true,
     },
     disable: {
@@ -35,6 +36,9 @@ export default {
     multiple: {
       required: false,
       default: false,
+    },
+    index: {
+      required: false,
     },
     editable: {
       required: false,
@@ -61,29 +65,40 @@ export default {
   },
   computed: {
     ...mapGetters({}),
+    configs() {
+      return {
+        icon: "settings",
+        store: "file",
+        context: "file",
+        index: this.index,
+        "full-height": true,
+        class: "upload-icon q-pa-xs btn-primary",
+        label: this.label,
+        component: FileExplorer,
+      };
+    },
   },
   created() {
-    console.log(this.item);
+    console.log(this.data);
   },
   methods: {
     ...mapActions({}),
-    openUpload() {
+    openFileExplorer() {
       if (!this.disable) this.open = true;
-      setTimeout(() => {
-        this.open = false;
-      }, 300);
     },
-    getImage() {
-      return ENTRYPOINT + "/files/download/" + this.item?.id;
+    getImage(file) {
+      return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "");
+    },
+    save(data, editIndex) {
+      this.$emit("save", data, editIndex);
     },
   },
 };
 </script>
 
-<style scoped>
+<style>
 .image-upload-wrapper {
   position: relative; /* Para posicionar o ícone sobre a imagem */
-  cursor: pointer; /* Indica que a imagem é clicável */
   min-height: 80px;
 }
 
@@ -98,12 +113,6 @@ export default {
   position: absolute; /* Sobrepõe a imagem */
   top: 10px; /* Ajusta conforme necessário */
   right: 10px; /* Ajusta conforme necessário */
-  background: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
-  color: #fff; /* Cor do ícone */
-  padding: 5px;
-  border-radius: 50%;
-  font-size: 18px; /* Tamanho do ícone */
-  pointer-events: none; /* Não interferir no clique da imagem */
 }
 
 @media (max-width: 768px) {

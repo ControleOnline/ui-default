@@ -7,7 +7,7 @@
   </label>
   <File
     v-if="inputType == 'file'"
-    :item="data"
+    :data="data"
     :accept="column.accept"
     :disable="editable == false"
     :editable="editable"
@@ -16,8 +16,8 @@
     :label="label"
     multiple
     :filters="filters"
-    @update="this.$emit('update', $event)"
-    @blur="this.$emit('blur', $event)"
+    :key="key"
+    @save="save"
   />
 
   <q-input
@@ -181,6 +181,7 @@ export default {
   data() {
     return {
       data: null,
+      key: 0,
     };
   },
   created() {
@@ -196,6 +197,15 @@ export default {
     },
   },
   methods: {
+    save(value) {
+      this.data = value;
+      setTimeout(() => {
+        this.key++;
+        console.log(this.data);
+
+      }, 1000);
+
+    },
     formatDateToBR(dateISO) {
       if (!dateISO) return "";
       const [year, month, day] = dateISO.split("/");
