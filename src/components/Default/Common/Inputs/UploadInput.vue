@@ -190,7 +190,7 @@ export default {
     },
     fileUploaded(info) {
       let response = JSON.parse(info.xhr.response);
-      this.$refs.uploader.removeUploadedFiles();
+      //this.$refs.uploader.removeUploadedFiles();
       this.$emit("fileUploaded", response);
     },
     uploadFailed(info) {
