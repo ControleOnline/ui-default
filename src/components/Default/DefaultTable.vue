@@ -195,6 +195,8 @@
                 index: editIndex,
                 disable: isLoading || deleteModal || editing.length > 0,
                 component: this.$components.DefaultForm,
+                componentConfigs:configs
+
               }"
               :row="props.row"
               @click="editItem(props.row)"
@@ -395,6 +397,7 @@
                 index: editIndex,
                 disable: isLoading || deleteModal || editing.length > 0,
                 component: this.$components.DefaultForm,
+                componentConfigs:configs
               }"
               @click="editItem({})"
               @saved="saved"
@@ -779,6 +782,7 @@
                       index: editIndex,
                       disable: isLoading || deleteModal || editing.length > 0,
                       component: this.$components.DefaultForm,
+                      componentConfigs:configs
                     }"
                     :row="props.row"
                     @click="editItem(props.row)"

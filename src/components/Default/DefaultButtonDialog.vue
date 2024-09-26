@@ -19,7 +19,11 @@
       }}
     </q-tooltip>
   </q-btn>
-  <q-dialog v-model="openModal" :full-width="configs['full-width'] != false" :full-height="configs['full-height'] == true">
+  <q-dialog
+    v-model="openModal"
+    :full-width="configs['full-width'] != false"
+    :full-height="configs['full-height'] == true"
+  >
     <q-card class="">
       <q-card-section class="row col-12 q-pa-sm">
         <q-toolbar class="">
@@ -46,7 +50,7 @@
       <q-card-section class="row q-pa-md">
         <component
           :context="configs.context || configs.store"
-          :configs="configs"
+          :configs="configs.componentConfigs || configs"
           :data="row"
           :index="configs.index"
           :is="configs.component"
