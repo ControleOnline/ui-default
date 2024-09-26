@@ -100,6 +100,7 @@
 <script>
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import { ENTRYPOINT } from "app/config/entrypoint";
+import { mapGetters, mapActions } from "vuex";
 
 export default {
   props: {
@@ -136,7 +137,7 @@ export default {
     endpoint: {
       type: String,
       required: false,
-      default: () => `${ENTRYPOINT}/media_objects`,
+      default: () => `${ENTRYPOINT}/files/upload`,
     },
     showError: {
       type: Boolean,
@@ -164,6 +165,9 @@ export default {
     },
   },
   computed: {
+    ...mapGetters({
+      myCompany: "people/currentCompany",
+    }),
     myClass() {
       return (
         `q-upd ${this.multiple ? "q-upd-multiple" : "q-upd-single"}` +
@@ -174,7 +178,9 @@ export default {
   methods: {
     ...DefaultFiltersMethods,
     getFields() {
-      return this.extraData;
+      let data = this.$copyObject(this.extraData);
+      data.push({ name: "people", value: this.myCompany?.id });
+      return data;
     },
     openUploader() {
       this.$refs.uploader.$el.querySelector('input[type="file"]').click();
