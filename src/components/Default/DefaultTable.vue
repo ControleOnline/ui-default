@@ -193,10 +193,9 @@
                 store: configs.store,
                 label: 'edit',
                 index: editIndex,
-                disable: isLoading || deleteModal || editing.length > 0,
+                disable: isLoading || editing.length > 0,
                 component: this.$components.DefaultForm,
-                componentConfigs:configs
-
+                componentConfigs: configs,
               }"
               :row="props.row"
               @click="editItem(props.row)"
@@ -204,18 +203,13 @@
               @error="error"
             />
 
-            <q-btn
+            <DefaultDelete
+              @deleted="deleted"
+              :configs="configs"
+              :item="props.row"
               v-if="configs.delete != false"
-              dense
-              icon="delete"
-              class="btn-danger"
-              :disable="isLoading || deleteModal || editing.length > 0"
-              @click="openConfirm(props.row)"
-            >
-              <q-tooltip>
-                {{ $tt(configs.store, "tooltip", "delete") }}
-              </q-tooltip>
-            </q-btn>
+            />
+
             <DefaultComponent
               :componentConfig="tableActionsComponent()"
               :row="props.row"
@@ -395,9 +389,9 @@
                 store: configs.store,
                 label: 'add',
                 index: editIndex,
-                disable: isLoading || deleteModal || editing.length > 0,
+                disable: isLoading || editing.length > 0,
                 component: this.$components.DefaultForm,
-                componentConfigs:configs
+                componentConfigs: configs,
               }"
               @click="editItem({})"
               @saved="saved"
@@ -780,27 +774,21 @@
                       store: configs.store,
                       label: 'edit',
                       index: editIndex,
-                      disable: isLoading || deleteModal || editing.length > 0,
+                      disable: isLoading || editing.length > 0,
                       component: this.$components.DefaultForm,
-                      componentConfigs:configs
+                      componentConfigs: configs,
                     }"
                     :row="props.row"
                     @click="editItem(props.row)"
                     @saved="saved"
                     @error="error"
                   />
-                  <q-btn
+                  <DefaultDelete
+                    @deleted="deleted"
+                    :configs="configs"
+                    :item="props.row"
                     v-if="configs.delete != false"
-                    dense
-                    icon="delete"
-                    class="btn-danger"
-                    :disable="isLoading || deleteModal || editing.length > 0"
-                    @click="openConfirm(props.row)"
-                  >
-                    <q-tooltip>
-                      {{ $tt(configs.store, "tooltip", "delete") }}
-                    </q-tooltip>
-                  </q-btn>
+                  />
                   <DefaultComponent
                     :componentConfig="tableActionsComponent()"
                     :row="props.row"
@@ -865,37 +853,6 @@
         </div>
       </template>
     </q-table>
-
-    <q-dialog v-model="deleteModal">
-      <q-card class="q-pa-md full-width">
-        <q-card-section class="row items-center">
-          <label class="text-h5">{{
-            $tt(configs.store, "title", "msg_delete")
-          }}</label>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
-        <q-separator></q-separator>
-        <q-card-section>
-          <div class="flex q-pt-md">
-            <q-btn
-              class="q-py-sm q-px-md text-capitalize btn-primary"
-              :label="$tt(configs.store, 'btn', 'cancel')"
-              v-close-popup
-            >
-            </q-btn>
-            <q-space></q-space>
-            <q-btn
-              class="q-py-sm q-px-md text-capitalize btn-primary"
-              :label="$tt(configs.store, 'btn', 'confirm')"
-              @click="confirmDelete"
-              :loading="isSaving"
-            >
-            </q-btn>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
   </div>
 </template>
 
@@ -912,6 +869,7 @@ import DefaultComponent from "@controleonline/ui-default/src/components/Default/
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
+import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 
 export default {
   props: {
@@ -929,6 +887,7 @@ export default {
   },
 
   components: {
+    DefaultDelete,
     DefaultButtonDialog,
     DefaultExternalFilters,
     FilterInputs,
@@ -959,8 +918,6 @@ export default {
       draggedColumnIndex: -1,
       showEdit: [],
       saveEditing: [],
-      deleteModal: false,
-      deleteItem: {},
       selectAll: false,
       sortedColumn: null,
       sortDirection: null,
@@ -1098,7 +1055,13 @@ export default {
       if (typeof column.style == "function") return column.style(row);
       return "";
     },
-
+    deleted(item) {
+      let items = this.$copyObject(this.items);
+      items = items.filter((i) => i["@id"] != item["@id"]);
+      this.$store.commit(this.configs.store + "/SET_ITEMS", items);
+      this.items = items;
+      //this.tableKey++;
+    },
     discoverySelected() {
       if (!this.configs.selection) return;
       let selectedRows = [];
@@ -1234,33 +1197,13 @@ export default {
       //this.tableKey++;
       this.$emit("saved", data, editIndex);
     },
-    openConfirm(data) {
-      this.deleteItem = data;
-      this.deleteModal = true;
-    },
+
     editItem(item) {
       const index = this.items.findIndex((i) => i["@id"] === item["@id"]);
       this.item = this.$copyObject(item);
       this.editIndex = index;
     },
-    confirmDelete() {
-      this.$store
-        .dispatch(
-          this.configs.store + "/remove",
-          this.deleteItem["@id"].split("/").pop()
-        )
-        .then((data) => {
-          let items = this.$copyObject(this.items);
-          items = items.filter((i) => i["@id"] != this.deleteItem["@id"]);
-          this.$store.commit(this.configs.store + "/SET_ITEMS", items);
-          this.$emit("deleted", this.deleteItem);
-          this.items = items;
-          //this.tableKey++;
-        })
-        .finally(() => {
-          this.deleteModal = false;
-        });
-    },
+
     toggleSelectAll() {
       this.selectedRows = this.selectedRows.map((item, index) => {
         if (this.selectionDisabled(this.items[index], this.configs))
