@@ -25,7 +25,12 @@
     :full-height="configs['full-height'] == true"
   >
     <q-card class="">
-      <q-card-section class="row col-12 q-pa-sm">
+      <q-card-section
+        class="row col-12 q-pa-sm fixed bg-primary"
+        :style="{ 'z-index': 999,
+          'width': 'calc(100% - 46px) !important'
+         }"
+      >
         <q-toolbar class="">
           <q-toolbar-title class="">
             {{
@@ -47,7 +52,7 @@
           />
         </q-toolbar>
       </q-card-section>
-      <q-card-section class="row q-pa-md">
+      <q-card-section class="row q-pa-md" :style="{ 'padding-top': '80px' }">
         <component
           :context="configs.context || configs.store"
           :configs="configs.componentConfigs || configs"
