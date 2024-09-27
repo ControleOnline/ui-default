@@ -78,15 +78,20 @@ export default {
       };
     },
   },
-  created() {
-  },
+  created() {},
   methods: {
     ...mapActions({}),
     openFileExplorer() {
       if (!this.disable) this.open = true;
     },
     getImage(file) {
-      return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "");
+      return (
+        ENTRYPOINT +
+        "/files/download/" +
+        file["@id"].replace(/\D/g, "") +
+        "?_=" +
+        btoa(file.file_name)
+      );
     },
     save(data, editIndex) {
       this.$emit("save", data, editIndex);

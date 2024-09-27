@@ -134,6 +134,10 @@ export default {
       required: false,
       default: () => ".jpg, .pdf, image/*",
     },
+    item: {
+      type: Object,
+      required: false,
+    },
     endpoint: {
       type: String,
       required: false,
@@ -180,6 +184,13 @@ export default {
     getFields() {
       let data = this.$copyObject(this.extraData);
       data.push({ name: "people", value: this.myCompany?.id });
+      let item = (this.item.id || this.item["@id"] || this.item).toString();
+      if (item)
+        data.push({
+          name: "id",
+          value: item.replace(/\D/g, ""),
+        });
+
       return data;
     },
     openUploader() {
