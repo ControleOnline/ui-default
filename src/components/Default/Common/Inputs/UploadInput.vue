@@ -1,100 +1,106 @@
 <template>
-  <q-uploader
-    ref="uploader"
-    no-thumbnails
-    square
-    flat
-    :url="endpoint"
-    :headers="headers"
-    :accept="accept"
-    field-name="file"
-    @uploaded="fileUploaded"
-    @failed="uploadFailed"
-    @removed="filesRemoved"
-    :multiple="multiple"
-    :class="myClass"
-    :auto-upload="autoupd"
-    :form-fields="getFields"
-  >
-    <template v-slot:header="scope">
-      <div class="row no-wrap items-center justify-end q-pa-sm q-gutter-xs">
-        <q-spinner
-          v-if="scope.isUploading"
-          class="q-uploader__spinner loading-primary"
-        />
-        <q-btn
-          flat
-          dense
-          rounded
-          v-if="scope.canAddFiles"
-          type="a"
-          icon="add_box"
-          class="btn-primary"
-        >
-          <q-uploader-add-trigger />
-          <q-tooltip>{{ $tt(store, "tooltip", "select") }}</q-tooltip>
-        </q-btn>
-        <q-btn
-          v-if="scope.isUploading"
-          round
-          dense
-          flat
-          icon="clear"
-          color="negative"
-          @click="scope.abort"
-        >
-          <q-tooltip>{{ $tt(store, "tooltip", "cancel") }}</q-tooltip>
-        </q-btn>
-      </div>
-    </template>
-
-    <template v-slot:list="scope">
-      <div class="row items-center" style="min-height: 100%">
-        <div
-          v-if="scope.files.length == 0"
-          class="text-center text-camelcase"
-          style="min-width: 100%; min-height: 100%"
-        >
-          <span class="text-bold text-uppercase">{{
-            $tt(store, "tooltip", "upload_area")
-          }}</span>
-          <br />{{ $tt(store, "tooltip", "upload_description") }}
+  <div class="upload-bars">
+    <q-uploader
+      ref="uploader"
+      no-thumbnails
+      square
+      flat
+      :url="endpoint"
+      :headers="headers"
+      :accept="accept"
+      field-name="file"
+      @uploaded="fileUploaded"
+      @failed="uploadFailed"
+      @removed="filesRemoved"
+      :multiple="multiple"
+      :class="myClass"
+      :auto-upload="autoupd"
+      :form-fields="getFields"
+    >
+      <template v-slot:header="scope">
+        <div class="row no-wrap items-center justify-end q-pa-sm q-gutter-xs">
+          <q-spinner
+            v-if="scope.isUploading"
+            class="q-uploader__spinner loading-primary"
+          />
+          <q-btn
+            flat
+            dense
+            rounded
+            v-if="scope.canAddFiles"
+            type="a"
+            icon="add_box"
+            class="btn-primary"
+          >
+            <q-uploader-add-trigger />
+            <q-tooltip>{{ $tt(store, "tooltip", "select") }}</q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="scope.isUploading"
+            round
+            dense
+            flat
+            icon="clear"
+            color="negative"
+            @click="scope.abort"
+          >
+            <q-tooltip>{{ $tt(store, "tooltip", "cancel") }}</q-tooltip>
+          </q-btn>
         </div>
+      </template>
 
-        <q-list separator v-if="scope.files.length > 0" style="min-width: 100%">
-          <q-item v-for="file in scope.files" :key="file.name">
-            <q-item-section>
-              <q-item-label class="full-width ellipsis">
-                {{ file.name }}
-              </q-item-label>
+      <template v-slot:list="scope">
+        <div class="row items-center" style="min-height: 100%">
+          <div
+            v-if="scope.files.length == 0"
+            class="text-center text-camelcase"
+            style="min-width: 100%; min-height: 100%"
+          >
+            <span class="text-bold text-uppercase">{{
+              $tt(store, "tooltip", "upload_area")
+            }}</span>
+            <br />{{ $tt(store, "tooltip", "upload_description") }}
+          </div>
 
-              <q-item-label caption>
-                {{ $tt(store, "tooltip", "status") }}
-                : {{ file.__status }}
-              </q-item-label>
+          <q-list
+            separator
+            v-if="scope.files.length > 0"
+            style="min-width: 100%"
+          >
+            <q-item v-for="file in scope.files" :key="file.name">
+              <q-item-section>
+                <q-item-label class="full-width ellipsis">
+                  {{ file.name }}
+                </q-item-label>
 
-              <q-item-label caption>
-                {{ file.__sizeLabel }} / {{ file.__progressLabel }}
-              </q-item-label>
-            </q-item-section>
+                <q-item-label caption>
+                  {{ $tt(store, "tooltip", "status") }}
+                  : {{ file.__status }}
+                </q-item-label>
 
-            <q-item-section top side>
-              <q-btn
-                flat
-                dense
-                round
-                class="gt-xs"
-                size="12px"
-                icon="clear"
-                color="negative"
-                @click="scope.removeFile(file)"
-              />
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </div>
-    </template>
-  </q-uploader>
+                <q-item-label caption>
+                  {{ file.__sizeLabel }} / {{ file.__progressLabel }}
+                </q-item-label>
+              </q-item-section>
+
+              <q-item-section top side>
+                <q-btn
+                  flat
+                  dense
+                  round
+                  class="gt-xs"
+                  size="12px"
+                  icon="clear"
+                  color="negative"
+                  @click="scope.removeFile(file)"
+                />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
+      </template>
+    </q-uploader>
+  </div>
 </template>
 
 <script>
@@ -229,4 +235,9 @@ export default {
     border    : 1px dashed #cccccc !important
 .q-upd-maximized
   min-height: calc(100vh - 150px)!important
+.upload-bars
+    position: fixed;
+    width: 400px;
+    bottom: 0px;
+    z-index: 999;
 </style>

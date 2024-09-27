@@ -124,4 +124,5 @@ export default {
     width: 100px; /* Reduz a largura da imagem no mobile */
   }
 }
+
 </style>
