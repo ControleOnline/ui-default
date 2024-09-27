@@ -6,7 +6,7 @@
     flat
     :url="endpoint"
     :headers="headers"
-    :accept="accepted"
+    :accept="accept"
     field-name="file"
     @uploaded="fileUploaded"
     @failed="uploadFailed"
@@ -129,7 +129,7 @@ export default {
       required: false,
       default: false,
     },
-    accepted: {
+    accept: {
       type: String,
       required: false,
       default: () => ".jpg, .pdf, image/*",

@@ -8,7 +8,7 @@
   <File
     v-if="inputType == 'file'"
     :data="data"
-    :accept="column.accept"
+    :fileType="column.fileType"
     :disable="editable == false"
     :editable="editable"
     :store="store"

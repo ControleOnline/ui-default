@@ -55,9 +55,9 @@ export default {
     filters: {
       required: false,
     },
-    accept: {
+    fileType: {
       required: false,
-      default: () => ".jpg, .pdf, image/*",
+      default: () => ["image"],
     },
   },
   data() {
