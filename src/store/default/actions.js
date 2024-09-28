@@ -23,7 +23,7 @@ export const getItems = ({ commit, getters }, params = {}) => {
 export const get = ({ commit, getters }, id) => {
   commit(types.SET_ISLOADING, true);
   return api
-    .fetch(getters.resourceEndpoint + "/" + id, {})
+    .fetch(getters.resourceEndpoint + "/" + id.replace(/\D/g, ""), {})
     .then((data) => {
       commit(types.SET_ITEM, data);
       return data;

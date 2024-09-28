@@ -2,6 +2,7 @@
   <q-btn
     :class="configs.class || 'q-pa-xs btn-primary'"
     dense
+    :size="configs.size"
     :disable="configs.disable"
     :icon="configs.icon"
     @click="

@@ -1,4 +1,16 @@
 <template>
+  <label class="bg sticky-top full-width q-mb-lg" :class="{ top: '65px' }">
+    {{ $tt("files", "input", "file_name") }}
+
+    <q-input
+      outlined
+      dense
+      lazy-rules
+      stack-label
+      class="full-width"
+      v-model="file_name"
+    />
+  </label>
   <q-editor
     v-model="editor"
     :definitions="{
@@ -94,31 +106,82 @@
     }"
     class="full-width"
   />
+
+  <div class="row justify-end q-pa-sm bg sticky-bottom full-width">
+    <q-btn label="Salvar" color="primary" @click="save" />
+  </div>
 </template>
 
 <script>
+import { mapGetters, mapActions } from "vuex";
+
 export default {
   components: {},
   props: {
     data: {
       required: false,
+
+      default() {
+        return {
+          id: this.data.id,
+          extension: "html",
+          file_name: "",
+          file_type: "text",
+          content: this.editor,
+          people: "/people/" + myCompany.id,
+        };
+      },
     },
   },
   data() {
     return {
-      editor: [],
+      editor: "",
+      file_name: "",
     };
   },
-  created() {
-    this.editor = this.$copyObject(this.data);
+  computed: {
+    ...mapGetters({
+      myCompany: "people/currentCompany",
+    }),
   },
-
-  watch: {
-    editor(editor) {
-      this.$emit("changed", editor);
-    },
+  created() {
+    this.getData();
   },
   methods: {
+    ...mapActions({
+      getItem: "file/get",
+      saveItem: "file/save",
+    }),
+    getData() {
+      if (this.data && this.data["@id"])
+        this.getItem(this.data["@id"]).then((data) => {
+          this.editor = data.content;
+          this.file_name = data.file_name;
+        });
+    },
+    save() {
+      let data = this.$copyObject(this.data);
+      data.content = this.editor;
+      data.file_name = this.file_name;
+
+      this.saveItem(data)
+        .then((data) => {
+          this.$emit("saved", data);
+          this.$q.notify({
+            message: this.$tt("file", "message", "success"),
+            position: "bottom",
+            type: "positive",
+          });
+        })
+        .catch((error) => {
+          this.$emit("error", error);
+          this.$q.notify({
+            message: this.$tt("file", "message", "error"),
+            position: "bottom",
+            type: "negative",
+          });
+        });
+    },
     onPaste(evt) {
       if (evt.target.nodeName === "INPUT") return;
       let text, onPasteStripFormattingIEPaste;

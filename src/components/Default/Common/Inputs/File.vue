@@ -1,9 +1,7 @@
 <template>
-  <Html v-if="fileType.includes('html')" :data="data" @changed="changed" />
-
   <div class="image-upload-wrapper" @blur="this.$emit('blur', $event)">
     <img
-      v-if="data && data['@id']"
+      v-if="data && data['@id'] && data.file_type == 'image'"
       :src="getImage(data)"
       :alt="label"
       class="default-image"
@@ -22,11 +20,9 @@ import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
 import FileExplorer from "@controleonline/ui-common/src/components/Common/FileExplorer";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
-import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
 
 export default {
   components: {
-    Html,
     FileExplorer,
     DefaultButtonDialog,
   },
@@ -71,13 +67,14 @@ export default {
     ...mapGetters({}),
     configs() {
       return {
-        icon: "settings",
+        icon: this.data.file_type == "image" ? "image" : "description",
         store: "file",
         context: "file",
         index: this.index,
         "full-height": true,
         class: "upload-icon q-pa-xs btn-primary",
         label: this.label,
+        fileType: this.fileType,
         component: FileExplorer,
       };
     },
