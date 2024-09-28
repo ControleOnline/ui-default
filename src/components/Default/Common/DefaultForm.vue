@@ -42,7 +42,7 @@
       />
     </div>
 
-    <div class="row justify-end">
+    <div class="row justify-end bg sticky-bottom full-width">
       <q-btn
         :loading="isSaving"
         icon="save"

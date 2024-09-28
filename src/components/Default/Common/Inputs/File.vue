@@ -1,4 +1,6 @@
 <template>
+  <Html v-if="fileType.includes('html')" :data="data" @changed="changed" />
+
   <div class="image-upload-wrapper" @blur="this.$emit('blur', $event)">
     <img
       v-if="data && data['@id']"
@@ -20,9 +22,11 @@ import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
 import FileExplorer from "@controleonline/ui-common/src/components/Common/FileExplorer";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
+import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
 
 export default {
   components: {
+    Html,
     FileExplorer,
     DefaultButtonDialog,
   },
@@ -96,6 +100,9 @@ export default {
     save(data, editIndex) {
       this.$emit("save", data, editIndex);
     },
+    changed(data, editIndex) {
+      this.$emit("changed", data, editIndex);
+    },
   },
 };
 </script>
@@ -124,5 +131,4 @@ export default {
     width: 100px; /* Reduz a largura da imagem no mobile */
   }
 }
-
 </style>
