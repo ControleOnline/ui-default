@@ -19,6 +19,15 @@
     :key="key"
     @save="save"
   />
+  <Html
+    v-else-if="column.inputType == 'html'"
+    :data="data"
+    @changed="
+      (value) => {
+        this.data = value;
+      }
+    "
+  />
 
   <q-input
     :disable="editable == false"
@@ -116,11 +125,13 @@
 <script>
 import SelectInput from "../Common/Inputs/SelectInput";
 import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
+import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
 
 export default {
   components: {
     SelectInput,
     File,
+    Html,
   },
   props: {
     editable: {

@@ -27,9 +27,7 @@
     <q-card class="">
       <q-card-section
         class="row col-12 q-pa-sm fixed bg-primary"
-        :style="{ 'z-index': 999,
-          'width': 'calc(100% - 46px) !important'
-         }"
+        :style="{ 'z-index': 999, width: 'calc(100% - 46px) !important' }"
       >
         <q-toolbar class="">
           <q-toolbar-title class="">

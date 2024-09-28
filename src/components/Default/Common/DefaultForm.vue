@@ -1,6 +1,6 @@
 <template>
-  <q-form ref="myForm" @submit="onSubmit">
-    <div class="row q-col-gutter-xs q-pb-xs">
+  <q-form ref="myForm" @submit="onSubmit" class="full-width">
+    <div class="row q-col-gutter-xs q-pb-xs" v-if="loaded">
       <template v-for="(column, index) in columns">
         <div
           v-if="
@@ -94,11 +94,22 @@ export default {
       periodo: false,
       item: {},
       id: null,
+      loaded: false,
     };
   },
   created() {
     this.getFilteredColumns();
-    this.getData();
+
+    if (this.configs.loadOnEdit && this.data && this.data["@id"])
+      this.$store
+        .dispatch(
+          this.configs.store + "/get",
+          this.data["@id"].replace(/\D/g, "")
+        )
+        .then((item) => {
+          this.getData(item);
+        });
+    else this.getData();
   },
   mounted() {
     this.$nextTick(() => {});
@@ -134,37 +145,34 @@ export default {
     ...mapActions({
       getExtraFields: "extra_fields/getItems",
     }),
-    getData() {
+    getData(initialData) {
       let data = {};
-      Object.keys(this.data).forEach((item, i) => {
+      let itemData = initialData || this.data;
+      Object.keys(itemData).forEach((item, i) => {
         let column = this.columns.find((c) => {
           return (c.key || c.name) == item;
         });
 
         if (column) {
           data[column.key || column.name] = this.getList(this.configs, column)
-            ? this.formatList(
-                column,
-                this.data[column.key || column.name],
-                true
-              )
+            ? this.formatList(column, itemData[column.key || column.name], true)
             : this.format(
                 column,
-                this.data,
-                this.data[column.key || column.name],
+                itemData,
+                itemData[column.key || column.name],
                 true
               );
 
           if (column.isIdentity) {
-            this.id = this.data[column.key || column.name];
+            this.id = itemData[column.key || column.name];
             data.id = this.id;
           }
         }
       });
 
-      if (this.data["@id"]) data["id"] = this.data["@id"].split("/").pop();
-
+      if (itemData["@id"]) data["id"] = itemData["@id"].split("/").pop();
       this.item = data;
+      this.loaded = true;
     },
 
     isEditable(column) {

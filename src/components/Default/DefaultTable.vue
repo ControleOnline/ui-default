@@ -74,7 +74,6 @@
                 )
               }}
             </q-btn>
-
             <File
               v-else-if="column.inputType == 'file'"
               :disable="column.editable == false"
@@ -188,7 +187,11 @@
             <DefaultButtonDialog
               v-if="configs.editable != false"
               :configs="{
-                'full-width': columns.length >= 16,
+                'full-width':
+                  configs['full-width'] != undefined
+                    ? configs['full-width']
+                    : columns.length >= 16,
+                'full-height': configs['full-height'],
                 icon: 'edit',
                 store: configs.store,
                 label: 'edit',
@@ -233,7 +236,7 @@
             @mousedown="startDrag(index)"
             @mouseup="stopDrag()"
             @mousemove="dragColumn(index)"
-            :style="column.style"
+            :style="styleColumn(column)"
             :class="[
               'text-' + column.align,
               { 'no-drag': index === 0 && nodrag },
@@ -384,7 +387,11 @@
             <DefaultButtonDialog
               v-if="configs.editable != false"
               :configs="{
-                'full-width': columns.length >= 16,
+                'full-width':
+                  configs['full-width'] != undefined
+                    ? configs['full-width']
+                    : columns.length >= 16,
+                'full-height': configs['full-height'],
                 icon: 'add',
                 store: configs.store,
                 label: 'add',
@@ -769,7 +776,11 @@
                   <DefaultButtonDialog
                     v-if="configs.editable != false"
                     :configs="{
-                      'full-width': columns.length >= 16,
+                      'full-width':
+                        configs['full-width'] != undefined
+                          ? configs['full-width']
+                          : columns.length >= 16,
+                      'full-height': configs['full-height'],
                       icon: 'edit',
                       store: configs.store,
                       label: 'edit',
