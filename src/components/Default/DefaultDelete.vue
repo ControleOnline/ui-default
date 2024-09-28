@@ -1,11 +1,11 @@
 <template>
   <q-btn
-    :dense="configs.dense"
+    dense
     :size="configs.size"
     :flat="configs.flat"
     :color="configs.color"
-    :icon="configs.icon || 'delete'"
-    :class="configs.class || 'btn-danger'"
+    icon="delete"
+    :class="'btn-danger'"
     :disable="isSaving || deleteModal"
     @click="openConfirm()"
   >
