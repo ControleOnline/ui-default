@@ -67,7 +67,8 @@ export default {
     ...mapGetters({}),
     configs() {
       return {
-        icon: this.data.file_type == "image" ? "image" : "description",
+        icon:
+          this.data && this.data.file_type == "image" ? "image" : "description",
         store: "file",
         context: "file",
         index: this.index,
@@ -96,9 +97,6 @@ export default {
     },
     save(data, editIndex) {
       this.$emit("save", data, editIndex);
-    },
-    changed(data, editIndex) {
-      this.$emit("changed", data, editIndex);
     },
   },
 };

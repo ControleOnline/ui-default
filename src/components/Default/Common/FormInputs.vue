@@ -18,11 +18,7 @@
     :filters="filters"
     :key="key"
     @save="save"
-    @changed="
-      (value) => {
-        this.data = value;
-      }
-    "
+
   />
 
   <q-input
