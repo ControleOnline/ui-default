@@ -1,9 +1,9 @@
 <template>
   <div
     :class="
-      (!data || !data['@id'] ?'full-width ':'') +( data && data['@id'] && data.file_type == 'image'
+      data && data['@id'] && data.file_type == 'image'
         ? 'image-upload-wrapper'
-        : 'q-pt-xs')
+        : 'q-pt-xs'
     "
     @blur="this.$emit('blur', $event)"
   >
@@ -107,20 +107,24 @@ export default {
 
 <style>
 .image-upload-wrapper {
-  position: relative; /* Para posicionar o ícone sobre a imagem */
+  position: relative;
   min-height: 80px;
 }
 
 .default-image {
-  width: 150px; /* Largura da imagem */
-  height: auto; /* Mantém a proporção da imagem */
+  width: 150px;
+  height: auto;
   margin-bottom: 10px;
   display: block;
 }
-
+.image-upload-wrapper .upload-icon {
+  position: absolute;
+  top: calc(50% - 15px);
+  right: 5px;
+}
 @media (max-width: 768px) {
   .default-image {
-    width: 100px; /* Reduz a largura da imagem no mobile */
+    width: 100px;
   }
 }
 </style>
