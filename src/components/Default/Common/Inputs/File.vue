@@ -1,11 +1,19 @@
 <template>
-  <div class="image-upload-wrapper" @blur="this.$emit('blur', $event)">
+  <div
+    :class="
+      (!data || !data['@id'] ?'full-width ':'') +( data && data['@id'] && data.file_type == 'image'
+        ? 'image-upload-wrapper'
+        : 'q-pt-xs')
+    "
+    @blur="this.$emit('blur', $event)"
+  >
     <img
       v-if="data && data['@id'] && data.file_type == 'image'"
       :src="getImage(data)"
       :alt="label"
       class="default-image"
     />
+
     <DefaultButtonDialog
       :configs="configs"
       :row="data"
@@ -18,12 +26,10 @@
 <script>
 import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
-import FileExplorer from "@controleonline/ui-common/src/components/Common/FileExplorer";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 
 export default {
   components: {
-    FileExplorer,
     DefaultButtonDialog,
   },
   props: {
@@ -52,9 +58,6 @@ export default {
     label: {
       required: false,
     },
-    filters: {
-      required: false,
-    },
     fileType: {
       required: false,
       default: () => ["image"],
@@ -76,7 +79,7 @@ export default {
         class: "upload-icon q-pa-xs btn-primary",
         label: this.label,
         fileType: this.fileType,
-        component: FileExplorer,
+        component: this.$components.FileExplorer,
       };
     },
   },
@@ -113,12 +116,6 @@ export default {
   height: auto; /* Mantém a proporção da imagem */
   margin-bottom: 10px;
   display: block;
-}
-
-.upload-icon {
-  position: absolute; /* Sobrepõe a imagem */
-  top: 10px; /* Ajusta conforme necessário */
-  right: 10px; /* Ajusta conforme necessário */
 }
 
 @media (max-width: 768px) {

@@ -28,7 +28,6 @@
     <q-card class="">
       <q-card-section
         class="row col-12 q-pa-sm fixed bg-primary sticky-top full-width"
-        
       >
         <q-toolbar class="">
           <q-toolbar-title class="">

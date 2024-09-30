@@ -1,26 +1,38 @@
 <template>
-  <label v-if="labelType != 'stack-label' && store">
+  <label v-if="labelType != 'stack-label' && store && (!column.preview || !data || !data['@id'])">
     {{ $tt(store, "input", label) }}
   </label>
-  <label v-else-if="labelType != 'stack-label'">
+  <label v-else-if="labelType != 'stack-label' && (!column.preview || !data || !data['@id'])">
     {{ label }}
   </label>
-  <File
-    v-if="inputType == 'file'"
-    :data="data"
-    :fileType="column.fileType"
-    :disable="editable == false"
-    :editable="editable"
-    :store="store"
-    :labelType="labelType"
-    :label="label"
-    multiple
-    :filters="filters"
-    :key="key"
-    @save="save"
-
-  />
-
+  <template v-if="inputType == 'file'">
+    <File
+      v-if="!isPreview()"
+      class="file-preview"
+      :style="
+        !isPreview()
+          ? ''
+          : { position: 'absolute', 'z-index': 2, 'margin-top': '15px' }
+      "
+      :data="data"
+      :fileType="column.fileType"
+      :disable="editable == false"
+      :editable="editable"
+      :store="store"
+      :labelType="labelType"
+      :label="label"
+      multiple
+      :key="key"
+      @save="save"
+    />
+    <Html
+      v-if="inputType == 'file' && isPreview()"
+      :readonly="true"
+      :key="key"
+      :data="data"
+      @changed="changed"
+    />
+  </template>
   <q-input
     :disable="editable == false"
     outlined
@@ -116,12 +128,12 @@
 </template>
 <script>
 import SelectInput from "../Common/Inputs/SelectInput";
-import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
+import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
 
 export default {
   components: {
     SelectInput,
-    File,
+    Html,
   },
   props: {
     editable: {
@@ -192,17 +204,24 @@ export default {
   watch: {
     data: {
       handler: function (data) {
-        this.$emit("changed", data);
+        this.changed(data);
       },
       deep: true,
     },
   },
   methods: {
+    changed(data) {
+      this.$emit("changed", data);
+    },
     save(value) {
       this.data = value;
       setTimeout(() => {
         this.key++;
-      }, 1000);
+      }, 300);
+    },
+
+    isPreview(){
+      return this.column.preview && this.data && this.data['@id'];
     },
     formatDateToBR(dateISO) {
       if (!dateISO) return "";

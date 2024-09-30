@@ -878,7 +878,6 @@ import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
-import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 
@@ -907,7 +906,7 @@ export default {
     DefaultFilters,
     ToolBar,
     DefaultComponent,
-    File,
+
   },
 
   data() {
