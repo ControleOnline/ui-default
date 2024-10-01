@@ -1,8 +1,18 @@
 <template>
-  <label v-if="labelType != 'stack-label' && store && (!column.preview || !data || !data['@id'])">
+  <label
+    v-if="
+      labelType != 'stack-label' &&
+      store &&
+      (!column.preview || !data || !data['@id'])
+    "
+  >
     {{ $tt(store, "input", label) }}
   </label>
-  <label v-else-if="labelType != 'stack-label' && (!column.preview || !data || !data['@id'])">
+  <label
+    v-else-if="
+      labelType != 'stack-label' && (!column.preview || !data || !data['@id'])
+    "
+  >
     {{ label }}
   </label>
   <template v-if="inputType == 'file'">
@@ -220,8 +230,8 @@ export default {
       }, 300);
     },
 
-    isPreview(){
-      return this.column.preview && this.data && this.data['@id'];
+    isPreview() {
+      return this.column.preview && this.data && this.data["@id"];
     },
     formatDateToBR(dateISO) {
       if (!dateISO) return "";

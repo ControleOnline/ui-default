@@ -5,7 +5,8 @@
         <div
           v-if="
             column.isIdentity != true &&
-            showFormColumn[column.key || column.name]
+            showFormColumn[column.key || column.name] &&
+            column.add != false
           "
           :class="getFilterSize(column)"
         >
@@ -21,7 +22,7 @@
             :labelType="'outer-label'"
             :label="column.label"
             :filters="getSearchFilters(column)"
-            :initialValue="item[column.key || column.name]"
+            :initialValue="getInitialData(column)"
             :searchParam="column.searchParam || 'search'"
             :formatOptions="column.formatList"
             :searchAction="getList(configs, column)"
@@ -145,14 +146,24 @@ export default {
     ...mapActions({
       getExtraFields: "extra_fields/getItems",
     }),
+
+    getInitialData(column) {
+      if (this.item[column.key || column.name])
+        return this.item[column.key || column.name];
+
+      return this.configs?.initialData
+        ? this.configs?.initialData[column.key || column.name]
+        : null;
+    },
+
     getData(initialData) {
       let data = {};
       let itemData = initialData || this.data;
+
       Object.keys(itemData).forEach((item, i) => {
         let column = this.columns.find((c) => {
           return (c.key || c.name) == item;
         });
-
         if (column) {
           data[column.key || column.name] = this.getList(this.configs, column)
             ? this.formatList(column, itemData[column.key || column.name], true)
@@ -176,7 +187,12 @@ export default {
     },
 
     isEditable(column) {
-      return this.id ? column.editable : true;
+      return this.configs?.initialData &&
+        this.configs?.initialData[column.key || column.name]
+        ? false
+        : this.id
+        ? column.editable
+        : true;
     },
     getFilteredColumns() {
       let columns = {};

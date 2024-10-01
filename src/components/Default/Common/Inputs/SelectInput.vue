@@ -15,6 +15,7 @@
     label-color="black"
     input-debounce="700"
     :loading="isLoadingList"
+    :disable="disable"
     :multiple="multiple == true"
     :label="
       labelType != 'stack-label'
@@ -72,6 +73,10 @@ export default {
     formatOptions: {
       type: Function,
       required: true,
+    },
+    disable:{
+      type: Boolean,
+      required: false,
     },
     store: {
       type: String,
