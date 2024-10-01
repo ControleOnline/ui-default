@@ -415,14 +415,17 @@
             <q-space
               v-if="$q.screen.gt.sm == false && configs.selection"
             ></q-space>
-            <DefaultComponent
-              :componentConfig="headerActionsComponent()"
-              :row="props.row"
-              :configs="configs"
-              @saved="saved"
-              @loadData="loadData"
-            />
-            <q-space v-if="headerActionsComponent()"></q-space>
+
+            <template v-for="comp in headerActionsComponent()">
+              <DefaultComponent
+                :componentConfig="comp"
+                :row="props.row"
+                :configs="comp.configs"
+                @saved="saved"
+                @loadData="loadData"
+              />
+              <q-space></q-space>
+            </template>
             <ToolBar :configs="configs" :columns="columns" />
 
             <DefaultFilters
@@ -906,7 +909,6 @@ export default {
     DefaultFilters,
     ToolBar,
     DefaultComponent,
-
   },
 
   data() {
