@@ -65,7 +65,7 @@
               class="btn-primary"
               v-else-if="column.to && props.row[column.key || column.name]"
               @click="verifyClick(column, props.row)"
-              :icon="column.icon"
+              :icon="getIcon(column, props.row)"
               >{{
                 this.format(
                   column,
@@ -92,6 +92,7 @@
               v-else-if="editingInit(items.indexOf(props.row), column) != true"
             >
               <span
+                :style="{ color: getColor(column, props.row) }"
                 @mouseenter="
                   showEdit[items.indexOf(props.row)] =
                     column.editable == false
@@ -112,11 +113,17 @@
                   )
                 "
               >
-                <template v-if="column.icon">
-                  <q-icon :name="column.icon" />
+                <template v-if="getIcon(column, props.row)">
+                  <q-icon
+                    :color="getColor(column, props.row)"
+                    :name="getIcon(column, props.row)"
+                  />
                 </template>
                 <template v-if="column.inputType == 'icon'">
-                  <q-icon :name="formatData(column, props.row, true)" />
+                  <q-icon
+                    :color="getColor(column, props.row)"
+                    :name="formatData(column, props.row, true)"
+                  />
                 </template>
                 {{ column.prefix }}
 
@@ -579,7 +586,8 @@
                         column.to && props.row[column.key || column.name]
                       "
                       @click="verifyClick(column, props.row)"
-                      :icon="column.icon"
+                      :color="getColor(column, props.row)"
+                      :icon="getIcon(column, props.row)"
                     >
                       {{
                         this.format(
@@ -593,7 +601,11 @@
                         )
                       }}
                     </q-btn>
-                    <span v-else :icon="column.icon">
+                    <span
+                      v-else
+                      :icon="getIcon(column, props.row)"
+                      :color="getColor(column, props.row)"
+                    >
                       {{
                         this.format(
                           column,
@@ -664,7 +676,8 @@
                         column.to && props.row[column.key || column.name]
                       "
                       @click="verifyClick(column, props.row)"
-                      :icon="column.icon"
+                      :color="getColor(column, props.row)"
+                      :icon="getIcon(column, props.row)"
                       >{{
                         this.format(
                           column,
@@ -683,7 +696,21 @@
                         editingInit(items.indexOf(props.row), column) != true
                       "
                     >
+                      <template v-if="getIcon(column, props.row)">
+                        <q-icon
+                          :color="getColor(column, props.row)"
+                          :name="getIcon(column, props.row)"
+                        />
+                      </template>
+                      <template v-if="column.inputType == 'icon'">
+                        <q-icon
+                          :color="getColor(column, props.row)"
+                          :name="formatData(column, props.row, true)"
+                        />
+                      </template>
+
                       <span
+                        :style="{ color: getColor(column, props.row) }"
                         @click="
                           startEditing(
                             items.indexOf(props.row),
@@ -1086,6 +1113,16 @@ export default {
         });
       });
       this.selectedRows = selectedRows;
+    },
+    getColor(column, row) {
+      return column.color || row[column.key || column.name]
+        ? row[column.key || column.name].color
+        : false;
+    },
+    getIcon(column, row) {
+      return column.icon || row[column.key || column.name]
+        ? row[column.key || column.name].icon
+        : false;
     },
     toggleView() {
       this.isTableView = !this.isTableView;
