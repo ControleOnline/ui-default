@@ -28,6 +28,14 @@
           store: 'categories',
           context: category,
           component: component.Categories,
+          columns: {
+            parent: {
+              filters: {
+                context: category,
+                company: '/people/' + this.myCompany.id,
+              },
+            },
+          },
         }"
       />
     </template>
@@ -70,6 +78,7 @@ import Categories from "@controleonline/ui-default/src/components/Default/Catego
 import Status from "@controleonline/ui-default/src/components/Default/Status";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
 import Imports from "@controleonline/ui-default/src/components/Default/Import";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   components: {
@@ -86,7 +95,11 @@ export default {
       default: [],
     },
   },
-
+  computed: {
+    ...mapGetters({
+      myCompany: "people/currentCompany",
+    }),
+  },
   data() {
     return {
       component: {
