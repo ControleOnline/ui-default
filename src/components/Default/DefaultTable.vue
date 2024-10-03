@@ -91,7 +91,20 @@
             <template
               v-else-if="editingInit(items.indexOf(props.row), column) != true"
             >
+              <template v-if="column.multiline == true">
+                <template
+                  v-for="(data, index) in formatData(column, props.row, false)"
+                >
+                  <span :style="{ color: getColor(column, props.row) }">
+                    {{ column.prefix }}
+                    {{ data }}
+                    {{ column.sufix }} </span
+                  ><br />
+                  <q-separator class="full-width" />
+                </template>
+              </template>
               <span
+                v-else
                 :style="{ color: getColor(column, props.row) }"
                 @mouseenter="
                   showEdit[items.indexOf(props.row)] =
@@ -708,8 +721,24 @@
                           :name="formatData(column, props.row, true)"
                         />
                       </template>
-
+                      <template v-if="column.multiline == true">
+                        <template
+                          v-for="(data, index) in formatData(
+                            column,
+                            props.row,
+                            false
+                          )"
+                        >
+                          <span :style="{ color: getColor(column, props.row) }">
+                            {{ column.prefix }}
+                            {{ data }}
+                            {{ column.sufix }} </span
+                          ><br />
+                          <q-separator class="full-width" />
+                        </template>
+                      </template>
                       <span
+                        v-else
                         :style="{ color: getColor(column, props.row) }"
                         @click="
                           startEditing(
@@ -722,6 +751,7 @@
                       >
                         {{ column.prefix }}
                         {{ formatData(column, props.row, false) }}
+                        {{ column.sufix }}
                         <q-icon
                           v-if="column.editable != false && !isSaving"
                           size="1.0em"
