@@ -9,7 +9,7 @@
   >
     <img
       v-if="data && data['@id'] && data.fileType == 'image'"
-      :src="getImage(data)"
+      :src="$image(data)"
       :alt="label"
       class="default-image"
     />
@@ -24,7 +24,6 @@
 </template>
 
 <script>
-import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 
@@ -88,16 +87,6 @@ export default {
     ...mapActions({}),
     openFileExplorer() {
       if (!this.disable) this.open = true;
-    },
-    getImage(file) {
-      return (
-        ENTRYPOINT +
-        "/files/" +
-        file["@id"].replace(/\D/g, "") +
-        "/download" +
-        "?_=" +
-        btoa(file.fileName)
-      );
     },
     save(data, editIndex) {
       this.$emit("save", data, editIndex);

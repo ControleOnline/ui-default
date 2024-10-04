@@ -5,7 +5,7 @@
       no-thumbnails
       square
       flat
-      :url="endpoint"
+      :url="endpoint || $entrypoint"
       :headers="headers"
       :accept="accept"
       field-name="file"
@@ -105,7 +105,6 @@
 
 <script>
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
-import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
 
 export default {
@@ -147,7 +146,6 @@ export default {
     endpoint: {
       type: String,
       required: false,
-      default: () => `${ENTRYPOINT}/files/upload`,
     },
     showError: {
       type: Boolean,
@@ -178,6 +176,7 @@ export default {
     ...mapGetters({
       myCompany: "people/currentCompany",
     }),
+
     myClass() {
       return (
         `q-upd ${this.multiple ? "q-upd-multiple" : "q-upd-single"}` +
