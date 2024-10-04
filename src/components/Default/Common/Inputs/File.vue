@@ -1,14 +1,14 @@
 <template>
   <div
     :class="
-      data && data['@id'] && data.file_type == 'image'
+      data && data['@id'] && data.fileType == 'image'
         ? 'image-upload-wrapper'
         : 'q-pt-xs'
     "
     @blur="this.$emit('blur', $event)"
   >
     <img
-      v-if="data && data['@id'] && data.file_type == 'image'"
+      v-if="data && data['@id'] && data.fileType == 'image'"
       :src="getImage(data)"
       :alt="label"
       class="default-image"
@@ -71,7 +71,7 @@ export default {
     configs() {
       return {
         icon:
-          this.data && this.data.file_type == "image" ? "image" : "description",
+          this.data && this.data.fileType == "image" ? "image" : "description",
         store: "file",
         context: "file",
         index: this.index,
@@ -95,7 +95,7 @@ export default {
         "/files/download/" +
         file["@id"].replace(/\D/g, "") +
         "?_=" +
-        btoa(file.file_name)
+        btoa(file.fileName)
       );
     },
     save(data, editIndex) {

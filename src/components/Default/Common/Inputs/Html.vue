@@ -1,26 +1,27 @@
 <template>
-  <label class="bg sticky-top full-width q-mb-lg" :style="{ top: '65px' }">
-    {{ $tt("files", "input", "file_name") }}
-
-    <q-input
-      outlined
-      dense
-      lazy-rules
-      stack-label
-      class="full-width"
-      v-model="file_name"
-      :readonly="readonly"
-    >
-      <File
-        v-if="readonly"
-        :editable="true"
-        :data="item"
-        :fileType="['text']"
-        store="file"
-        @save="changed"
-      />
-    </q-input>
-  </label>
+  <div class="bg sticky-top full-width" :style="{ top: '64px' }">
+    <label class="q-mb-lg">
+      {{ $tt("files", "input", "fileName") }}
+      <q-input
+        outlined
+        dense
+        lazy-rules
+        stack-label
+        class="full-width"
+        v-model="fileName"
+        :readonly="readonly"
+      >
+        <File
+          v-if="readonly"
+          :editable="true"
+          :data="item"
+          :fileType="['text']"
+          store="file"
+          @save="changed"
+        />
+      </q-input>
+    </label>
+  </div>
   <q-editor
     v-model="editor"
     :readonly="readonly"
@@ -137,7 +138,20 @@
     v-if="!readonly"
     class="row justify-end q-pa-sm bg sticky-bottom full-width"
   >
-    <q-btn :label="$tt('file', 'btn', 'save')" color="primary" @click="save" />
+    <q-btn
+      v-if="generatePDF && originalEditor == editor"
+      icon="picture_as_pdf"
+      :label="$tt('file', 'btn', 'pdf')"
+      color="primary"
+      @click="toPdf"
+    />
+    <q-btn
+      v-if="originalEditor != editor"
+      icon="save"
+      :label="$tt('file', 'btn', 'save')"
+      color="primary"
+      @click="save"
+    />
   </div>
 </template>
 
@@ -151,14 +165,18 @@ export default {
       required: false,
       default: false,
     },
+    generatePDF: {
+      required: false,
+      default: false,
+    },
     data: {
       required: false,
       default() {
         return {
           id: this.item?.id,
           extension: "html",
-          file_name: "",
-          file_type: "text",
+          fileName: "",
+          fileType: "text",
           content: this.editor,
           people: "/people/" + this.myCompany?.id,
         };
@@ -167,7 +185,8 @@ export default {
   },
   data() {
     return {
-      file_name: "",
+      originalEditor: "",
+      fileName: "",
       editor: "",
       item: {},
     };
@@ -194,14 +213,17 @@ export default {
     ...mapActions({
       getItem: "file/get",
       saveItem: "file/save",
+      convert: "file/convert",
     }),
     fetchData() {
       if (this.item && this.item["@id"])
         this.getItem(this.item["@id"]).then((data) => {
+          this.originalEditor = data.content;
           this.editor = data.content;
-          this.file_name = data.file_name;
+          this.fileName = data.fileName;
         });
     },
+
     changed(data) {
       this.item = data;
       this.fetchData();
@@ -211,20 +233,26 @@ export default {
         this.item || {
           id: this.item?.id,
           extension: "html",
-          file_name: "",
-          file_type: "text",
+          fileName: "",
+          fileType: "text",
           content: this.editor,
           people: "/people/" + this.myCompany?.id,
         }
       );
       data.content = this.editor;
-      data.file_name = this.file_name;
+      data.fileName = this.fileName;
       return data;
+    },
+    toPdf() {
+      this.convert(this.getData()).then((data) => {
+        console.log(data);
+      });
     },
     save() {
       this.saveItem(this.getData())
         .then((data) => {
           this.$emit("saved", data);
+          this.originalEditor = this.editor;
           //this.$emit("changed", data);
           this.$q.notify({
             message: this.$tt("file", "message", "success"),
