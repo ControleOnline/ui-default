@@ -92,8 +92,9 @@ export default {
     getImage(file) {
       return (
         ENTRYPOINT +
-        "/files/download/" +
+        "/files/" +
         file["@id"].replace(/\D/g, "") +
+        "/download" +
         "?_=" +
         btoa(file.fileName)
       );
