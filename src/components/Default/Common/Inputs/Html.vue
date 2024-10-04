@@ -244,8 +244,8 @@ export default {
       return data;
     },
     toPdf() {
-      this.convert(this.getData()).then((data) => {
-        console.log(data);
+      this.convert({ id: this.item?.id }).then((data) => {
+        this.$emit("converted", data);
       });
     },
     save() {
