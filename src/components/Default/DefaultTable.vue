@@ -1433,9 +1433,12 @@ export default {
     },
     verifyClick(column, row) {
       if (column && typeof column.to == "function") {
-        this.$router.push(
-          column.to(row[column.key || column.name], column, row)
-        );
+        const route = column.to(row[column.key || column.name], column, row);
+        //if (route.target) {
+        const url = this.$router.resolve(route).href;
+        window.open(url, "_blank");
+        //} else
+        //  this.$router.push(column.to(row[column.key || column.name], column, row));
       }
       return;
     },
@@ -1478,6 +1481,7 @@ export default {
               position: "bottom",
               type: "positive",
             });
+            this.$emit("saved", data);
           } else {
             this.$q.notify({
               message: this.$tt(this.configs.store, "message", "error"),

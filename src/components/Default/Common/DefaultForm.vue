@@ -36,11 +36,6 @@
           />
         </div>
       </template>
-      <template v-for="(multiline, name) in configs.multiline">
-        <q-card class="col-12">
-          <DefaultTable :configs="multiline" />
-        </q-card>
-      </template>
 
       <ExtraData
         :entity="data"
