@@ -6,7 +6,8 @@
           v-if="
             column.isIdentity != true &&
             showFormColumn[column.key || column.name] &&
-            column.add != false
+            column.add != false &&
+            column.multiline != true
           "
           :class="getFilterSize(column)"
         >
@@ -35,6 +36,11 @@
           />
         </div>
       </template>
+      <template v-for="(multiline, name) in configs.multiline">
+        <q-card class="col-12">
+          <DefaultTable :configs="multiline" />
+        </q-card>
+      </template>
 
       <ExtraData
         :entity="data"
@@ -61,6 +67,7 @@ import * as DefaultFiltersMethods from "@controleonline/ui-default/src/component
 import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import ExtraData from "@controleonline/ui-default/src/components/Default/Common/ExtraData";
 import { mapActions, mapGetters } from "vuex";
+import configs from "app/modules/controleonline/ui-config/src/store/configs";
 
 export default {
   props: {
