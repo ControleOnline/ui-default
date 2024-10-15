@@ -48,7 +48,7 @@
     <div
       class="row justify-end bg sticky-bottom full-width"
       :style="{
-        'z-index': 2,
+        'z-index': 1,
         position: 'fixed !important',
         left: 0,
         'padding-right': '35px',
