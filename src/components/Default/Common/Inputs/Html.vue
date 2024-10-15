@@ -12,7 +12,7 @@
         :readonly="readonly"
       >
         <File
-          v-if="readonly"
+          v-if="readonly || editInline == true"
           :editable="true"
           :data="item"
           :fileType="['text']"
@@ -171,6 +171,10 @@ export default {
   components: {},
   props: {
     readonly: {
+      required: false,
+      default: false,
+    },
+    editInline: {
       required: false,
       default: false,
     },

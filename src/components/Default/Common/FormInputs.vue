@@ -38,6 +38,7 @@
     <Html
       v-if="inputType == 'file' && isPreview()"
       :readonly="column.editInline != true"
+      :editInline="column.editInline"
       :key="key"
       :data="data"
       @saved="forceSave"
