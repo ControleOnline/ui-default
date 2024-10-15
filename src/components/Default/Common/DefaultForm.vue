@@ -28,6 +28,7 @@
             :formatOptions="column.formatList"
             :searchAction="getList(configs, column)"
             @focus="editingInit(column)"
+            @forceSave="onSubmit"
             @changed="
               (value) => {
                 item[column.key || column.name] = value;
@@ -44,7 +45,15 @@
       />
     </div>
 
-    <div class="row justify-end bg sticky-bottom full-width">
+    <div
+      class="row justify-end bg sticky-bottom full-width"
+      :style="{
+        'z-index': 2,
+        position: 'fixed !important',
+        left: 0,
+        'padding-right': '35px',
+      }"
+    >
       <q-btn
         :loading="isSaving"
         icon="save"

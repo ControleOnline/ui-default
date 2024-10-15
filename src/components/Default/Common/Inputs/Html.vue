@@ -1,5 +1,5 @@
 <template>
-  <div class="bg sticky-top full-width" :style="{ top: '64px' }">
+  <div class="bg sticky-top full-width" :style="{ top: '64px', 'z-index': 2 }">
     <label class="q-mb-lg">
       {{ $tt("files", "input", "fileName") }}
       <q-input
@@ -135,8 +135,17 @@
   />
 
   <div
-    v-if="!readonly"
-    class="row justify-end q-pa-sm bg sticky-bottom full-width"
+    v-if="
+      !readonly &&
+      ((generatePDF && originalEditor == editor) || originalEditor != editor)
+    "
+    class="row justify-end bg sticky-bottom full-width"
+    :style="{
+      'z-index': 2,
+      position: 'fixed !important',
+      left: 0,
+      'padding-right': '35px',
+    }"
   >
     <q-btn
       v-if="generatePDF && originalEditor == editor"

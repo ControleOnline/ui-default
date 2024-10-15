@@ -37,9 +37,10 @@
     />
     <Html
       v-if="inputType == 'file' && isPreview()"
-      :readonly="true"
+      :readonly="column.editInline != true"
       :key="key"
       :data="data"
+      @saved="forceSave"
       @changed="changed"
     />
   </template>
@@ -229,7 +230,9 @@ export default {
         this.key++;
       }, 300);
     },
-
+    forceSave(){
+      this.$emit("forceSave");
+    },
     isPreview() {
       return this.column.preview && this.data && this.data["@id"];
     },
