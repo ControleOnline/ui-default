@@ -11,7 +11,7 @@
     <template v-for="status in configs.status">
       <DefaultButtonDialog
         :configs="{
-          icon: 'settings',
+          icon: 'manage_accounts',
           store: 'status',
           context: status,
           component: component.Status,
@@ -24,7 +24,7 @@
     <template v-for="category in configs.categories">
       <DefaultButtonDialog
         :configs="{
-          icon: 'person',
+          icon: 'card_travel',  // spoke, card_travel and stacks
           store: 'categories',
           context: category,
           component: component.Categories,
