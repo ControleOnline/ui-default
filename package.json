@@ -1,20 +1,18 @@
 {
-    "name": "@controleonline/ui-legacy/ui-import",
-    "version": "1.0.27",
-    "author": "ControleOnline",
-    "description": "ControleOnline Quasar UI Component",
-    "license": "MIT",
-    "main": "src/index.js",
-    "scripts": {},
-    "repository": {
-      "type": "git",
-
-      "url": "https://github.com/controleonline/conline-quasar-ui"
-
-    },
-    "bugs": "",
-    "homepage": "https://www.controleonline.com/devs/plugins",
-    "browserslist": [
-      "last 1 version, not dead, ie >= 11"
-    ]
-  }
+  "name": "@controleonline/ui-legacy/ui-guides",
+  "version": "1.0.17",
+  "author": "Conntrorole Online",
+  "description": "Quasar UI Component",
+  "license": "MIT",
+  "main": "src/index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coontroleonline/conline-quasar-ui"
+  },
+  "bugs": "",
+  "homepage": "https://www.controleonline.com/devs/plugins",
+  "browserslist": [
+    "last 1 version, not dead, ie >= 11"
+  ]
+}
