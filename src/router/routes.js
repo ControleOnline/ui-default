@@ -1,19 +1,11 @@
-export const routes = [{
-    path: '/translates/',
+export const routes = [
+  {
+    path     : '/support/',
     component: () =>  import ('@controleonline/ui-layout/src/layouts/AdminLayout.vue'),
-    children: [
-      {
-        name: 'TranslateIndex',
-        path: '',
-        component: () =>  import ('@controleonline/ui-translate/src/pages/Menu.vue'),
-      },    
-      {
-        name: "translateDetails",
-        path: "id/:id",
-        component: () => import("@controleonline/ui-translate/src/pages/Details.vue"),
-      }      
+    children : [
+      { name: 'FAQ',  path: 'faq',  component: () =>  import ('../pages/Support/FAQ.vue') },
+      { name: 'News', path: 'news', component: () =>  import ('../pages/Support/News.vue') },
+      { name: 'NewsDetail', path: 'news/:id', component: () =>  import ('../pages/Support/NewsDetail.vue') },
     ]
-  }];
-  
-  export default routes
-  
+  },
+];
