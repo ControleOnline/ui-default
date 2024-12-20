@@ -1,14 +1,16 @@
 {
-  "name": "@controleonline/ui-legacy/quasar-delivery-ui",
-  "version": "1.0.11",
+  "name": "@controleonline/ui-legacy/quasar-support-ui",
+  "version": "1.0.19",
   "author": "ControleOnline",
-  "description": "ControleOnline delivery Quasar UI Component",
+  "description": "ControleOnline support Quasar UI Component",
   "license": "MIT",
   "main": "src/index.js",
   "scripts": {},
   "repository": {
     "type": "git",
+
     "url": "https://github.com/controleonline/conline-quasar-ui"
+
   },
   "bugs": "",
   "homepage": "https://www.controleonline.com/devs/plugins",

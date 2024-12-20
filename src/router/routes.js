@@ -1,20 +1,11 @@
-
 export const routes = [
-    {
-      path     : '/',
-      component: () =>  import ('@controleonline/ui-layout/src/layouts/AdminLayout.vue'),
-      children : [  
-        { 
-            name: 'ProductList', 
-            path: 'products/', 
-            component: () =>  import ('../pages/Products/List.vue')
-        },
-        { 
-            name: 'ProductDetails', 
-            path: 'product/id/:id', 
-            component: () =>  import ('../pages/Products/Details.vue') 
-        },
-        
-      ]
-    },
+  {
+    path     : '/support/',
+    component: () =>  import ('@controleonline/ui-layout/src/layouts/AdminLayout.vue'),
+    children : [
+      { name: 'FAQ',  path: 'faq',  component: () =>  import ('../pages/Support/FAQ.vue') },
+      { name: 'News', path: 'news', component: () =>  import ('../pages/Support/News.vue') },
+      { name: 'NewsDetail', path: 'news/:id', component: () =>  import ('../pages/Support/NewsDetail.vue') },
+    ]
+  },
 ];

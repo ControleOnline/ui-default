@@ -5,13 +5,7 @@ import mutations from './mutations';
 export default {
   namespaced: true,
   state     : {
-    isLoading : false,
-    error     : '',
-    violations: null,
-    retrieved : null,
-    totalItems: 10,
-    items     : [],
-    view      : [],
+    isLoading: false,
   },
   actions,
   getters,
