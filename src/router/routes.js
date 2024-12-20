@@ -1,16 +1,16 @@
 export const routes = [{
-    path: '/ead/contents/',
+    path: '/translates/',
     component: () =>  import ('@controleonline/ui-layout/src/layouts/AdminLayout.vue'),
     children: [
       {
-        name: 'ContentIndex',
+        name: 'TranslateIndex',
         path: '',
-        component: () =>  import ('@controleonline/ui-ead/src/pages/contents'),
+        component: () =>  import ('@controleonline/ui-translate/src/pages/Menu.vue'),
       },    
       {
-        name: "contentDetails",
+        name: "translateDetails",
         path: "id/:id",
-        component: () => import("@controleonline/ui-ead/src/pages/contents/Details.vue"),
+        component: () => import("@controleonline/ui-translate/src/pages/Details.vue"),
       }      
     ]
   }];

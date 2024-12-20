@@ -7,12 +7,7 @@ import { mapActions, mapGetters } from "vuex";
 
 export default {
   components: {},
-  props: {
-    context: {
-      required: false,
-      default: "contents",
-    },
-  },
+
   computed: {
     ...mapGetters({
       defaultCompany: "people/defaultCompany",
@@ -20,23 +15,17 @@ export default {
     configs() {
       return {
         externalFilters: false,
-        store: this.context,
-        categories: ["ead-courses","ead-subjects"],
+        store: "translate",
+        categories: ["translate"],
         add: true,
         delete: true,
         filters: true,
         selection: false,
         search: false,
         columns: {
-          courses: {
+          category: {
             filters: {
-              context: "ead-courses",
-              company: "/people/" + this.defaultCompany.id,
-            },
-          },
-          subjects: {
-            filters: {
-              context: "ead-subjects",
+              context: "translate",
               company: "/people/" + this.defaultCompany.id,
             },
           },
