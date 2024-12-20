@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "name": "@controleonline/ui-translate",
     "version": "1.1.62",
     "author": "ControleOnline",
@@ -8,9 +9,21 @@
     "scripts": {},
     "repository": {
       "type": "git",
+=======
+  "name": "@controleonline/ui-legacy/quasar-support-ui",
+  "version": "1.0.19",
+  "author": "ControleOnline",
+  "description": "ControleOnline support Quasar UI Component",
+  "license": "MIT",
+  "main": "src/index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+>>>>>>> b44ed49b07419a866987ea5af2bc99485d28e483
 
       "url": "https://github.com/controleonline/conline-quasar-ui"
 
+<<<<<<< HEAD
     },
     "bugs": "",
     "homepage": "https://www.controleonline.com/devs/plugins",
@@ -18,3 +31,12 @@
       "last 1 version, not dead, ie >= 11"
     ]
   }
+=======
+  },
+  "bugs": "",
+  "homepage": "https://www.controleonline.com/devs/plugins",
+  "browserslist": [
+    "last 1 version, not dead, ie >= 11"
+  ]
+}
+>>>>>>> b44ed49b07419a866987ea5af2bc99485d28e483
