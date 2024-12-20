@@ -1,4 +1,5 @@
 export const translate = {
+<<<<<<< HEAD
 
 
   failed: 'Action failed',
@@ -397,3 +398,8 @@ export const translate = {
   // ConcludedGuides
   see_where_you_been: 'Veja onde você já foi',
 };
+=======
+  support: {
+  }
+}
+>>>>>>> 6674ca873f77206b0d52470e7daeef418992ed67
