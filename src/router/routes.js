@@ -1,23 +1,19 @@
 export const routes = [{
-  path: '/docs/',
-  component: () =>  import ('@controleonline/ui-layout/src/layouts/AdminLayout.vue'),
-  children: [
-    {
-      name: 'DocsIndex',
-      path: '',
-      component: () =>  import ('../pages/Docs/Index.vue'),
-    },
-    {
-      name: 'DocsCreate',
-      path: 'create',
-      component: () =>  import ('../pages/Docs/Edit.vue'),
-    },
-    {
-      name: 'DocsDetails',
-      path: 'id/:id',
-      component: () =>  import ('../pages/Docs/Edit.vue'),
-    }
-  ]
-}];
-
-export default routes
+    path: '/ead/contents/',
+    component: () =>  import ('@controleonline/ui-layout/src/layouts/AdminLayout.vue'),
+    children: [
+      {
+        name: 'ContentIndex',
+        path: '',
+        component: () =>  import ('@controleonline/ui-ead/src/pages/contents'),
+      },    
+      {
+        name: "contentDetails",
+        path: "id/:id",
+        component: () => import("@controleonline/ui-ead/src/pages/contents/Details.vue"),
+      }      
+    ]
+  }];
+  
+  export default routes
+  
