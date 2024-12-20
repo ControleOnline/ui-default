@@ -1,15 +1,8 @@
 {
-<<<<<<< HEAD
     "name": "@controleonline/ui-legacy/ui-import",
     "version": "1.0.27",
     "author": "ControleOnline",
     "description": "ControleOnline Quasar UI Component",
-=======
-    "name": "@controleonline/ui-translate",
-    "version": "1.1.62",
-    "author": "ControleOnline",
-    "description": "ControleOnline tasks Quasar UI Component",
->>>>>>> 8dee2441582991932e51ed2f3bc190a3c15b39b6
     "license": "MIT",
     "main": "src/index.js",
     "scripts": {},
