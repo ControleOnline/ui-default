@@ -1,4 +1,15 @@
 <template>
+  <template v-for="comp in headerActionsComponent()">
+    <DefaultComponent
+      :componentConfig="comp"
+      :row="row"
+      :configs="comp.configs"
+      @saved="$emit('saved')"
+      @loadData="$emit('loadData')"
+    />
+    <q-space></q-space>
+  </template>
+
   <template v-for="column in columns">
     <template v-if="configs.columns">
       <template v-if="configs.columns[column.name]?.store">
@@ -24,7 +35,7 @@
     <template v-for="category in configs.categories">
       <DefaultButtonDialog
         :configs="{
-          icon: 'card_travel',  // spoke, card_travel and stacks
+          icon: 'card_travel', // spoke, card_travel and stacks
           store: 'categories',
           context: category,
           component: component.Categories,
@@ -70,6 +81,17 @@
   />
 
   <q-space v-if="configs.import && configs.controls != false" />
+  <DefaultSearch :configs="configs"  @loadData="$emit('loadData')"></DefaultSearch>
+
+  <DefaultFilters
+    v-if="configs.filters"
+    :configs="configs"
+    @loadData="$emit('loadData')"
+  >
+  </DefaultFilters>
+  <q-space
+              v-if="configs.filters && configs.controls != false"
+            ></q-space>
 </template>
 
 <script>
@@ -79,10 +101,13 @@ import Status from "@controleonline/ui-default/src/components/Default/Status";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
 import Imports from "@controleonline/ui-default/src/components/Default/Import";
 import { mapActions, mapGetters } from "vuex";
+import DefaultFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultFilters";
+import DefaultSearch from "@controleonline/ui-default/src/components/Default/Filters/DefaultSearch";
 
 export default {
   components: {
     DefaultButtonDialog,
+    DefaultFilters,DefaultSearch
   },
   props: {
     row: Object,
@@ -111,6 +136,10 @@ export default {
     };
   },
   created() {},
-  methods: {},
+  methods: {
+    headerActionsComponent() {
+      return this.configs.components?.headerActions;
+    },
+  },
 };
 </script>

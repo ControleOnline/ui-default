@@ -3,7 +3,7 @@
     v-if="configsLoaded"
     :class="
       (configs['full-height'] == false ? '' : 'full') +
-      'full-height full-width default-table'
+      ' q-mt-lg full-height full-width default-table'
     "
   >
     <div
@@ -377,27 +377,24 @@
       <template v-slot:top-left="props">
         <div class="q-gutter-sm">
           <h3
-            v-if="configs?.title != false && configs?.title != undefined"
             :class="configs?.title?.class || 'text-secondary text-h6 q-mb-md'"
           >
             <q-icon
-              v-if="configs.title.icon"
+              v-if="configs?.title?.icon"
               :name="configs.title.icon.name"
               :size="configs.title.icon.size || '24px'"
               :class="configs.title.icon.class || 'q-mr-sm'"
             />
             {{
               $tt(
-                configs.context || configs.store,
+                configs?.title ? configs.context || configs.store : "route",
                 "title",
-                configs.context || configs.store
+                configs?.title
+                  ? configs.context || configs.store
+                  : this.$route.name
               )
             }}
           </h3>
-          <DefaultSearch
-            :configs="configs"
-            @loadData="loadData"
-          ></DefaultSearch>
         </div>
       </template>
 
@@ -436,27 +433,12 @@
               v-if="$q.screen.gt.sm == false && configs.selection"
             ></q-space>
 
-            <template v-for="comp in headerActionsComponent()">
-              <DefaultComponent
-                :componentConfig="comp"
-                :row="props.row"
-                :configs="comp.configs"
-                @saved="saved"
-                @loadData="loadData"
-              />
-              <q-space></q-space>
-            </template>
-            <ToolBar :configs="configs" :columns="columns" />
-
-            <DefaultFilters
-              v-if="configs.filters"
+            <ToolBar
               :configs="configs"
+              :columns="columns"
+              @saved="saved"
               @loadData="loadData"
-            >
-            </DefaultFilters>
-            <q-space
-              v-if="configs.filters && configs.controls != false"
-            ></q-space>
+            />
 
             <q-btn
               v-if="isTableView && configs.controls != false"
@@ -929,8 +911,6 @@
 
 <script>
 import DefaultExternalFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultExternalFilters";
-import DefaultSearch from "@controleonline/ui-default/src/components/Default/Filters/DefaultSearch";
-import DefaultFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultFilters";
 import FilterInputs from "@controleonline/ui-default/src/components/Default/Filters/FilterInputs";
 import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
@@ -962,8 +942,6 @@ export default {
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
-    DefaultSearch,
-    DefaultFilters,
     ToolBar,
     DefaultComponent,
   },
@@ -1252,9 +1230,7 @@ export default {
         this.tableKey += 1;
       }
     },
-    headerActionsComponent() {
-      return this.configs.components?.headerActions;
-    },
+
     tableColumnComponent(name) {
       if (this.configs.components?.customColumns)
         return this.configs.components?.customColumns[name];
