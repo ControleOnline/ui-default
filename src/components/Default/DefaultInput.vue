@@ -1,4 +1,4 @@
-<template>
+<template >
   <template v-if="tableColumnComponent(column.key || column.name)">
     <DefaultComponent
       :componentConfig="tableColumnComponent(column.key || column.name)"
@@ -142,13 +142,14 @@ export default {
     FormInputs,
   },
   props: {
-    column: {
+    columnName: {
       type: Object,
       required: true,
     },
     index: {
       type: Number,
-      required: true,
+      required: false,
+      default: 0,
     },
     row: {
       type: Object,
@@ -172,7 +173,7 @@ export default {
       myCompany: "people/currentCompany",
     }),
     items() {
-      return this.$store.getters[this.configs.store + "/items"];
+      return this.$store.getters[this.configs.store + "/items"] || [];
     },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
@@ -200,6 +201,9 @@ export default {
     },
     selected() {
       return this.$store.getters[this.configs.store + "/selected"] || [];
+    },
+    column() {
+      return this.getColumnByName(this.columnName);
     },
   },
   methods: {

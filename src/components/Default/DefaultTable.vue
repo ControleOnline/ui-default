@@ -52,7 +52,7 @@
           >
             <DefaultInput
               :index="index"
-              :column="column"
+              :columnName="column.key || column.name"
               :row="props.row"
               :configs="configs"
               @saved="saved"
@@ -510,7 +510,7 @@
                   <q-item-section side>
                     <DefaultInput
                       :index="index"
-                      :column="column"
+                      :columnName="column.key || column.name"
                       :row="props.row"
                       :configs="configs"
                       @saved="saved"
