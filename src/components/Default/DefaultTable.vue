@@ -50,158 +50,14 @@
               { hidden: !shouldIncludeColumn(column) },
             ]"
           >
-            <template v-if="tableColumnComponent(column.key || column.name)">
-              <DefaultComponent
-                :componentConfig="
-                  tableColumnComponent(column.key || column.name)
-                "
-                :row="props.row"
-                :configs="configs"
-                @saved="saved"
-                @loadData="loadData"
-              />
-            </template>
-            <q-btn
-              class="btn-primary"
-              v-else-if="column.to && props.row[column.key || column.name]"
-              @click="verifyClick(column, props.row)"
-              :icon="getIcon(column, props.row)"
-              >{{
-                this.format(
-                  column,
-                  props.row,
-                  getNameFromList(column, props.row, column.key || column.name)
-                )
-              }}
-            </q-btn>
-            <File
-              v-else-if="column.inputType == 'file'"
-              :disable="column.editable == false"
-              :editable="column.editable"
-              :fileType="column.fileType"
-              :data="formatData(column, props.row, true)"
-              :index="items.indexOf(props.row)"
-              @save="
-                (value, index) => {
-                  this.save(index, items[index], column, value['@id']);
-                }
-              "
+            <DefaultInput
+              :index="index"
+              :column="column"
+              :row="props.row"
+              :configs="configs"
+              @saved="saved"
+              @loadData="loadData"
             />
-
-            <template
-              v-else-if="editingInit(items.indexOf(props.row), column) != true"
-            >
-              <template v-if="column.multiline == true">
-                <template
-                  v-for="(data, index) in formatData(column, props.row, false)"
-                >
-                  <span :style="{ color: getColor(column, props.row) }">
-                    {{ column.prefix }}
-                    {{ data }}
-                    {{ column.sufix }} </span
-                  ><br />
-                  <q-separator class="full-width" />
-                </template>
-              </template>
-              <span
-                v-else
-                :style="{ color: getColor(column, props.row) }"
-                @mouseenter="
-                  showEdit[items.indexOf(props.row)] =
-                    column.editable == false
-                      ? false
-                      : { [column.key || column.name]: true }
-                "
-                @mouseleave="
-                  showEdit[items.indexOf(props.row)] = {
-                    [column.key || column.name]: false,
-                  }
-                "
-                @click="
-                  startEditing(
-                    items.indexOf(props.row),
-                    column,
-                    props.row,
-                    formatData(column, props.row, true)
-                  )
-                "
-              >
-                <template v-if="getIcon(column, props.row)">
-                  <q-icon
-                    :color="getColor(column, props.row)"
-                    :name="getIcon(column, props.row)"
-                  />
-                </template>
-                <template v-if="column.inputType == 'icon'">
-                  <q-icon
-                    :color="getColor(column, props.row)"
-                    :name="formatData(column, props.row, true)"
-                  />
-                </template>
-                {{ column.prefix }}
-
-                {{ formatData(column, props.row, false) }}
-
-                {{ column.sufix }}
-                <q-icon
-                  v-if="
-                    column.inputType != 'image' &&
-                    column.editable != false &&
-                    !isSaving &&
-                    showEdit[items.indexOf(props.row)] &&
-                    showEdit[items.indexOf(props.row)][
-                      column.key || column.name
-                    ] == true
-                  "
-                  size="1.0em"
-                  name="edit"
-                />
-                <q-icon v-else size="1.0em" name="" />
-                <q-spinner-ios
-                  v-if="isSaving && isEditing(items.indexOf(props.row), column)"
-                  class="loading-primary"
-                  size="2em"
-                />
-              </span>
-            </template>
-
-            <template v-else>
-              <FormInputs
-                :column="column"
-                :prefix="column.prefix"
-                :sufix="column.sufix"
-                :editable="column.editable"
-                :inputType="
-                  getList(configs, column) ? 'list' : column.inputType
-                "
-                :store="configs.store"
-                :mask="mask(column)"
-                :rules="[isInvalid()]"
-                :labelType="'stack-label'"
-                :label="column.label"
-                :filters="getSearchFilters(column, props.row)"
-                :initialValue="editedValue"
-                :searchParam="column.searchParam || 'search'"
-                :formatOptions="column.formatList"
-                :searchAction="getList(configs, column)"
-                @focus="editingInit(items.indexOf(props.row), column)"
-                @changed="
-                  (value) => {
-                    editedValue = value;
-                  }
-                "
-                @apply="
-                  stopEditing(items.indexOf(props.row), column, props.row)
-                "
-                @blur="stopEditing(items.indexOf(props.row), column, props.row)"
-                @update:modelValue="
-                  stopEditing(items.indexOf(props.row), column, props.row)
-                "
-                @keydown.enter="
-                  stopEditing(items.indexOf(props.row), column, props.row)
-                "
-              />
-            </template>
           </q-td>
           <q-td class="q-gutter-sm text-right">
             <DefaultButtonDialog
@@ -402,7 +258,7 @@
         <div class="table-toolbar">
           <q-toolbar class="q-gutter-sm">
             <DefaultButtonDialog
-              v-if="configs.editable != false"
+              v-if="configs.add != false"
               :configs="{
                 'full-width':
                   configs['full-width'] != undefined
@@ -652,161 +508,14 @@
                     }}</q-item-label>
                   </q-item-section>
                   <q-item-section side>
-                    <template
-                      v-if="tableColumnComponent(column.key || column.name)"
-                    >
-                      <DefaultComponent
-                        :componentConfig="
-                          tableColumnComponent(column.key || column.name)
-                        "
-                        :row="props.row"
-                        :configs="configs"
-                        @saved="saved"
-                        @loadData="loadData"
-                      />
-                    </template>
-                    <q-btn
-                      class="btn-primary"
-                      v-else-if="
-                        column.to && props.row[column.key || column.name]
-                      "
-                      @click="verifyClick(column, props.row)"
-                      :color="getColor(column, props.row)"
-                      :icon="getIcon(column, props.row)"
-                      >{{
-                        this.format(
-                          column,
-                          props.row,
-                          getNameFromList(
-                            column,
-                            props.row,
-                            column.key || column.name
-                          )
-                        )
-                      }}
-                    </q-btn>
-
-                    <template
-                      v-else-if="
-                        editingInit(items.indexOf(props.row), column) != true
-                      "
-                    >
-                      <template v-if="getIcon(column, props.row)">
-                        <q-icon
-                          :color="getColor(column, props.row)"
-                          :name="getIcon(column, props.row)"
-                        />
-                      </template>
-                      <template v-if="column.inputType == 'icon'">
-                        <q-icon
-                          :color="getColor(column, props.row)"
-                          :name="formatData(column, props.row, true)"
-                        />
-                      </template>
-                      <template v-if="column.multiline == true">
-                        <template
-                          v-for="(data, index) in formatData(
-                            column,
-                            props.row,
-                            false
-                          )"
-                        >
-                          <span :style="{ color: getColor(column, props.row) }">
-                            {{ column.prefix }}
-                            {{ data }}
-                            {{ column.sufix }} </span
-                          ><br />
-                          <q-separator class="full-width" />
-                        </template>
-                      </template>
-                      <span
-                        v-else
-                        :style="{ color: getColor(column, props.row) }"
-                        @click="
-                          startEditing(
-                            items.indexOf(props.row),
-                            column,
-                            props.row,
-                            formatData(column, props.row, true)
-                          )
-                        "
-                      >
-                        {{ column.prefix }}
-                        {{ formatData(column, props.row, false) }}
-                        {{ column.sufix }}
-                        <q-icon
-                          v-if="column.editable != false && !isSaving"
-                          size="1.0em"
-                          name="edit"
-                        />
-                        <q-icon v-else size="1.0em" name="" />
-
-                        <q-spinner-ios
-                          v-if="
-                            isSaving &&
-                            isEditing(items.indexOf(props.row), column)
-                          "
-                          class="loading-primary"
-                          size="2em"
-                        />
-                      </span>
-                    </template>
-
-                    <template v-else>
-                      <FormInputs
-                        :column="column"
-                        :editable="column.editable"
-                        :prefix="column.prefix"
-                        :sufix="column.sufix"
-                        :inputType="
-                          getList(configs, column) ? 'list' : column.inputType
-                        "
-                        :store="configs.store"
-                        :mask="mask(column)"
-                        :rules="[isInvalid()]"
-                        :labelType="'stack-label'"
-                        :label="column.label"
-                        :filters="getSearchFilters(column, props.row)"
-                        :initialValue="editedValue"
-                        :searchParam="column.searchParam || 'search'"
-                        :formatOptions="column.formatList"
-                        :searchAction="getList(configs, column)"
-                        @focus="editingInit(items.indexOf(props.row), column)"
-                        @changed="
-                          (value) => {
-                            editedValue = value;
-                          }
-                        "
-                        @blur="
-                          stopEditing(
-                            items.indexOf(props.row),
-                            column,
-                            props.row
-                          )
-                        "
-                        @apply="
-                          stopEditing(
-                            items.indexOf(props.row),
-                            column,
-                            props.row
-                          )
-                        "
-                        @update:modelValue="
-                          stopEditing(
-                            items.indexOf(props.row),
-                            column,
-                            props.row
-                          )
-                        "
-                        @keydown.enter="
-                          stopEditing(
-                            items.indexOf(props.row),
-                            column,
-                            props.row
-                          )
-                        "
-                      />
-                    </template>
+                    <DefaultInput
+                      :index="index"
+                      :column="column"
+                      :row="props.row"
+                      :configs="configs"
+                      @saved="saved"
+                      @loadData="loadData"
+                    />
                   </q-item-section>
                 </q-item>
               </template>
@@ -920,6 +629,7 @@ import DefaultComponent from "@controleonline/ui-default/src/components/Default/
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
+import DefaultInput from "./DefaultInput.vue";
 
 export default {
   props: {
@@ -942,6 +652,7 @@ export default {
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
+    DefaultInput,
     ToolBar,
     DefaultComponent,
   },
@@ -1007,9 +718,6 @@ export default {
     ...mapGetters({
       myCompany: "people/currentCompany",
     }),
-    resourceEndpoint() {
-      return this.$store.getters[this.configs.store + "/resourceEndpoint"];
-    },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
     },
@@ -1106,7 +814,6 @@ export default {
       let items = this.$copyObject(this.items);
       items = items.filter((i) => i["@id"] != item["@id"]);
       this.$store.commit(this.configs.store + "/SET_ITEMS", items);
-      this.items = items;
       //this.tableKey++;
     },
     discoverySelected() {
@@ -1243,13 +950,7 @@ export default {
       this.$emit("error", error);
     },
     saved(data, editIndex) {
-      let items = this.$copyObject(this.items);
-      if (editIndex >= 0) items[editIndex] = data;
-      else items.push(data);
-
-      this.$store.commit(this.configs.store + "/SET_ITEMS", items);
-      this.items = items;
-      //this.tableKey++;
+      this.items = this.$copyObject(data);
       this.$emit("saved", data, editIndex);
     },
 
@@ -1317,44 +1018,7 @@ export default {
 
       this.items = clonedData;
     },
-    editingInit(index, col) {
-      return this.editing[index] && this.editing[index][col.key || col.name]
-        ? true
-        : false;
-    },
-    startEditing(index, col, row, value) {
-      if (col.editable == false || (col.key && col.key.indexOf(".") != -1))
-        return;
 
-      if (col.list)
-        this.editedValue = this.formatList(
-          col,
-          this.items[index][col.key || col.name]
-        );
-      else this.editedValue = this.format(col, row, value);
-      this.editing[index] = { [col.key || col.name]: true };
-      this.showEdit[index] = { [col.key || col.name]: false };
-    },
-
-    stopEditing(index, col, row) {
-      let editing = this.$copyObject(this.editing);
-      editing[index] = {
-        [col.key || col.name]: false,
-      };
-
-      this.saveEditing[index] = {
-        [col.key || col.name]: true,
-      };
-      this.editing = editing;
-
-      this.save(index, row, col, this.editedValue?.value || this.editedValue);
-    },
-    isEditing(index, col) {
-      return this.saveEditing[index] &&
-        this.saveEditing[index][col.key || col.name]
-        ? true
-        : false;
-    },
     getFilterParams(params) {
       this.columns.forEach((item, i) => {
         if (item.name && this.filters && this.filters[item.key || item.name]) {
@@ -1418,69 +1082,7 @@ export default {
       }
       return;
     },
-    save(index, row, col, value) {
-      this.$store.commit(this.configs.store + "/SET_ITEM", row);
 
-      let c = col.list
-        ? this.formatList(col, row[col.key || col.name])?.value
-        : this.format(col, row, row[col.key || col.name]);
-      if (c == value) {
-        this.editing = [];
-        this.saveEditing[index] = {
-          [col.key || col.name]: false,
-        };
-        return;
-      }
-      let params = {};
-      if (row["@id"]) params["id"] = row["@id"].split("/").pop();
-
-      params[col.key || col.name] =
-        this.saveFormat(col.key || col.name, value, row) ||
-        (col.list ? null : col.inputType == "float" ? 0 : "");
-      if (this.myCompany && this.configs.companyParam != false)
-        params[this.configs.companyParam || "company"] =
-          "/people/" + this.myCompany?.id;
-
-      this.$store
-        .dispatch(this.configs.store + "/save", params)
-        .then((data) => {
-          if (data) {
-            let items = this.$copyObject(this.items);
-
-            if (index >= 0) items[index] = data;
-            else items.push(data);
-            this.$store.commit(this.configs.store + "/SET_ITEMS", items);
-            this.items = items;
-            //this.tableKey++;
-            this.$q.notify({
-              message: this.$tt(this.configs.store, "message", "success"),
-              position: "bottom",
-              type: "positive",
-            });
-            this.$emit("saved", data);
-          } else {
-            this.$q.notify({
-              message: this.$tt(this.configs.store, "message", "error"),
-              position: "bottom",
-              type: "negative",
-            });
-          }
-        })
-        .catch((error) => {
-          this.$emit("error", error);
-          this.$q.notify({
-            message: this.$tt(this.configs.store, "message", "error"),
-            position: "bottom",
-            type: "negative",
-          });
-        })
-        .finally(() => {
-          this.editing = [];
-          this.saveEditing[index] = {
-            [col.key || col.name]: false,
-          };
-        });
-    },
     scrollToTop(callback) {
       const top = 0;
       const currentPosition =
