@@ -1,4 +1,4 @@
-<template >
+<template>
   <template v-if="tableColumnComponent(column.key || column.name)">
     <DefaultComponent
       :componentConfig="tableColumnComponent(column.key || column.name)"
@@ -222,12 +222,6 @@ export default {
         //  this.$router.push(column.to(row[column.key || column.name], column, row));
       }
       return;
-    },
-    formatData(column, row, value) {
-      if (column.format) {
-        return column.format(row[column.key || column.name], value);
-      }
-      return row[column.key || column.name];
     },
     getColor(column, row) {
       return column.color || row[column.key || column.name]
