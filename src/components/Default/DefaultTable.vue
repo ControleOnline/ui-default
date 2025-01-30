@@ -625,8 +625,6 @@ import FormInputs from "@controleonline/ui-default/src/components/Default/Common
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
-import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent";
-import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 import DefaultInput from "./DefaultInput.vue";
@@ -648,13 +646,12 @@ export default {
 
   components: {
     DefaultDelete,
-    DefaultButtonDialog,
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
     DefaultInput,
     ToolBar,
-    DefaultComponent,
+    
   },
 
   data() {

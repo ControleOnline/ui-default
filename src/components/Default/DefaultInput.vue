@@ -129,7 +129,6 @@
   </template>
 </template>
 <script>
-import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent.vue";
 import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
 import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import { mapActions, mapGetters } from "vuex";
@@ -137,7 +136,6 @@ import * as DefaultFiltersMethods from "@controleonline/ui-default/src/component
 
 export default {
   components: {
-    DefaultComponent,
     File,
     FormInputs,
   },

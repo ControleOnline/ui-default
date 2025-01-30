@@ -25,11 +25,10 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
-import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 
 export default {
   components: {
-    DefaultButtonDialog,
+    
   },
   props: {
     data: {

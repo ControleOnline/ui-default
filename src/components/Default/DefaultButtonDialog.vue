@@ -68,6 +68,7 @@
 <script>
 export default {
   props: {
+    componentProps: { default: {} },
     configs: { default: {} },
     row: { default: {} },
   },

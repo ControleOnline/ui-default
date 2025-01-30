@@ -3,17 +3,23 @@
     <DefaultComponent
       :componentConfig="comp"
       :row="row"
+      :componentProps="comp.props"
       :configs="comp.configs"
       @saved="$emit('saved')"
       @loadData="$emit('loadData')"
     />
+
     <q-space></q-space>
   </template>
 
   <template v-for="column in columns">
     <template v-if="configs.columns">
       <template v-if="configs.columns[column.name]?.store">
-        <DefaultButtonDialog :configs="configs.columns[column.name]" />
+        <DefaultButtonDialog
+          @saved="$emit('saved')"
+          @loadData="$emit('loadData')"
+          :configs="configs.columns[column.name]"
+        />
       </template>
     </template>
   </template>
@@ -21,6 +27,9 @@
   <template v-if="configs.status">
     <template v-for="status in configs.status">
       <DefaultButtonDialog
+        @saved="$emit('saved')"
+        @loadData="$emit('loadData')"
+        :componentProps="comp.props"
         :configs="{
           icon: 'manage_accounts',
           store: 'status',
@@ -34,6 +43,9 @@
   <template v-if="configs.categories">
     <template v-for="category in configs.categories">
       <DefaultButtonDialog
+        @saved="$emit('saved')"
+        @loadData="$emit('loadData')"
+        :componentProps="comp.props"
         :configs="{
           icon: 'card_travel', // spoke, card_travel and stacks
           store: 'categories',
@@ -53,6 +65,8 @@
   </template>
   <q-space v-if="configs.categories && configs.controls != false" />
   <DefaultButtonDialog
+    @saved="$emit('saved')"
+    @loadData="$emit('loadData')"
     v-if="configs.extraFields"
     :configs="{
       ...configs.extraFields,
@@ -62,12 +76,13 @@
         component: component.ExtraFields,
       },
     }"
-    @loadData="loadData"
   />
 
   <q-space v-if="configs.extraFields && configs.controls != false" />
 
   <DefaultButtonDialog
+    @saved="$emit('saved')"
+    @loadData="$emit('loadData')"
     v-if="configs.import"
     :configs="{
       ...configs.import,
@@ -77,11 +92,13 @@
         component: component.Imports,
       },
     }"
-    @loadData="loadData"
   />
 
   <q-space v-if="configs.import && configs.controls != false" />
-  <DefaultSearch :configs="configs"  @loadData="$emit('loadData')"></DefaultSearch>
+  <DefaultSearch
+    :configs="configs"
+    @loadData="$emit('loadData')"
+  ></DefaultSearch>
 
   <DefaultFilters
     v-if="configs.filters"
@@ -89,13 +106,10 @@
     @loadData="$emit('loadData')"
   >
   </DefaultFilters>
-  <q-space
-              v-if="configs.filters && configs.controls != false"
-            ></q-space>
+  <q-space v-if="configs.filters && configs.controls != false"></q-space>
 </template>
 
 <script>
-import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 import Categories from "@controleonline/ui-default/src/components/Default/Categories";
 import Status from "@controleonline/ui-default/src/components/Default/Status";
 import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
@@ -106,8 +120,8 @@ import DefaultSearch from "@controleonline/ui-default/src/components/Default/Fil
 
 export default {
   components: {
-    DefaultButtonDialog,
-    DefaultFilters,DefaultSearch
+    DefaultFilters,
+    DefaultSearch,
   },
   props: {
     row: Object,
