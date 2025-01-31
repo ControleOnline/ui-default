@@ -57,6 +57,7 @@
           :data="row"
           :index="configs.index"
           :is="configs.component"
+          @loadData="loadData"
           @saved="saved"
           @save="save"
           @error="error"
