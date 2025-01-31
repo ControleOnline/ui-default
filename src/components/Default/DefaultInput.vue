@@ -6,6 +6,7 @@
       :configs="configs"
       @saved="saved"
       @loadData="loadData"
+      @reload="reloadData"
     />
   </template>
   <q-btn
@@ -204,8 +205,19 @@ export default {
       return this.getColumnByName(this.columnName);
     },
   },
+  watch: {
+    reload(reload) {
+      if (reload == true) {
+        this.$emit("loadData");
+        this.$store.commit(this.configs.store + "/SET_RELOAD", false);
+      }
+    },
+  },
   methods: {
     ...DefaultFiltersMethods,
+    reloadData() {
+      this.$emit("reload");
+    },
     tableColumnComponent(name) {
       if (this.configs.components?.customColumns)
         return this.configs.components?.customColumns[name];
@@ -278,6 +290,7 @@ export default {
         : false;
     },
     saved(data, editIndex) {
+   
       let items = this.$copyObject(this.items);
       if (editIndex >= 0) items[editIndex] = data;
       else items.push(data);
@@ -285,6 +298,7 @@ export default {
       this.$store.commit(this.configs.store + "/SET_ITEMS", items);
 
       //this.tableKey++;
+
       this.$emit("saved", items, editIndex);
     },
     save(index, row, col, value) {

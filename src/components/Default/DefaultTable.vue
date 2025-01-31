@@ -95,6 +95,7 @@
               :configs="configs"
               @saved="saved"
               @loadData="loadData"
+              @reload="reloadData"
             />
           </q-td>
         </q-tr>
@@ -294,6 +295,7 @@
               :columns="columns"
               @saved="saved"
               @loadData="loadData"
+              @reload="reloadData"
             />
 
             <q-btn
@@ -429,6 +431,7 @@
                         :configs="configs"
                         @saved="saved"
                         @loadData="loadData"
+                         @reload="reloadData"
                       />
                     </template>
                     <q-btn
@@ -557,6 +560,7 @@
                     :configs="configs"
                     @saved="saved"
                     @loadData="loadData"
+                    @reload="reloadData"
                   />
                 </div>
               </q-item-section>
@@ -628,6 +632,7 @@ import isEqual from "lodash/isEqual";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 import DefaultInput from "./DefaultInput.vue";
+import { reload } from "../../store/default/getters";
 
 export default {
   props: {
@@ -651,7 +656,6 @@ export default {
     FormInputs,
     DefaultInput,
     ToolBar,
-    
   },
 
   data() {
@@ -760,11 +764,11 @@ export default {
       },
       deep: true,
     },
-    reload(reload) {
-      if (reload == true) {
-        this.$store.commit(this.configs.store + "/SET_RELOAD", false);
-        this.loadData();
-      }
+    reload: {
+      handler: function (reload) {
+        if (reload == true) this.loadData();
+      },
+      deep: true,
     },
     filters: {
       handler: function () {
@@ -806,6 +810,9 @@ export default {
     styleColumn(column, row) {
       if (typeof column.style == "function") return column.style(row);
       return "";
+    },
+    reloadData() {
+      this.$emit("reload");
     },
     deleted(item) {
       let items = this.$copyObject(this.items);

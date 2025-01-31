@@ -7,6 +7,7 @@
       :configs="comp.configs"
       @saved="$emit('saved')"
       @loadData="$emit('loadData')"
+      @reload="$emit('reload')"
     />
 
     <q-space></q-space>

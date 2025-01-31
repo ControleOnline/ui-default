@@ -7,6 +7,7 @@
     :configs="configs"
     @saved="saved"
     @loadData="loadData"
+    @reload="reload"
   />
 </template>
 <script>
@@ -35,14 +36,15 @@ export default {
   },
   methods: {
     ...mapActions({}),
-    click(){
-
-    },
+    click() {},
     saved(data, editIndex) {
       this.$emit("saved", data, editIndex);
     },
     loadData() {
       this.$emit("loadData");
+    },
+    reload() {
+      this.$emit("reload");
     },
   },
 };

@@ -61,6 +61,7 @@
           @saved="saved"
           @save="save"
           @error="error"
+          @reload="reload"
         />
       </q-card-section>
     </q-card>
@@ -95,6 +96,9 @@ export default {
     },
     loadData() {
       this.$emit("loadData");
+    },
+    reload() {
+      this.$emit("reload");
     },
   },
 };
