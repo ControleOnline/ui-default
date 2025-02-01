@@ -343,8 +343,10 @@ export default {
         ? true
         : false;
     },
-    saved(data, editIndex) {
+    saved(data) {
+      let editIndex = this.getIndex(data);
       let items = this.$copyObject(this.items);
+
       if (editIndex >= 0) items[editIndex] = data;
       else items.push(data);
 
@@ -352,7 +354,7 @@ export default {
 
       //this.tableKey++;
 
-      this.$emit("saved", items, editIndex);
+      this.$emit("saved", data, editIndex);
     },
     save: debounce(function (index, row, col, value) {
       this.$store.commit(this.configs.store + "/SET_ITEM", row);

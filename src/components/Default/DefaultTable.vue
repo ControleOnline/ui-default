@@ -39,7 +39,20 @@
               :disable="selectionDisabled(props.row, configs)"
             />
           </q-td>
-
+          <q-td key="expand" v-if="configs.expanded">
+            <q-btn
+              v-if="isExpandRow(props.row)"
+              dense
+              flat
+              round
+              :icon="
+                expandedRows.includes(props.row['@id'])
+                  ? 'keyboard_arrow_up'
+                  : 'keyboard_arrow_down'
+              "
+              @click="toggleExpand(props.row)"
+            />
+          </q-td>
           <q-td
             :style="styleColumn(column, props.row)"
             v-for="(column, index) in columns"
@@ -51,7 +64,6 @@
             ]"
           >
             <DefaultInput
-              :index="index"
               :columnName="column.key || column.name"
               :row="props.row"
               :configs="{ ...configs, editOnHover: false }"
@@ -99,6 +111,22 @@
             />
           </q-td>
         </q-tr>
+        <template
+          v-if="configs.expanded && expandedRows.includes(props.row['@id'])"
+        >
+          <q-tr class="q-td-subtitle bg-white" v-for="(r, i) in expandedData">
+            <q-td class="bg-white"></q-td>
+            <q-td v-for="(c, iw) in expandedColumns" class="bg-white">
+              <DefaultInput
+                :index="i"
+                :columnName="c.key || c.name"
+                :row="r"
+                :configs="{ ...configs.expanded, editOnHover: false }"
+                @saved="reLoadExpandedData"
+              />
+            </q-td>
+          </q-tr>
+        </template>
       </template>
 
       <template v-slot:header="props">
@@ -109,6 +137,7 @@
               v-model="selectAll"
             />
           </q-th>
+          <q-th key="expand" v-if="configs.expanded"></q-th>
           <q-th
             @mousedown="startDrag(index)"
             @mouseup="stopDrag()"
@@ -512,7 +541,6 @@
                   </q-item-section>
                   <q-item-section side>
                     <DefaultInput
-                      :index="index"
                       :columnName="column.key || column.name"
                       :row="props.row"
                       :configs="configs"
@@ -572,7 +600,7 @@
       <template v-slot:bottom-row>
         <q-tr class="tr-sum">
           <q-td v-if="configs.selection"> </q-td>
-
+          <q-td key="expand" v-if="configs.expanded"></q-td>
           <q-td
             v-for="(column, index) in columns"
             :class="[
@@ -632,7 +660,7 @@ import isEqual from "lodash/isEqual";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 import DefaultInput from "./DefaultInput.vue";
-import { reload } from "../../store/default/getters";
+import { debounce } from "lodash";
 
 export default {
   props: {
@@ -660,6 +688,8 @@ export default {
 
   data() {
     return {
+      expandedRows: [],
+      expandedData: [],
       editIndex: false,
       forceShowInput: false,
       hideFilterTimeout: false,
@@ -719,6 +749,10 @@ export default {
     ...mapGetters({
       myCompany: "people/currentCompany",
     }),
+    expandedColumns() {
+      if (this.configs.expanded?.store)
+        return this.$store.getters[this.configs.expanded.store + "/columns"];
+    },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
     },
@@ -807,6 +841,35 @@ export default {
   },
   methods: {
     ...DefaultFiltersMethods,
+    isExpandRow(row) {
+      return (
+        this.configs.expanded.noExpand == undefined ||
+        this.configs.expanded.noExpand(row) == false
+      );
+    },
+    toggleExpand(row) {
+      if (this.expandedRows.includes(row["@id"])) {
+        this.expandedRows = this.expandedRows.filter(
+          (rowId) => rowId !== row["@id"]
+        );
+      } else {
+        this.expandedRows = [row["@id"]];
+        this.loadExpandedData(row);
+      }
+    },
+    reLoadExpandedData(row, editIndex) {
+      this.expandedData[editIndex] = row;
+    },
+    loadExpandedData(row) {
+      this.$store
+        .dispatch(
+          this.configs.expanded.store + "/getItems",
+          this.configs.expanded.filters(row)
+        )
+        .then((data) => {
+          this.expandedData = data;
+        });
+    },
     styleColumn(column, row) {
       if (typeof column.style == "function") return column.style(row);
       return "";
