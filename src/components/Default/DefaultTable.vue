@@ -54,7 +54,7 @@
               :index="index"
               :columnName="column.key || column.name"
               :row="props.row"
-              :configs="configs"
+              :configs="{ ...configs, editOnHover: false }"
               @saved="saved"
               @loadData="loadData"
             />
@@ -431,7 +431,7 @@
                         :configs="configs"
                         @saved="saved"
                         @loadData="loadData"
-                         @reload="reloadData"
+                        @reload="reloadData"
                       />
                     </template>
                     <q-btn
