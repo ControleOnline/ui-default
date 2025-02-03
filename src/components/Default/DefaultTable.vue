@@ -3,13 +3,16 @@
     v-if="configsLoaded"
     :class="
       (configs['full-height'] == false ? '' : 'full') +
-      ' q-mt-lg full-height full-width default-table'
+      ' full-height full-width default-table'
     "
   >
     <div
       class="q-gutter-sm full-height"
       v-if="
-        $q.screen.gt.sm && configs.filters && configs.externalFilters != false
+        $q.screen.gt.sm &&
+        configs.filters &&
+        configs.externalFilters != false &&
+        configs.headers != false
       "
     >
       <DefaultExternalFilters
@@ -31,17 +34,28 @@
       binary-state-sort
     >
       <template v-slot:body="props">
-        <q-tr :props="props.row" @click="rowClick(props.row, $event)">
-          <q-td v-if="configs.selection">
+        <q-tr
+          :props="props.row"
+          @click="rowClick(props.row, $event)"
+          :class="configs.expandedChild ? 'bg-transparent' : ''"
+        >
+          <q-td
+            v-if="configs.selection"
+            :class="configs.expandedChild ? 'bg-transparent' : ''"
+          >
             <q-checkbox
               v-model="selectedRows[items.indexOf(props.row)]"
               v-bind:value="false"
               :disable="selectionDisabled(props.row, configs)"
             />
           </q-td>
-          <q-td key="expand" v-if="configs.expanded">
+          <q-td
+            key="expand"
+            v-if="configs.expanded || configs.expandedChild"
+            :class="configs.expandedChild ? 'bg-transparent' : ''"
+          >
             <q-btn
-              v-if="isExpandRow(props.row)"
+              v-if="isExpandRow(props.row) && !configs.expandedChild"
               dense
               flat
               round
@@ -52,6 +66,12 @@
               "
               @click="toggleExpand(props.row)"
             />
+            <q-icon
+              v-else-if="configs.expandedChild"
+              class="q-ml-md"
+              name="subdirectory_arrow_right"
+              size="19"
+            />
           </q-td>
           <q-td
             :style="styleColumn(column, props.row)"
@@ -61,6 +81,7 @@
               'text-' + column.align,
               { 'dragging-column': isDraggingCollumn[index] },
               { hidden: !shouldIncludeColumn(column) },
+              configs.expandedChild ? 'bg-transparent' : '',
             ]"
           >
             <DefaultInput
@@ -71,7 +92,7 @@
               @loadData="loadData"
             />
           </q-td>
-          <q-td class="q-gutter-sm text-right">
+          <q-td class="q-gutter-sm text-right"  :class="configs.expandedChild?'bg-transparent':''">
             <DefaultButtonDialog
               v-if="configs.editable != false"
               :configs="{
@@ -114,23 +135,30 @@
         <template
           v-if="configs.expanded && expandedRows.includes(props.row['@id'])"
         >
-          <q-tr class="q-td-subtitle bg-white" v-for="(r, i) in expandedData">
-            <q-td class="bg-white"></q-td>
-            <q-td v-for="(c, iw) in expandedColumns" class="bg-white">
-              <DefaultInput
-                :index="i"
-                :columnName="c.key || c.name"
-                :row="r"
-                :configs="{ ...configs.expanded, editOnHover: false }"
-                @saved="reLoadExpandedData"
+          <tr>
+            <td
+              class="q-pa-none"
+              colspan="100%"
+              :style="{ height: 'auto', padding: '0 !important' }"
+            >
+              <component
+                :configs="{ ...configs.expanded, expandedChild: true }"
+                :row="row"
+                :is="configs.expanded.component"
+                :filters="configs.expanded.filters(props.row)"
+                @loadData="loadData"
+                @saved="saved"
+                @save="save"
+                @error="error"
+                @reload="reload"
               />
-            </q-td>
-          </q-tr>
+            </td>
+          </tr>
         </template>
       </template>
 
       <template v-slot:header="props">
-        <q-tr :props="props.row">
+        <q-tr :props="props.row" v-if="configs.headers != false">
           <q-th v-if="configs.selection">
             <q-checkbox
               v-on:click.native="toggleSelectAll"
@@ -260,7 +288,7 @@
         </q-tr>
       </template>
 
-      <template v-slot:top-left="props">
+      <template v-slot:top-left="props" v-if="configs.headers != false">
         <div class="q-gutter-sm">
           <h3
             :class="configs?.title?.class || 'text-secondary text-h6 q-mb-md'"
@@ -284,7 +312,7 @@
         </div>
       </template>
 
-      <template v-slot:top-right="props">
+      <template v-slot:top-right="props" v-if="configs.headers != false">
         <div class="table-toolbar">
           <q-toolbar class="q-gutter-sm">
             <DefaultButtonDialog
@@ -593,11 +621,40 @@
                 </div>
               </q-item-section>
             </q-card-section>
+            <q-card-section v-if="configs.expanded" class="flex justify-center">
+              <q-btn
+                v-if="isExpandRow(props.row)"
+                dense
+                flat
+                round
+                :icon="
+                  expandedRows.includes(props.row['@id'])
+                    ? 'keyboard_arrow_up'
+                    : 'keyboard_arrow_down'
+                "
+                @click="toggleExpand(props.row)"
+              />
+            </q-card-section>
+            <q-card-section
+              v-if="configs.expanded && expandedRows.includes(props.row['@id'])"
+            >
+              <component
+                :configs="{ ...configs.expanded, expandedChild: true }"
+                :row="row"
+                :is="configs.expanded.component"
+                :filters="configs.expanded.filters(props.row)"
+                @loadData="loadData"
+                @saved="saved"
+                @save="save"
+                @error="error"
+                @reload="reload"
+              />
+            </q-card-section>
           </q-card>
         </div>
       </template>
 
-      <template v-slot:bottom-row>
+      <template v-slot:bottom-row v-if="configs.bottom != false">
         <q-tr class="tr-sum">
           <q-td v-if="configs.selection"> </q-td>
           <q-td key="expand" v-if="configs.expanded"></q-td>
@@ -689,7 +746,6 @@ export default {
   data() {
     return {
       expandedRows: [],
-      expandedData: [],
       editIndex: false,
       forceShowInput: false,
       hideFilterTimeout: false,
@@ -749,10 +805,6 @@ export default {
     ...mapGetters({
       myCompany: "people/currentCompany",
     }),
-    expandedColumns() {
-      if (this.configs.expanded?.store)
-        return this.$store.getters[this.configs.expanded.store + "/columns"];
-    },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
     },
@@ -843,8 +895,8 @@ export default {
     ...DefaultFiltersMethods,
     isExpandRow(row) {
       return (
-        this.configs.expanded.noExpand == undefined ||
-        this.configs.expanded.noExpand(row) == false
+        this.configs.expanded?.noExpand == undefined ||
+        this.configs.expanded?.noExpand(row) == false
       );
     },
     toggleExpand(row) {
@@ -854,22 +906,9 @@ export default {
         );
       } else {
         this.expandedRows = [row["@id"]];
-        this.loadExpandedData(row);
       }
     },
-    reLoadExpandedData(row, editIndex) {
-      this.expandedData[editIndex] = row;
-    },
-    loadExpandedData(row) {
-      this.$store
-        .dispatch(
-          this.configs.expanded.store + "/getItems",
-          this.configs.expanded.filters(row)
-        )
-        .then((data) => {
-          this.expandedData = data;
-        });
-    },
+
     styleColumn(column, row) {
       if (typeof column.style == "function") return column.style(row);
       return "";
