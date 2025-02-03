@@ -49,7 +49,7 @@
     <template v-else>
       <div class="flex items-center">
         <q-btn
-          v-if="column.inputType === 'increase'"
+          v-if="column.inputType === 'increase' && column.editable == true"
           flat
           dense
           icon="remove"
@@ -99,7 +99,7 @@
             v-if="
               column.inputType !== 'increase' &&
               column.inputType != 'image' &&
-              column.editable != false &&
+              column.editable == true &&
               !isSaving &&
               ((showEdit[getIndex(row)] &&
                 showEdit[getIndex(row)][column.key || column.name] == true) ||
@@ -109,7 +109,7 @@
             :name="column.list ? 'unfold_more' : 'edit'"
           />
           <q-icon
-            v-else-if="column.inputType !== 'increase'"
+            v-else-if="column.inputType !== 'increase' &&  column.editable == true"
             size="1.0em"
             name=""
           />
@@ -120,7 +120,7 @@
           />
         </span>
         <q-btn
-          v-if="column.inputType === 'increase'"
+          v-if="column.inputType === 'increase'  && column.editable == true"
           flat
           dense
           icon="add"
