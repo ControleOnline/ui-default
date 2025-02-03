@@ -92,7 +92,10 @@
               @loadData="loadData"
             />
           </q-td>
-          <q-td class="q-gutter-sm text-right"  :class="configs.expandedChild?'bg-transparent':''">
+          <q-td
+            class="q-gutter-sm text-right"
+            :class="configs.expandedChild ? 'bg-transparent' : ''"
+          >
             <DefaultButtonDialog
               v-if="configs.editable != false"
               :configs="{
@@ -145,7 +148,6 @@
                 :configs="{ ...configs.expanded, expandedChild: true }"
                 :row="row"
                 :is="configs.expanded.component"
-                :filters="configs.expanded.filters(props.row)"
                 @loadData="loadData"
                 @saved="saved"
                 @save="save"
@@ -642,7 +644,6 @@
                 :configs="{ ...configs.expanded, expandedChild: true }"
                 :row="row"
                 :is="configs.expanded.component"
-                :filters="configs.expanded.filters(props.row)"
                 @loadData="loadData"
                 @saved="saved"
                 @save="save"
@@ -905,6 +906,12 @@ export default {
           (rowId) => rowId !== row["@id"]
         );
       } else {
+        let filters = this.configs.expanded.filters(row);
+
+        this.$store.commit(
+          this.configs.expanded.store + "/SET_FILTERS",
+          filters
+        );
         this.expandedRows = [row["@id"]];
       }
     },
