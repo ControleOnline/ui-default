@@ -55,7 +55,6 @@
           :context="configs.context || configs.store"
           :configs="configs.componentConfigs || configs"
           :data="row"
-          :index="configs.index"
           :is="configs.component"
           @loadData="loadData"
           @saved="saved"
@@ -86,9 +85,9 @@ export default {
     error(data) {
       this.$emit("error", data);
     },
-    saved(data, editIndex) {
+    saved(data) {
       this.openModal = false;
-      this.$emit("saved", data, editIndex);
+      this.$emit("saved", data);
     },
     save(data) {
       this.openModal = false;

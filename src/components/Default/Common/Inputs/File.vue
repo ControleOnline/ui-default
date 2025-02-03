@@ -41,9 +41,6 @@ export default {
       required: false,
       default: false,
     },
-    index: {
-      required: false,
-    },
     editable: {
       required: false,
     },
@@ -72,7 +69,6 @@ export default {
           this.data && this.data.fileType == "image" ? "image" : "description",
         store: "file",
         context: "file",
-        index: this.index,
         "full-height": true,
         class: "upload-icon q-pa-xs btn-primary",
         label: this.label,
@@ -87,8 +83,8 @@ export default {
     openFileExplorer() {
       if (!this.disable) this.open = true;
     },
-    save(data, editIndex) {
-      this.$emit("save", data, editIndex);
+    save(data) {
+      this.$emit("save", data);
     },
   },
 };

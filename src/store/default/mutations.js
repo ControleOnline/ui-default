@@ -38,10 +38,14 @@ export default {
     state.columns = columns;
   },
 
+  [types.SET_STORE](state, store) {
+    state.store = store;
+  },
+
   [types.SET_FILTERS](state, filters) {
     const persistentFilter = new Filters(
       this.$router.currentRoute.value.name,
-      state.resourceEndpoint
+      state.store || state.resourceEndpoint
     );
     persistentFilter.setFilters(filters);
     state.filters = filters;
@@ -60,7 +64,7 @@ export default {
   [types.SET_VISIBLECOLUMNS](state, visibleColumns) {
     const persistentFilter = new Filters(
       this.$router.currentRoute.value.name,
-      state.resourceEndpoint
+      state.store || state.resourceEndpoint
     );
     persistentFilter.setVisibleColumns(visibleColumns);
     state.visibleColumns = visibleColumns;

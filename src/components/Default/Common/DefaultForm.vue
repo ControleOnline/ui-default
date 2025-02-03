@@ -79,10 +79,6 @@ export default {
       type: Object,
       required: true,
     },
-    index: {
-      type: Number,
-      required: false,
-    },
     data: {
       type: Object,
       required: false,
@@ -283,7 +279,7 @@ export default {
             position: "bottom",
             type: "positive",
           });
-          this.$emit("saved", item, this.index);
+          this.$emit("saved", item);
         })
         .catch((error) => {
           this.$emit("error", error);

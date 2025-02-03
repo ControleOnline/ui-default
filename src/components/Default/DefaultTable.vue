@@ -107,7 +107,6 @@
                 icon: 'edit',
                 store: configs.store,
                 label: 'edit',
-                index: editIndex,
                 disable: isLoading || editing.length > 0,
                 component: this.$components.DefaultForm,
                 componentConfigs: configs,
@@ -328,7 +327,6 @@
                 icon: 'add',
                 store: configs.store,
                 label: 'add',
-                index: editIndex,
                 disable: isLoading || editing.length > 0,
                 component: this.$components.DefaultForm,
                 componentConfigs: configs,
@@ -556,10 +554,9 @@
                   :editable="column.editable"
                   :fileType="column.fileType"
                   :data="formatData(column, props.row, true)"
-                  :index="items.indexOf(props.row)"
                   @save="
                     (value, index) => {
-                      this.save(index, items[index], column, value['@id']);
+                      this.save(items[index], column, value['@id']);
                     }
                   "
                 />
@@ -596,7 +593,6 @@
                       icon: 'edit',
                       store: configs.store,
                       label: 'edit',
-                      index: editIndex,
                       disable: isLoading || editing.length > 0,
                       component: this.$components.DefaultForm,
                       componentConfigs: configs,
@@ -926,8 +922,12 @@ export default {
     deleted(item) {
       let items = this.$copyObject(this.items);
       items = items.filter((i) => i["@id"] != item["@id"]);
-      this.$store.commit(this.configs.store + "/SET_ITEMS", items);
+      this.updateItems(items);
       //this.tableKey++;
+    },
+    updateItems(items) {
+      this.$store.commit(this.configs.store + "/SET_ITEMS", items);
+      this.items = items;
     },
     discoverySelected() {
       if (!this.configs.selection) return;
@@ -1062,13 +1062,16 @@ export default {
     error(error) {
       this.$emit("error", error);
     },
-    saved(data, editIndex) {
-      this.items = this.$copyObject(data);
-      this.$emit("saved", data, editIndex);
+    saved(data) {
+      let index = this.getIndex(data);
+      let items = this.$copyObject(this.items);
+      items[index] = data;
+      this.updateItems(items);
+      if (this.configs.expandedChild != true) this.$emit("saved", data);
     },
 
     editItem(item) {
-      const index = this.items.findIndex((i) => i["@id"] === item["@id"]);
+      const index = this.getIndex(item);
       this.item = this.$copyObject(item);
       this.editIndex = index;
     },

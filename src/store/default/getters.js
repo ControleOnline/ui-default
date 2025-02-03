@@ -12,3 +12,5 @@ export const selected = (state) => state.selected;
 export const visibleColumns = (state) => state.visibleColumns;
 export const isLoadingList = (state) => state.isLoadingList;
 export const reload = (state) => state.reload;
+export const store = (state) => state.store;
+

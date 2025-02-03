@@ -27,7 +27,8 @@ export function addFilter(key, value) {
 export function loadPersistentFilters() {
   const persistentFilter = new Filters(
     this.$route.name,
-    this.$store.getters[this.configs.store + "/resourceEndpoint"]
+    this.$store.getters[this.configs.store + "/store"] ||
+      this.$store.getters[this.configs.store + "/resourceEndpoint"]
   );
   let filters = persistentFilter.getFilters();
   let visibleColumns = persistentFilter.getVisibleColumns();
@@ -114,6 +115,10 @@ export function isProxyEmpty(proxy) {
     }
   }
   return true;
+}
+
+export function getIndex(row) {
+  return this.items.findIndex((item) => item["@id"] == row["@id"]);
 }
 
 export function formatData(column, row, editing) {

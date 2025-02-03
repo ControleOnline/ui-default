@@ -28,15 +28,14 @@
     :editable="column.editable"
     :fileType="column.fileType"
     :data="formatData(column, row, true)"
-    :index="getIndex(row)"
     @save="
       (value, index) => {
-        this.save(index, items[index], column, value['@id']);
+        this.save(items[index], column, value['@id']);
       }
     "
   />
 
-  <template v-else-if="editingInit(getIndex(row), column) != true">
+  <template v-else-if="editingInit(row, column) != true">
     <template v-if="column.multiline == true">
       <template v-for="(data, index) in formatData(column, row, false)">
         <span :style="{ color: getColor(column, row) }">
@@ -115,7 +114,7 @@
             name=""
           />
           <q-spinner-ios
-            v-if="isSaving && isEditing(getIndex(row), column)"
+            v-if="isSaving && isEditing(row, column)"
             class="loading-primary"
             size="2em"
           />
@@ -149,16 +148,16 @@
       :searchParam="column.searchParam || 'search'"
       :formatOptions="column.formatList"
       :searchAction="getList(configs, column)"
-      @focus="editingInit(getIndex(row), column)"
+      @focus="editingInit(row, column)"
       @changed="
         (value) => {
           editedValue = value;
         }
       "
-      @apply="stopEditing(getIndex(row), column, row)"
-      @blur="stopEditing(getIndex(row), column, row)"
-      @update:modelValue="stopEditing(getIndex(row), column, row)"
-      @keydown.enter="stopEditing(getIndex(row), column, row)"
+      @apply="stopEditing(row, column)"
+      @blur="stopEditing(row, column)"
+      @update:modelValue="stopEditing(row, column)"
+      @keydown.enter="stopEditing(row, column)"
     />
   </template>
 </template>
@@ -178,11 +177,6 @@ export default {
     columnName: {
       type: Object,
       required: true,
-    },
-    index: {
-      type: Number,
-      required: false,
-      default: 0,
     },
     row: {
       type: Object,
@@ -275,7 +269,7 @@ export default {
       value = (value || 0) + 1;
 
       this.tempValue = value;
-      this.save(this.getIndex(row), row, column, value);
+      this.save(row, column, value);
     },
     decreaseQuantity(column, row) {
       let value =
@@ -285,7 +279,7 @@ export default {
       if (value && value >= 1) value--;
 
       this.tempValue = value;
-      this.save(this.getIndex(row), row, column, parseFloat(value));
+      this.save(row, column, parseFloat(value));
     },
     getColor(column, row) {
       return column.color || row[column.key || column.name]
@@ -297,14 +291,11 @@ export default {
         ? row[column.key || column.name].icon
         : false;
     },
-    editingInit(index, col) {
+    editingInit(row, col) {
+      let index = this.getIndex(row);
       return this.editing[index] && this.editing[index][col.key || col.name]
         ? true
         : false;
-    },
-
-    getIndex(row) {
-      return this.items.findIndex((item) => item["@id"] == row["@id"]);
     },
 
     startEditing(index, col, row, value) {
@@ -321,7 +312,8 @@ export default {
       this.showEdit[index] = { [col.key || col.name]: false };
     },
 
-    stopEditing(index, col, row) {
+    stopEditing(row, col) {
+      let index = this.getIndex(row);
       let editing = this.$copyObject(this.editing);
       editing[index] = {
         [col.key || col.name]: false,
@@ -332,12 +324,13 @@ export default {
       };
       this.editing = editing;
 
-      this.save(index, row, col, this.editedValue?.value || this.editedValue);
+      this.save(row, col, this.editedValue?.value || this.editedValue);
     },
     isInvalid() {
       return true;
     },
-    isEditing(index, col) {
+    isEditing(row, col) {
+      let index = this.getIndex(row);
       return this.saveEditing[index] &&
         this.saveEditing[index][col.key || col.name]
         ? true
@@ -354,9 +347,10 @@ export default {
 
       //this.tableKey++;
 
-      this.$emit("saved", data, editIndex);
+      this.$emit("saved", data);
     },
-    save: debounce(function (index, row, col, value) {
+    save: debounce(function (row, col, value) {
+      let index = this.getIndex(row);
       this.$store.commit(this.configs.store + "/SET_ITEM", row);
 
       let c = col.list
@@ -398,7 +392,7 @@ export default {
               position: "bottom",
               type: "positive",
             });
-            this.saved(data, index);
+            this.saved(data);
           } else {
             this.$q.notify({
               message: this.$tt(this.configs.store, "message", "error"),

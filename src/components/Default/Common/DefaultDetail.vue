@@ -6,7 +6,6 @@
         @saved="saved"
         @error="error"
         :data="data"
-        :index="index"
         v-if="data"
       />
     </q-card-section>
@@ -21,10 +20,6 @@ export default {
     configs: {
       type: Object,
       required: true,
-    },
-    index: {
-      type: Number,
-      required: false,
     },
     sectionClass: {
       required: false,
