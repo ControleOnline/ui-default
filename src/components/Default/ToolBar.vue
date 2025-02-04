@@ -30,7 +30,6 @@
       <DefaultButtonDialog
         @saved="$emit('saved')"
         @loadData="$emit('loadData')"
-        :componentProps="comp.props"
         :configs="{
           icon: 'manage_accounts',
           store: 'status',
