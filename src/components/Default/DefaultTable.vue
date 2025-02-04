@@ -151,7 +151,8 @@
                 @saved="saved"
                 @save="save"
                 @error="error"
-                @reload="reload"
+                @reload="reloadData"
+                @deleted="deleted"
               />
             </td>
           </tr>
@@ -644,7 +645,8 @@
                 @saved="saved"
                 @save="save"
                 @error="error"
-                @reload="reload"
+                @reload="reloadData"
+                @deleted="deleted"
               />
             </q-card-section>
           </q-card>
@@ -923,6 +925,8 @@ export default {
       let items = this.$copyObject(this.items);
       items = items.filter((i) => i["@id"] != item["@id"]);
       this.updateItems(items);
+      this.reloadData();
+
       //this.tableKey++;
     },
     updateItems(items) {
