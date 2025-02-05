@@ -932,6 +932,7 @@ export default {
     updateItems(items) {
       this.$store.commit(this.configs.store + "/SET_ITEMS", items);
       this.items = items;
+      //this.tableKey++;
     },
     discoverySelected() {
       if (!this.configs.selection) return;
@@ -1069,8 +1070,12 @@ export default {
     saved(data) {
       let index = this.getIndex(data);
       let items = this.$copyObject(this.items);
-      items[index] = data;
+
+      if (index != -1) items[index] = data;
+      else items.push(data);
+
       this.updateItems(items);
+
       if (this.configs.expandedChild != true) this.$emit("saved", data);
     },
 
