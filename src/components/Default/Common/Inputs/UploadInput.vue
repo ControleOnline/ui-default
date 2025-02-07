@@ -162,7 +162,7 @@ export default {
       headers: [
         {
           name: "API-TOKEN",
-          value: this.$store.getters["auth/user"].token,
+          value: this.$store.getters["auth/user"].api_key,
         },
       ],
     };

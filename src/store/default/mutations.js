@@ -2,71 +2,88 @@ import * as types from "./mutation_types";
 import Filters from "@controleonline/ui-default/src/utils/filters";
 
 export default {
-  [types.SET_ERROR](state, error) {
-    state.error = error;
+  [types.SET_ERROR](state, payload) {
+    if (!payload?.error) Object.assign(state, { error: payload });
+    return { ...state, error: payload?.error || payload };
   },
 
-  [types.SET_ISLOADING](state, isLoading = true) {
-    state.isLoading = isLoading;
+  [types.SET_ISLOADING](state, payload = true) {
+    if (!payload?.isLoading) Object.assign(state, { isLoading: payload });
+    return { ...state, isLoading: payload?.isLoading || payload };
   },
 
-  [types.SET_ISSAVING](state, isSaving = true) {
-    state.isSaving = isSaving;
+  [types.SET_ISSAVING](state, payload = true) {
+    if (!payload?.isSaving) Object.assign(state, { isSaving: payload });
+    return { ...state, isSaving: payload?.isSaving || payload };
   },
 
-  [types.SET_ISLOADINGLIST](state, isLoadingList = true) {
-    state.isLoadingList = isLoadingList;
+  [types.SET_ISLOADINGLIST](state, payload = true) {
+    if (!payload?.isLoadingList) Object.assign(state, { isLoadingList: payload });
+    return { ...state, isLoadingList: payload?.isLoadingList || payload };
   },
 
-  [types.SET_VIOLATIONS](state, violations) {
-    state.violations = violations;
+  [types.SET_VIOLATIONS](state, payload) {
+    if (!payload?.violations) Object.assign(state, { violations: payload });
+    return { ...state, violations: payload?.violations || payload };
   },
 
-  [types.SET_TOTALITEMS](state, totalItems) {
-    state.totalItems = totalItems;
+  [types.SET_TOTALITEMS](state, payload) {
+    if (!payload?.totalItems) Object.assign(state, { totalItems: payload });
+    return { ...state, totalItems: payload?.totalItems || payload };
   },
 
-  [types.SET_ITEMS](state, items) {
-    state.items = items;
+  [types.SET_ITEMS](state, payload) {
+    if (!payload?.items) Object.assign(state, { items: payload });
+    return { ...state, items: payload?.items || payload };
   },
 
-  [types.SET_ITEM](state, item) {
-    state.item = item;
+  [types.SET_ITEM](state, payload) {
+    if (!payload?.item) Object.assign(state, { item: payload });
+    return { ...state, item: payload?.item || payload };
   },
 
-  [types.SET_COLUMNS](state, columns) {
-    state.columns = columns;
+  [types.SET_COLUMNS](state, payload) {
+    if (!payload?.columns) Object.assign(state, { columns: payload });
+    return { ...state, columns: payload?.columns || payload };
   },
 
-  [types.SET_STORE](state, store) {
-    state.store = store;
+  [types.SET_STORE](state, payload) {
+    if (!payload?.store) Object.assign(state, { store: payload });
+    return { ...state, store: payload?.store || payload };
   },
 
-  [types.SET_FILTERS](state, filters) {
+  [types.SET_FILTERS](state, payload) {
+    if (!payload?.filters) Object.assign(state, { filters: payload });
     const persistentFilter = new Filters(
-      this.$router.currentRoute.value.name,
+      state.$router?.currentRoute?.value?.name,
       state.store || state.resourceEndpoint
     );
-    persistentFilter.setFilters(filters);
-    state.filters = filters;
+    persistentFilter.setFilters(payload);
+    return { ...state, filters: payload?.filters || payload };
   },
 
-  [types.SET_RESOURCE_ENDPOINT](state, resourceEndpoint) {
-    state.resourceEndpoint = resourceEndpoint;
+  [types.SET_RESOURCE_ENDPOINT](state, payload) {
+    if (!payload?.resourceEndpoint) Object.assign(state, { resourceEndpoint: payload });
+    return { ...state, resourceEndpoint: payload?.resourceEndpoint || payload };
   },
 
-  [types.SET_SELECTED](state, selected) {
-    state.selected = selected;
+  [types.SET_SELECTED](state, payload) {
+    if (!payload?.selected) Object.assign(state, { selected: payload });
+    return { ...state, selected: payload?.selected || payload };
   },
-  [types.SET_RELOAD](state, reload) {
-    state.reload = reload;
+
+  [types.SET_RELOAD](state, payload) {
+    if (!payload?.reload) Object.assign(state, { reload: payload });
+    return { ...state, reload: payload?.reload || payload };
   },
-  [types.SET_VISIBLECOLUMNS](state, visibleColumns) {
+
+  [types.SET_VISIBLECOLUMNS](state, payload) {
+    if (!payload?.visibleColumns) Object.assign(state, { visibleColumns: payload });
     const persistentFilter = new Filters(
-      this.$router.currentRoute.value.name,
+      state.$router?.currentRoute?.value?.name,
       state.store || state.resourceEndpoint
     );
-    persistentFilter.setVisibleColumns(visibleColumns);
-    state.visibleColumns = visibleColumns;
+    persistentFilter.setVisibleColumns(payload);
+    return { ...state, visibleColumns: payload?.visibleColumns || payload };
   },
 };

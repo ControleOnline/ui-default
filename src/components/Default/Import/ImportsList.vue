@@ -343,7 +343,7 @@ export default {
       uploadHeaders: [
         {
           name: "API-TOKEN",
-          value: this.$store.getters["auth/user"].token,
+          value: this.$store.getters["auth/user"].api_key,
         },
       ],
       uploadAccepted: ".csv",
