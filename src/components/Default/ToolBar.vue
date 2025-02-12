@@ -45,7 +45,6 @@
       <DefaultButtonDialog
         @saved="$emit('saved')"
         @loadData="$emit('loadData')"
-        :componentProps="comp.props"
         :configs="{
           icon: 'card_travel', // spoke, card_travel and stacks
           store: 'categories',
