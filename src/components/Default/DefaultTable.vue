@@ -305,9 +305,9 @@
               $tt(
                 configs?.title ? configs.context || configs.store : "route",
                 "title",
-                configs?.title && typeof configs?.title == "Object"
+                configs?.title && typeof configs?.title != "object"
                   ? configs?.title
-                  : this.$route.name
+                  : configs.context || configs.store || this.$route.name
               )
             }}
           </h3>
