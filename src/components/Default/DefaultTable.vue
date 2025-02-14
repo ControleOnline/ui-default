@@ -715,7 +715,6 @@ import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
 import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
-import DefaultInput from "./DefaultInput.vue";
 import { debounce } from "lodash";
 
 export default {
@@ -738,7 +737,6 @@ export default {
     DefaultExternalFilters,
     FilterInputs,
     FormInputs,
-    DefaultInput,
     ToolBar,
   },
 
