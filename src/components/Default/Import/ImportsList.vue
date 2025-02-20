@@ -44,7 +44,9 @@
                 >
                   <template v-slot:no-option>
                     <q-item>
-                      <q-item-section class="text-grey"> Sem resultados </q-item-section>
+                      <q-item-section class="text-grey">
+                        Sem resultados
+                      </q-item-section>
                     </q-item>
                   </template>
                 </q-select>
@@ -64,7 +66,9 @@
                 >
                   <template v-slot:no-option>
                     <q-item>
-                      <q-item-section class="text-grey"> Sem resultados </q-item-section>
+                      <q-item-section class="text-grey">
+                        Sem resultados
+                      </q-item-section>
                     </q-item>
                   </template>
                 </q-select>
@@ -75,15 +79,21 @@
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td key="id" :props="props">{{ props.row.id }}</q-td>
-              <q-td key="fileName" :props="props"> {{ props.row.fileName }} </q-td>
+              <q-td key="fileName" :props="props">
+                {{ props.row.fileName }}
+              </q-td>
               <q-td key="import_type" :props="props">{{
                 $t(`import.importStatuses.${props.row.typeLabel}`)
               }}</q-td>
               <q-td key="status" :props="props">{{
                 $t(`import.statuses.${props.row.statusLabel}`)
               }}</q-td>
-              <q-td key="feedback" :props="props">{{ props.row.feedback }}</q-td>
-              <q-td key="uploadDate" :props="props">{{ props.row.uploadDate }}</q-td>
+              <q-td key="feedback" :props="props">{{
+                props.row.feedback
+              }}</q-td>
+              <q-td key="uploadDate" :props="props">{{
+                props.row.uploadDate
+              }}</q-td>
               <q-td auto-width>
                 <q-btn
                   v-if="props.row.status === 'waiting'"
@@ -120,7 +130,9 @@
             >
               <template v-slot:no-option>
                 <q-item>
-                  <q-item-section class="text-grey"> Sem resultados </q-item-section>
+                  <q-item-section class="text-grey">
+                    Sem resultados
+                  </q-item-section>
                 </q-item>
               </template>
             </q-select>
@@ -148,7 +160,9 @@
               :auto-upload="true"
             >
               <template v-slot:header="scope">
-                <div class="row no-wrap items-center justify-end q-pa-sm q-gutter-xs">
+                <div
+                  class="row no-wrap items-center justify-end q-pa-sm q-gutter-xs"
+                >
                   <q-spinner
                     v-if="scope.isUploading"
                     color="primary"
@@ -192,14 +206,20 @@
                     Clique no botão "mais" ou arraste seu arquivo até esta caixa
                   </div>
 
-                  <q-list separator v-if="scope.files.length > 0" style="min-width: 100%">
+                  <q-list
+                    separator
+                    v-if="scope.files.length > 0"
+                    style="min-width: 100%"
+                  >
                     <q-item v-for="file in scope.files" :key="file.name">
                       <q-item-section>
                         <q-item-label class="full-width ellipsis">
                           {{ file.name }}
                         </q-item-label>
 
-                        <q-item-label caption> Status: {{ file.__status }} </q-item-label>
+                        <q-item-label caption>
+                          Status: {{ file.__status }}
+                        </q-item-label>
 
                         <q-item-label caption>
                           {{ file.__sizeLabel }} / {{ file.__progressLabel }}
@@ -232,8 +252,6 @@
 
 <script>
 import { api } from "app/modules/controleonline/ui-common/src/api";
-
-
 
 const SETTINGS = {
   columns: [
@@ -302,7 +320,6 @@ export default {
       type: String,
       required: false,
     },
-
   },
 
   data() {
@@ -314,14 +331,20 @@ export default {
         { label: "Abertos", value: -1 },
         { label: "Todos", value: 0 },
         { label: this.$t("import.statuses." + "waiting"), value: "waiting" },
-        { label: this.$t("import.statuses." + "importing"), value: "importing" },
+        {
+          label: this.$t("import.statuses." + "importing"),
+          value: "importing",
+        },
         { label: this.$t("import.statuses." + "imported"), value: "imported" },
         { label: this.$t("import.statuses." + "failed"), value: "failed" },
       ],
       importType: {
         import_type: this.import_type
           ? { value: this.import_type }
-          : { label: this.$t("import.importStatuses." + "DACTE"), value: "DACTE" },
+          : {
+              label: this.$t("import.importStatuses." + "DACTE"),
+              value: "DACTE",
+            },
       },
       importStatuses: [
         { label: this.$t("import.importStatuses." + "table"), value: "table" },
@@ -343,7 +366,7 @@ export default {
       uploadHeaders: [
         {
           name: "API-TOKEN",
-          value: this.$store.getters["auth/user"].api_key,
+          value: this.$auth.user.api_key,
         },
       ],
       uploadAccepted: ".csv",
@@ -424,13 +447,17 @@ export default {
     cleanItem(id) {
       let item = this.items.find((obj) => obj["id"] == id);
       let indx = this.items.indexOf(item);
-      this.items = [...this.items.slice(0, indx), ...this.items.slice(indx + 1)];
+      this.items = [
+        ...this.items.slice(0, indx),
+        ...this.items.slice(indx + 1),
+      ];
     },
 
     onRequest(props) {
       if (this.isLoading) return;
 
-      let { page, rowsPerPage, rowsNumber, sortBy, descending } = props.pagination;
+      let { page, rowsPerPage, rowsNumber, sortBy, descending } =
+        props.pagination;
 
       let params = {
         itemsPerPage: rowsPerPage,
