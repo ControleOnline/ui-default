@@ -1,6 +1,7 @@
 <template>
   <label
     v-if="
+      showLabels &&
       labelType != 'stack-label' &&
       store &&
       (!column.preview || !data || !data['@id'])
@@ -10,7 +11,9 @@
   </label>
   <label
     v-else-if="
-      labelType != 'stack-label' && (!column.preview || !data || !data['@id'])
+      showLabels &&
+      labelType != 'stack-label' &&
+      (!column.preview || !data || !data['@id'])
     "
   >
     {{ label }}
@@ -163,6 +166,11 @@ export default {
     searchAction: {
       required: true,
     },
+    showLabels: {
+      type: String,
+      required: false,
+      default: true,
+    },
     labelType: {
       type: String,
       required: false,
@@ -231,7 +239,7 @@ export default {
         this.key++;
       }, 300);
     },
-    forceSave(){
+    forceSave() {
       this.$emit("forceSave");
     },
     isPreview() {

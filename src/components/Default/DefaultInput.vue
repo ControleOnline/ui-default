@@ -91,15 +91,13 @@
             />
           </template>
           {{ column.prefix }}
-
           {{ tempValue != null ? tempValue : formatData(column, row, false) }}
-
           {{ column.sufix }}
           <q-icon
             v-if="
               column.inputType !== 'increase' &&
               column.inputType != 'image' &&
-              column.editable == true &&
+              column.editable != false &&
               !isSaving &&
               ((showEdit[getIndex(row)] &&
                 showEdit[getIndex(row)][column.key || column.name] == true) ||
@@ -109,7 +107,9 @@
             :name="column.list ? 'unfold_more' : 'edit'"
           />
           <q-icon
-            v-else-if="column.inputType !== 'increase' &&  column.editable == true"
+            v-else-if="
+              column.inputType !== 'increase' && column.editable == true
+            "
             size="1.0em"
             name=""
           />
@@ -120,7 +120,7 @@
           />
         </span>
         <q-btn
-          v-if="column.inputType === 'increase'  && column.editable == true"
+          v-if="column.inputType === 'increase' && column.editable == true"
           flat
           dense
           icon="add"
@@ -141,7 +141,8 @@
       :store="configs.store"
       :mask="mask(column)"
       :rules="[isInvalid()]"
-      :labelType="'stack-label'"
+      :labelType="configs.labelType || 'stack-label'"
+      :showLabels="configs.showLabels"
       :label="column.label"
       :filters="getSearchFilters(column, row)"
       :initialValue="editedValue"
