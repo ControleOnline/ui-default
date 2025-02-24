@@ -505,10 +505,7 @@
                         this.format(
                           column,
                           props.row,
-                          getNameFromList(
-                            column,
-                            props.row
-                          )
+                          getNameFromList(column, props.row)
                         )
                       }}
                     </q-btn>
@@ -521,10 +518,7 @@
                         this.format(
                           column,
                           props.row,
-                          getNameFromList(
-                            column,
-                            props.row
-                          )
+                          getNameFromList(column, props.row)
                         )
                       }}
                     </span>
@@ -554,8 +548,8 @@
                   :fileType="column.fileType"
                   :data="formatData(column, props.row, true)"
                   @save="
-                    (value, index) => {
-                      this.save(items[index], column, value['@id']);
+                    (value) => {
+                      this.saveFile(props.row, column, value);
                     }
                   "
                 />
@@ -1260,7 +1254,18 @@ export default {
           });
       }, 500);
     },
+    saveFile(row, column, selected) {
+      let params = {};
+      params[column.key || column.name] = selected["@id"];
+      params.id = row["@id"].split("/").pop();
 
+      console.log(params);
+      this.$store
+        .dispatch(this.configs.store + "/save", params)
+        .then((data) => {
+          this.items[this.items.indexOf(row)] = data;
+        });
+    },
     loadData(props) {
       this.adjustElementHeight();
       if (this.isLoading) return;
