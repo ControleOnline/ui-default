@@ -16,7 +16,6 @@
           :editable="true"
           :data="item"
           :fileType="['text']"
-          store="file"
           @save="changed"
         />
       </q-input>

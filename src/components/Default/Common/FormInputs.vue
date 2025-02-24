@@ -31,7 +31,6 @@
       :fileType="column.fileType"
       :disable="editable == false"
       :editable="editable"
-      :store="store"
       :labelType="labelType"
       :label="label"
       multiple

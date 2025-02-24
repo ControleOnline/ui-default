@@ -5,7 +5,7 @@
       no-thumbnails
       square
       flat
-      :url="endpoint || $entrypoint"
+      :url="$entrypoint + '/files/upload'"
       :headers="headers"
       :accept="accept"
       field-name="file"
@@ -141,10 +141,6 @@ export default {
     },
     item: {
       type: Object,
-      required: false,
-    },
-    endpoint: {
-      type: String,
       required: false,
     },
     showError: {

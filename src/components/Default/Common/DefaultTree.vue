@@ -112,9 +112,14 @@ export default {
       });
     },
     async buildSelected() {
+      let filters = this.$copyObject(this.linkConfigs.filters);
+      filters["category.context"] = this.context;
+      filters["category.company"] = this.company.id;
+
       return await this.$store.dispatch(
         this.linkConfigs.store + "/getItems",
-        this.linkConfigs.filters
+
+        filters
       );
     },
     buildCategoryTree() {
@@ -148,7 +153,7 @@ export default {
               }
 
               selectedCategories.some((item) => {
-                if (item.category === category["@id"])
+                if (item.category["@id"] === category["@id"])
                   selected.push(category.id);
               });
             });

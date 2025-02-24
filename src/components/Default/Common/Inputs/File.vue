@@ -44,9 +44,6 @@ export default {
     editable: {
       required: false,
     },
-    store: {
-      required: false,
-    },
     labelType: {
       required: false,
     },
@@ -67,7 +64,6 @@ export default {
       return {
         icon:
           this.data && this.data.fileType == "image" ? "image" : "description",
-        store: "file",
         context: "file",
         "full-height": true,
         class: "upload-icon q-pa-xs btn-primary",

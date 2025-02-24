@@ -1,0 +1,114 @@
+<template>
+  <div class="row img-box q-pa-md col-12">
+    <q-carousel
+      class="full-width"
+      animated
+      v-model="slide"
+      v-model:fullscreen="fullscreen"
+      arrows
+      navigation
+      infinite
+      swipeable
+      thumbnails
+    >
+      <q-carousel-slide
+        v-for="(slide, index) in slides"
+        :alt="slide.name"
+        :name="slide.id"
+        :img-src="slide.src"
+      />
+      <template v-slot:control>
+        <q-carousel-control position="bottom-right" :offset="[18, 18]">
+          <File
+            :editable="true"
+            :data="slide.file"
+            :fileType="['image']"
+            @save="selected"
+          />
+          <q-btn
+            push
+            round
+            dense
+            color="white"
+            text-color="primary"
+            :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'"
+            @click="fullscreen = !fullscreen"
+          />
+        </q-carousel-control>
+      </template>
+    </q-carousel>
+  </div>
+</template>
+
+<script>
+import { mapActions, mapGetters } from "vuex";
+
+export default {
+  props: {
+    files: {
+      required: true,
+    },
+    configs: {
+      required: true,
+    },
+    object: {
+      required: true,
+    },
+  },
+  data() {
+    return {
+      slide: null,
+      slides: [],
+      fullscreen: false,
+      carousel: [],
+    };
+  },
+  created() {
+    this.carousel = this.$copyObject(this.files);
+    this.init();
+  },
+  methods: {
+    ...mapActions({}),
+    selected(selected) {
+      const existingItem = this.carousel.find(
+        (item) => item.file["@id"] === selected["@id"]
+      );
+
+      if (existingItem) {
+        this.init(existingItem.file.id);
+        return;
+      }
+
+      let params = this.$copyObject(this.object);
+      params.file = selected["@id"];
+
+      this.$store
+        .dispatch(this.configs.store + "/save", params)
+        .then((data) => {
+          this.carousel.push(data);
+          this.init(data.file.id);
+        });
+    },
+    init(slide = null) {
+      let slides = [];
+
+      this.carousel.forEach((file, i) => {
+        if (!this.slide || slide) this.slide = slide || file.file.id;
+        slides.push({
+          id: file.file.id,
+          file: file.file,
+
+          src: this.$image(file.file),
+        });
+      });
+      this.slides = slides;
+    },
+  },
+};
+</script>
+<style>
+.img-box > div {
+  border: 2px #bcbcbc dotted;
+  border-radius: 5px;
+}
+</style>
