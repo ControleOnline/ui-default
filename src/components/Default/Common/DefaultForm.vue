@@ -11,22 +11,10 @@
           "
           :class="getFilterSize(column)"
         >
-          <FormInputs
+          <DefaultInput
+            :row="getInitialData(column)"
             :column="column"
-            :editable="isEditable(column)"
-            :prefix="column.prefix"
-            :sufix="column.sufix"
-            :inputType="getList(configs, column) ? 'list' : column.inputType"
-            :store="configs.store"
-            :mask="mask(column)"
-            :rules="column.rules"
-            :labelType="'outer-label'"
-            :label="column.label"
-            :filters="getSearchFilters(column)"
-            :initialValue="getInitialData(column)"
-            :searchParam="column.searchParam || 'search'"
-            :formatOptions="column.formatList"
-            :searchAction="getList(configs, column)"
+            :configs="configs"
             @focus="editingInit(column)"
             @forceSave="onSubmit"
             @changed="
@@ -47,12 +35,16 @@
 
     <div
       class="row justify-end bg sticky-bottom full-width"
-      :style="configs.stickyBottom  ?{
-        'z-index': 1,
-        position: 'fixed !important',
-        left: 0,
-        'padding-right': '35px',
-      } : {}"
+      :style="
+        configs.stickyBottom
+          ? {
+              'z-index': 1,
+              position: 'fixed !important',
+              left: 0,
+              'padding-right': '35px',
+            }
+          : {}
+      "
     >
       <q-btn
         :loading="isSaving"
@@ -68,7 +60,6 @@
 
 <script>
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
-import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import ExtraData from "@controleonline/ui-default/src/components/Default/Common/ExtraData";
 import { mapActions, mapGetters } from "vuex";
 import configs from "app/modules/controleonline/ui-config/src/store/configs";
@@ -88,7 +79,6 @@ export default {
     },
   },
   components: {
-    FormInputs,
     ExtraData,
   },
   data() {

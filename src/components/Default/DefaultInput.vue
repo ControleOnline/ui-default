@@ -1,8 +1,28 @@
 <template>
+  <label
+    v-if="
+      configs.showLabels &&
+      configs.labelType != 'stack-label' &&
+      configs.store &&
+      (!column.preview || !data || !data['@id'])
+    "
+  >
+    {{ $tt(configs.store, "input", column.label) }}
+  </label>
+  <label
+    v-else-if="
+      configs.showLabels &&
+      configs.labelType != 'stack-label' &&
+      (!column.preview || !data || !data['@id'])
+    "
+  >
+    {{ column.label }}
+  </label>
+
   <template v-if="tableColumnComponent(column.key || column.name)">
     <DefaultComponent
       :componentConfig="tableColumnComponent(column.key || column.name)"
-      :row="row"
+      :row="data[column.key || column.name]"
       :configs="configs"
       @saved="saved"
       @loadData="loadData"
@@ -11,36 +31,62 @@
   </template>
   <q-btn
     class="btn-primary"
-    v-else-if="column.to && row[column.key || column.name]"
-    @click="verifyClick(column, row)"
-    :icon="getIcon(column, row)"
-    >{{
-      this.format(
-        column,
-        row,
-        getNameFromList(column, row, column.key || column.name)
-      )
-    }}
+    v-else-if="column.to && data[column.key || column.name]"
+    @click="verifyClick(data)"
+    :icon="getIcon(column, data)"
+    >{{ this.format(column, data, getNameFromList(column, data)) }}
   </q-btn>
-  <File
-    v-else-if="column.inputType == 'file'"
-    :disable="column.editable == false"
-    :editable="column.editable"
-    :fileType="column.fileType"
-    :data="formatData(column, row, true)"
-    @save="
-      (value, index) => {
-        this.save(items[index], column, value['@id']);
-      }
-    "
-  />
+  <template v-else-if="column.inputType == 'file'">
+    <File
+      :disable="column.editable == false"
+      :editable="column.editable"
+      :fileType="column.fileType"
+      :labelType="configs.labelType || 'stack-label'"
+      :row="formatData(column, data, true)"
+      :label="column.name"
+      multiple
+      :key="key"
+      @save="
+        (value, index) => {
+          this.save(value['@id']);
+        }
+      "
+    />
+    <File
+      v-if="!isPreview()"
+      class="file-preview"
+      :style="
+        !isPreview()
+          ? ''
+          : { position: 'absolute', 'z-index': 2, 'margin-top': '15px' }
+      "
+      :row="data[column.key || column.name]"
+      :fileType="column.fileType"
+      :disable="column.editable == false"
+      :editable="column.editable"
+      :labelType="configs.labelType"
+      :label="column.label"
+      multiple
+      :key="key"
+      @save="save"
+    />
+    <Html
+      v-if="column.inputType == 'file' && isPreview()"
+      :readonly="column.editInline != true"
+      :editInline="column.editInline"
+      :key="key"
+      :row="data[column.key || column.name]"
+      @saved="forceSave"
+      @changed="changed"
+    />
+  </template>
 
-  <template v-else-if="editingInit(row, column) != true">
+  <template v-else-if="editingInit(data, column) != true">
     <template v-if="column.multiline == true">
-      <template v-for="(data, index) in formatData(column, row, false)">
-        <span :style="{ color: getColor(column, row) }">
+      <template v-for="(v, index) in formatData(column, data, false)">
+        <span :style="{ color: getColor(column, data) }">
           {{ column.prefix }}
-          {{ data }}
+          {{ v }}
           {{ column.sufix }} </span
         ><br />
         <q-separator class="full-width" />
@@ -54,44 +100,26 @@
           dense
           icon="remove"
           color="grey"
-          @click="decreaseQuantity(column, row)"
+          @click="decreaseQuantity(column, data)"
         />
         <span
-          :style="{ color: getColor(column, row) }"
-          @mouseenter="
-            showEdit[getIndex(row)] =
-              column.editable == false
-                ? false
-                : { [column.key || column.name]: true }
-          "
-          @mouseleave="
-            showEdit[getIndex(row)] = {
-              [column.key || column.name]: false,
-            }
-          "
-          @click="
-            startEditing(
-              getIndex(row),
-              column,
-              row,
-              formatData(column, row, true)
-            )
-          "
+          :style="{ color: getColor(column, data) }"
+          @click="startEditing(column, data)"
         >
-          <template v-if="getIcon(column, row)">
+          <template v-if="getIcon(column, data)">
             <q-icon
-              :color="getColor(column, row)"
-              :name="getIcon(column, row)"
+              :color="getColor(column, data)"
+              :name="getIcon(column, data)"
             />
           </template>
           <template v-if="column.inputType == 'icon'">
             <q-icon
-              :color="getColor(column, row)"
-              :name="formatData(column, row, true)"
+              :color="getColor(column, data)"
+              :name="formatData(column, data, true)"
             />
           </template>
           {{ column.prefix }}
-          {{ tempValue != null ? tempValue : formatData(column, row, false) }}
+          {{ tempValue != null ? tempValue : formatData(column, data, false) }}
           {{ column.sufix }}
           <q-icon
             v-if="
@@ -99,8 +127,8 @@
               column.inputType != 'image' &&
               column.editable != false &&
               !isSaving &&
-              ((showEdit[getIndex(row)] &&
-                showEdit[getIndex(row)][column.key || column.name] == true) ||
+              ((editing[getIndex(data)] &&
+                editing[getIndex(data)][column.key || column.name] == true) ||
                 configs.editOnHover != false)
             "
             size="1.0em"
@@ -113,11 +141,6 @@
             size="1.0em"
             name=""
           />
-          <q-spinner-ios
-            v-if="isSaving && isEditing(row, column)"
-            class="loading-primary"
-            size="2em"
-          />
         </span>
         <q-btn
           v-if="column.inputType === 'increase' && column.editable == true"
@@ -125,54 +148,124 @@
           dense
           icon="add"
           color="primary"
-          @click="increaseQuantity(column, row)"
+          @click="increaseQuantity(column, data)"
         />
       </div>
     </template>
   </template>
 
   <template v-else>
-    <FormInputs
+    <q-input
+      :disable="column.editable == false"
+      outlined
+      dense
+      v-if="column.inputType == 'date-range'"
+      v-model="data[column.key || column.name]"
+      mask="##/##/####"
+      :rules="['$formatter.validateBRDate']"
+      @keydown.enter="save(data[column.key || column.name])"
+    >
+      <template v-slot:append>
+        <q-icon name="event" class="cursor-pointer">
+          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+            <q-date
+              v-model="tempDate"
+              @update:modelValue="
+                (val) =>
+                  (data[column.key || column.name] =
+                    $formatter.formatDateToBR(val))
+              "
+            >
+              <div class="row items-center justify-end">
+                <q-btn
+                  v-close-popup
+                  :label="$tt(configs.store, 'btn', 'apply')"
+                  @click="save(row, column)"
+                  class="btn-primary"
+                  flat
+                />
+              </div>
+            </q-date>
+          </q-popup-proxy>
+        </q-icon>
+      </template>
+    </q-input>
+
+    <SelectInput
+      v-else-if="getList(configs, column)"
+      multiple
+      :disable="column.editable == false"
+      :store="configs.store"
+      :labelType="configs.labelType || 'stack-label'"
+      :label="column.label"
+      :searchAction="getList(configs, column)"
+      :filters="getSearchFilters(column, data)"
+      :formatOptions="column.formatList"
+      :searchParam="column.searchParam || 'search'"
       :column="column"
+      @blur="changed"
+      @selected="onSelected"
+    />
+    <q-input
+      outlined
+      v-else
+      :disable="column.editable == false"
+      dense
+      :stack-label="configs.labelType == 'stack-label'"
+      lazy-rules
+      v-model="data[column.key || column.name]"
+      :type="column.inputType == 'number' ? 'number' : 'text'"
+      @keydown.enter="save(data[column.key || column.name])"
       :prefix="column.prefix"
       :sufix="column.sufix"
-      :editable="column.editable"
-      :inputType="getList(configs, column) ? 'list' : column.inputType"
-      :store="configs.store"
-      :mask="mask(column)"
+      @blur="changed"
+      :label="configs.labelType == 'stack-label' ? column.label : ''"
       :rules="[isInvalid()]"
-      :labelType="configs.labelType || 'stack-label'"
-      :showLabels="configs.showLabels"
-      :label="column.label"
-      :filters="getSearchFilters(column, row)"
-      :initialValue="editedValue"
-      :searchParam="column.searchParam || 'search'"
-      :formatOptions="column.formatList"
-      :searchAction="getList(configs, column)"
-      @focus="editingInit(row, column)"
-      @changed="
-        (value) => {
-          editedValue = value;
-        }
+      :reverse-fill-mask="
+        column.inputType == 'float' || column.inputType == 'number'
       "
-      @apply="stopEditing(row, column)"
-      @blur="stopEditing(row, column)"
-      @update:modelValue="stopEditing(row, column)"
-      @keydown.enter="stopEditing(row, column)"
-    />
+      :mask="column.mask || column.inputType == 'float' ? '#,##' : column.mask"
+      :fill-mask="
+        column.inputType == 'float' || column.inputType == 'number' ? 0 : ''
+      "
+    >
+      <template v-slot:append v-if="isSavingItem(data)">
+        <q-spinner-ios class="loading-primary" size="2em" />
+      </template>
+      <template v-slot:append v-if="column.inputType == 'icon'">
+        <q-icon :name="data[column.key || column.name]" />
+      </template>
+      <template v-slot:append v-if="column.inputType == 'color'">
+        <q-icon name="colorize" class="cursor-pointer">
+          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+            <q-color v-model="data[column.key || column.name]"> </q-color>
+            <div class="row items-center justify-end">
+              <q-btn
+                v-close-popup
+                :label="$tt(configs.store, 'btn', 'apply')"
+                @click="save(data[column.key || column.name])"
+                class="btn-primary"
+                flat
+              />
+            </div>
+          </q-popup-proxy>
+        </q-icon>
+      </template>
+    </q-input>
   </template>
 </template>
 <script>
 import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
-import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import { mapActions, mapGetters } from "vuex";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import debounce from "lodash/debounce";
-
+import SelectInput from "@controleonline/ui-default/src/components/Default/Common/Inputs/SelectInput";
+import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
 export default {
   components: {
     File,
-    FormInputs,
+    SelectInput,
+    Html,
   },
   props: {
     columnName: {
@@ -190,10 +283,11 @@ export default {
   },
   data() {
     return {
+      key: 0,
+      data: null,
       editing: [],
-      showEdit: [],
-      editedValue: false,
-      saveEditing: [],
+      data: false,
+      isItemSaved: [],
       tempValue: null,
     };
   },
@@ -203,6 +297,9 @@ export default {
     }),
     items() {
       return this.$store.getters[this.configs.store + "/items"] || [];
+    },
+    item() {
+      return this.$store.getters[this.configs.store + "/item"] || {};
     },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
@@ -235,7 +332,15 @@ export default {
       return this.getColumnByName(this.columnName);
     },
   },
+
+  created() {
+    this.data = this.$copyObject(this.row);
+    this.$store.commit(this.configs.store + "/SET_ITEM", this.row);
+  },
   watch: {
+    item() {
+      this.data = this.$copyObject(this.item);
+    },
     reload(reload) {
       if (reload == true) {
         this.$emit("loadData");
@@ -248,94 +353,92 @@ export default {
     reloadData() {
       this.$emit("reload");
     },
+
+    changed($event) {
+      if (this.column.inputType == "color") return;
+      this.$emit("blur", $event);
+      this.save(this.data[this.column.key || this.column.name]);
+    },
     tableColumnComponent(name) {
       if (this.configs.components?.customColumns)
         return this.configs.components?.customColumns[name];
     },
-    verifyClick(column, row) {
+    verifyClick(data) {
       if (column && typeof column.to == "function") {
-        const route = column.to(row[column.key || column.name], column, row);
+        const route = column.to(
+          data[this.column.key || this.column.name],
+          this.column,
+          data
+        );
         //if (route.target) {
         const url = this.$router.resolve(route).href;
         window.open(url, "_blank");
         //} else
-        //  this.$router.push(column.to(row[column.key || column.name], column, row));
+        //  this.$router.push(column.to(data[this.column.key || this.column.name], this.column, data));
       }
       return;
     },
 
-    increaseQuantity(column, row) {
-      let value = this.tempValue || this.formatData(column, row, false);
+    forceSave() {
+      this.$emit("forceSave");
+    },
+    isPreview() {
+      return this.column.preview && this.data && this.data["@id"];
+    },
+
+    increaseQuantity(column, data) {
+      let value = this.tempValue || this.formatData(column, data, false);
 
       value = (value || 0) + 1;
 
       this.tempValue = value;
-      this.save(row, column, value);
+      this.save(value);
     },
-    decreaseQuantity(column, row) {
+    decreaseQuantity(column, data) {
       let value =
         this.tempValue ||
-        (this.tempValue === 0 ? 0 : this.formatData(column, row, false));
+        (this.tempValue === 0 ? 0 : this.formatData(column, data, false));
 
       if (value && value >= 1) value--;
 
       this.tempValue = value;
-      this.save(row, column, parseFloat(value));
+      this.save(parseFloat(value));
     },
-    getColor(column, row) {
-      return column.color || row[column.key || column.name]
-        ? row[column.key || column.name].color
+    getColor(column, data) {
+      return column.color || data[column.key || column.name]
+        ? data[column.key || column.name].color
         : false;
     },
-    getIcon(column, row) {
-      return column.icon || row[column.key || column.name]
-        ? row[column.key || column.name].icon
-        : false;
-    },
-    editingInit(row, col) {
-      let index = this.getIndex(row);
-      return this.editing[index] && this.editing[index][col.key || col.name]
-        ? true
+    getIcon(column, data) {
+      return column.icon || data[column.key || column.name]
+        ? data[column.key || column.name].icon
         : false;
     },
 
-    startEditing(index, col, row, value) {
+    startEditing(col, data) {
+      let value = this.formatData(col, data, true);
+      let index = this.getIndex(data);
       if (col.editable == false || (col.key && col.key.indexOf(".") != -1))
         return;
 
-      if (col.list)
-        this.editedValue = this.formatList(
-          col,
-          this.items[index][col.key || col.name]
-        );
-      else this.editedValue = this.format(col, row, value);
+      if (col.list) this.data[col.key || col.name] = this.formatList(col, data);
+      else this.data[col.key || col.name] = this.format(col, data, value);
+
       this.editing[index] = { [col.key || col.name]: true };
-      this.showEdit[index] = { [col.key || col.name]: false };
     },
 
-    stopEditing(row, col) {
-      let index = this.getIndex(row);
-      let editing = this.$copyObject(this.editing);
-      editing[index] = {
-        [col.key || col.name]: false,
-      };
-
-      this.saveEditing[index] = {
-        [col.key || col.name]: true,
-      };
-      this.editing = editing;
-
-      this.save(row, col, this.editedValue?.value || this.editedValue);
-    },
     isInvalid() {
       return true;
     },
-    isEditing(row, col) {
-      let index = this.getIndex(row);
-      return this.saveEditing[index] &&
-        this.saveEditing[index][col.key || col.name]
+    isSavingItem(data) {
+      let index = this.getIndex(data);
+      return this.isItemSaved[index] &&
+        this.isItemSaved[index][this.column.key || this.column.name]
         ? true
         : false;
+    },
+    onSelected(value) {
+      this.data[this.column.key || this.column.name] = value;
     },
     saved(data) {
       let editIndex = this.getIndex(data);
@@ -345,30 +448,33 @@ export default {
       else items.push(data);
 
       this.$store.commit(this.configs.store + "/SET_ITEMS", items);
-
-      //this.tableKey++;
-
       this.$emit("saved", data);
-    },
-    save: debounce(function (row, col, value) {
-      let index = this.getIndex(row);
-      this.$store.commit(this.configs.store + "/SET_ITEM", row);
+      this.$emit("changed", data);
 
+      setTimeout(() => {
+        this.$store.commit(this.configs.store + "/SET_ITEM", data);
+        this.key++;
+      }, 300);
+    },
+    save: debounce(function (value) {
+      let data = this.$copyObject(this.data);
+      let col = this.$copyObject(this.column);
+      let index = this.getIndex(data);
       let c = col.list
-        ? this.formatList(col, row[col.key || col.name])?.value
-        : this.format(col, row, row[col.key || col.name]);
-      if (c == value) {
-        this.editing = [];
-        this.saveEditing[index] = {
-          [col.key || col.name]: false,
-        };
-        return;
-      }
+        ? this.formatList(col, this.item[col.key || col.name])?.value
+        : this.format(col, this.item, this.item[col.key || col.name]);
+
+      if (c == value) return;
+
+      this.isItemSaved[index] = {
+        [col.key || col.name]: true,
+      };
+
       let params = {};
-      if (row["@id"]) params["id"] = row["@id"].split("/").pop();
+      if (data["@id"]) params["id"] = data["@id"].split("/").pop();
 
       params[col.key || col.name] =
-        this.saveFormat(col.key || col.name, value, row) ||
+        this.saveFormat(col.key || col.name, value, data) ||
         (col.list
           ? null
           : col.inputType == "float" || col.inputType == "increase"
@@ -377,17 +483,10 @@ export default {
       if (this.myCompany && this.configs.companyParam != false)
         params[this.configs.companyParam || "company"] =
           "/people/" + this.myCompany?.id;
-
       this.$store
         .dispatch(this.configs.store + "/save", params)
         .then((data) => {
           if (data) {
-            let items = this.$copyObject(this.items);
-
-            if (index >= 0) items[index] = data;
-            else items.push(data);
-            this.$store.commit(this.configs.store + "/SET_ITEMS", items);
-            //this.tableKey++;
             this.$q.notify({
               message: this.$tt(this.configs.store, "message", "success"),
               position: "bottom",
@@ -413,7 +512,7 @@ export default {
         .finally(() => {
           this.editing = [];
           this.tempValue = null;
-          this.saveEditing[index] = {
+          this.isItemSaved[index] = {
             [col.key || col.name]: false,
           };
         });

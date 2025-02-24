@@ -125,7 +125,7 @@ export function formatData(column, row, editing) {
   let data = this.format(
     column,
     row,
-    this.getNameFromList(column, row, editing),
+    this.getNameFromList(column, row),
     editing
   );
 
@@ -147,8 +147,17 @@ export function shouldIncludeColumn(column) {
   return isVisibleFunction !== false && column.visible !== false;
 }
 
-export function getNameFromList(column, row, editing) {
+export function editingInit(data, col) {
+  let index = this.getIndex(data);
+  return this.editing[index] && this.editing[index][col.key || col.name]
+    ? true
+    : false;
+}
+
+export function getNameFromList(column, row) {
+  let editing = this.editingInit(row, column);
   let name = null;
+
   if (column.list == undefined || typeof column.list == "string") {
     return row[column.key || column.name];
   } else {
@@ -164,10 +173,12 @@ export function getNameFromList(column, row, editing) {
           (row[column.key || column.name] instanceof Object &&
           row[column.key || column.name]
             ? row[column.key || column.name]["@id"]
-                .split("/")
-                .pop()
-                .toString()
-                .trim()
+              ? row[column.key || column.name]["@id"]
+                  .split("/")
+                  .pop()
+                  .toString()
+                  .trim()
+              : row[column.key || column.name].value
             : row[column.key || column.name]
             ? row[column.key || column.name].toString().trim()
             : null)

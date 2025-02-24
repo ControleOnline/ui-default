@@ -1,14 +1,12 @@
 <template>
   <template v-for="(field, index) in extraFields" :key="key">
     <div :class="(field.formClass || getFilterSize()) + ' q-pa-xs'">
-      <FormInputs
-        :column="{}"
-        :editable="true"
-        :inputType="field.type"
-        :rules="field.rules"
-        :labelType="'outer-label'"
-        :label="field.name"
-        :initialValue="extraData.data[field.id]"
+      <DefaultInput
+        :columnName="''"
+        :row="field"
+        :configs="configs"
+        @saved="saved"
+        @loadData="loadData"
         @changed="
           (value) => {
             extraData.data[field.id] = value;
@@ -20,7 +18,6 @@
 </template>
 
 <script>
-import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -34,9 +31,7 @@ export default {
       required: true,
     },
   },
-  components: {
-    FormInputs,
-  },
+  components: {},
   data() {
     return {
       key: 0,

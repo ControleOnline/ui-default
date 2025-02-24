@@ -37,6 +37,8 @@
 </template>
 
 <script>
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
+
 export default {
   props: {
     multiple: {
@@ -60,10 +62,9 @@ export default {
       required: false,
       default: {},
     },
-    initialValue: {
+    column: {
       type: Object,
       required: false,
-      default: [],
     },
     searchParam: {
       type: String,
@@ -74,7 +75,7 @@ export default {
       type: Function,
       required: true,
     },
-    disable:{
+    disable: {
       type: Boolean,
       required: false,
     },
@@ -87,25 +88,36 @@ export default {
     isLoadingList() {
       return this.$store.getters[this.store + "/isLoadingList"];
     },
+    item() {
+      return this.$store.getters[this.store + "/item"];
+    },
   },
   data() {
     return {
       data: [],
       options: [],
+      loading: true,
     };
   },
   created() {
-    this.data = this.$copyObject(this.initialValue);
+    this.data = this.formatList(
+      this.column,
+      this.item[this.column.key || this.column.name]
+    );
+    setTimeout(() => {
+      this.loading = false;
+    }, 300);
   },
   watch: {
     data: {
       handler: function (data) {
-        this.$emit("selected", data);
+        if (!this.loading) this.$emit("selected", data);
       },
       deep: true,
     },
   },
   methods: {
+    ...DefaultFiltersMethods,
     searchList(input, update, abort) {
       let params = this.filters;
       if (input.length > 0) params[this.searchParam] = input;

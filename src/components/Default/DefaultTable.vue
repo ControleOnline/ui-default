@@ -507,8 +507,7 @@
                           props.row,
                           getNameFromList(
                             column,
-                            props.row,
-                            column.key || column.name
+                            props.row
                           )
                         )
                       }}
@@ -524,8 +523,7 @@
                           props.row,
                           getNameFromList(
                             column,
-                            props.row,
-                            column.key || column.name
+                            props.row
                           )
                         )
                       }}
@@ -709,7 +707,6 @@
 <script>
 import DefaultExternalFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultExternalFilters";
 import FilterInputs from "@controleonline/ui-default/src/components/Default/Filters/FilterInputs";
-import FormInputs from "@controleonline/ui-default/src/components/Default/Common/FormInputs";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
@@ -736,7 +733,6 @@ export default {
     DefaultDelete,
     DefaultExternalFilters,
     FilterInputs,
-    FormInputs,
     ToolBar,
   },
 
