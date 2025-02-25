@@ -247,8 +247,9 @@ export function saveFormat(columnName, value, row) {
 
   if (column.saveFormat instanceof Function)
     return column.saveFormat(value, column, row);
-  else if (value instanceof Object)
-    return !isNaN(value.value) ? parseFloat(value.value) : value.value;
+  else if (value instanceof Object && value?.value)
+    return !isNaN(value?.value) ? parseFloat(value?.value) : value?.value;
+  else if (value instanceof Object && value["@id"]) return value["@id"];
 
   return !isNaN(value) ? parseFloat(value) : value;
 }

@@ -12,14 +12,14 @@
           :class="getFilterSize(column)"
         >
           <DefaultInput
-            :row="getInitialData(column)"
-            :column="column"
+            :row="data"
+            :columnName="column.key || column.name"
             :configs="configs"
             @focus="editingInit(column)"
             @forceSave="onSubmit"
             @changed="
               (value) => {
-                item[column.key || column.name] = value;
+                changed(value,column)
               }
             "
           />
@@ -97,7 +97,6 @@ export default {
   },
   created() {
     this.getFilteredColumns();
-
     if (this.configs.loadOnEdit && this.data && this.data["@id"])
       this.$store
         .dispatch(
@@ -143,15 +142,6 @@ export default {
     ...mapActions({
       getExtraFields: "extra_fields/getItems",
     }),
-
-    getInitialData(column) {
-      if (this.item[column.key || column.name])
-        return this.item[column.key || column.name];
-
-      return this.configs?.initialData
-        ? this.configs?.initialData[column.key || column.name]
-        : null;
-    },
 
     getData(initialData) {
       let data = {};
@@ -229,6 +219,9 @@ export default {
             " col-xl-" +
             size) + " q-pa-xs"
       );
+    },
+    changed(data,column){
+
     },
     changedExtraData(data) {
       this.extraData = data;

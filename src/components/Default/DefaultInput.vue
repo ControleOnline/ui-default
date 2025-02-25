@@ -46,11 +46,7 @@
       :label="column.name"
       multiple
       :key="key"
-      @save="
-        (value, index) => {
-          this.save(value['@id']);
-        }
-      "
+      @save="save"
     />
     <File
       v-if="!isPreview()"
@@ -460,9 +456,10 @@ export default {
       let data = this.$copyObject(this.data);
       let col = this.$copyObject(this.column);
       let index = this.getIndex(data);
+      let item = this.item[col.key || col.name] || value;
       let c = col.list
-        ? this.formatList(col, this.item[col.key || col.name])?.value
-        : this.format(col, this.item, this.item[col.key || col.name]);
+        ? this.formatList(col, item)?.value
+        : this.format(col, this.item, item);
 
       if (c == value) return;
 
@@ -472,7 +469,6 @@ export default {
 
       let params = {};
       if (data["@id"]) params["id"] = data["@id"].split("/").pop();
-
       params[col.key || col.name] =
         this.saveFormat(col.key || col.name, value, data) ||
         (col.list
