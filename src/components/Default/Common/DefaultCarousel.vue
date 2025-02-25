@@ -20,6 +20,7 @@
       <template v-slot:control>
         <q-carousel-control position="bottom-right" :offset="[18, 18]">
           <File
+            v-if="configs.isAdmin"
             :editable="true"
             :data="slide.file"
             :fileType="['image']"
