@@ -22,7 +22,7 @@
           <File
             v-if="configs.isAdmin"
             :editable="true"
-            :data="slide.file"
+            :data="slide?.file"
             :fileType="['image']"
             @save="selected"
           />
