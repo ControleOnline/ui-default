@@ -16,6 +16,8 @@
         :alt="slide.name"
         :name="slide.id"
         :img-src="slide.src"
+        class="product-image"
+        height="300px"
       />
       <template v-slot:control>
         <q-carousel-control position="bottom-right" :offset="[18, 18]">
@@ -111,5 +113,13 @@ export default {
 .img-box > div {
   border: 2px #bcbcbc dotted;
   border-radius: 5px;
+}
+
+.product-image {
+  background-position: center;
+  background-size: contain;
+  object-fit: cover;
+  border-bottom: 1px solid #e0e0e0;
+  background-repeat: no-repeat;
 }
 </style>
