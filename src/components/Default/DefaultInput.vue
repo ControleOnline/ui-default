@@ -294,9 +294,6 @@ export default {
     items() {
       return this.$store.getters[this.configs.store + "/items"] || [];
     },
-    item() {
-      return this.$store.getters[this.configs.store + "/item"] || {};
-    },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
     },
@@ -331,12 +328,8 @@ export default {
 
   created() {
     this.data = this.$copyObject(this.row);
-    this.$store.commit(this.configs.store + "/SET_ITEM", this.row);
   },
   watch: {
-    item() {
-      this.data = this.$copyObject(this.item);
-    },
     reload(reload) {
       if (reload == true) {
         this.$emit("loadData");
@@ -417,9 +410,9 @@ export default {
       if (col.editable == false || (col.key && col.key.indexOf(".") != -1))
         return;
 
-      if (col.list) this.data[col.key || col.name] = this.formatList(col, data);
-      else this.data[col.key || col.name] = this.format(col, data, value);
-
+      //if (col.list) this.data[col.key || col.name] = this.formatList(col, data);
+      //else this.data[col.key || col.name] = this.format(col, data, value);
+      this.$store.commit(this.configs.store + "/SET_ITEM", data);
       this.editing[index] = { [col.key || col.name]: true };
     },
 
@@ -434,34 +427,42 @@ export default {
         : false;
     },
     onSelected(value) {
-      this.data[this.column.key || this.column.name] = value;
+      this.save(value);
+    },
+
+    clearFields() {
+      this.editing = [];
+      this.tempValue = null;
+      this.isItemSaved = [];
+      this.key++;
     },
     saved(data) {
-      let editIndex = this.getIndex(data);
       let items = this.$copyObject(this.items);
-
+      let editIndex = this.getIndex(data);
       if (editIndex >= 0) items[editIndex] = data;
       else items.push(data);
-
-      this.$store.commit(this.configs.store + "/SET_ITEMS", items);
+      this.data = items;
+      this.$store.commit(this.configs.store + "/SET_ITEMS", this.data);
       this.$emit("saved", data);
       this.$emit("changed", data);
+    },
 
-      setTimeout(() => {
-        this.$store.commit(this.configs.store + "/SET_ITEM", data);
-        this.key++;
-      }, 300);
+    getValue(data) {
+      let col = this.$copyObject(this.column);
+
+      return col.list
+        ? this.formatList(col, data)?.value
+        : this.format(col, this.row, data);
     },
     save: debounce(function (value) {
       let data = this.$copyObject(this.data);
       let col = this.$copyObject(this.column);
       let index = this.getIndex(data);
-      let item = this.item[col.key || col.name] || value;
-      let c = col.list
-        ? this.formatList(col, item)?.value
-        : this.format(col, this.item, item);
+      let item = this.row[col.key || col.name] || value;
+      let c = this.getValue(item);
+      let d = this.getValue(value);
 
-      if (c == value) return;
+      if (c == d) return this.clearFields();
 
       this.isItemSaved[index] = {
         [col.key || col.name]: true,
@@ -506,13 +507,9 @@ export default {
           });
         })
         .finally(() => {
-          this.editing = [];
-          this.tempValue = null;
-          this.isItemSaved[index] = {
-            [col.key || col.name]: false,
-          };
+          this.clearFields();
         });
-    }, 500),
+    }, 100),
   },
 };
 </script>
