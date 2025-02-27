@@ -353,17 +353,16 @@ export default {
         return this.configs.components?.customColumns[name];
     },
     verifyClick(data) {
-      if (column && typeof column.to == "function") {
-        const route = column.to(
+      if (this.column && typeof this.column.to == "function") {
+        const route = this.column.to(
           data[this.column.key || this.column.name],
           this.column,
           data
         );
-        //if (route.target) {
-        const url = this.$router.resolve(route).href;
-        window.open(url, "_blank");
-        //} else
-        //  this.$router.push(column.to(data[this.column.key || this.column.name], this.column, data));
+        if (this.column.target) {
+          const url = this.$router.resolve(route).href;
+          window.open(url, this.column.target || null);
+        } else this.$router.push(route);
       }
       return;
     },
