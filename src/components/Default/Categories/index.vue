@@ -43,7 +43,7 @@ export default {
       context: this.context,
       company: "/people/" + this.myCompany.id,
     };
-    this.$store.commit("categories" + "/SET_FILTERS", filters);
+    this.setFilters(filters);
   },
   mounted() {
     this.$nextTick(() => {
@@ -51,7 +51,9 @@ export default {
     });
   },
   methods: {
-    ...mapActions({}),
+    ...mapActions({
+      setFilters: "categories/SET_FILTERS",
+    }),
   },
 };
 </script>

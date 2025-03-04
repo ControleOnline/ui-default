@@ -2,12 +2,9 @@
   <DefaultTable :configs="configs" v-if="configs" />
 </template>
 <script>
-
 import { mapActions, mapGetters } from "vuex";
 export default {
-  components: {
-
-  },
+  components: {},
   props: {
     context: {
       required: true,
@@ -45,10 +42,12 @@ export default {
       context: this.context,
       company: "/people/" + this.myCompany.id,
     };
-    this.$store.commit("status" + "/SET_FILTERS", filters);
+    this.setFilters(filters);
   },
   methods: {
-    ...mapActions({}),
+    ...mapActions({
+      setFilters: "status/SET_FILTERS",
+    }),
   },
 };
 </script>

@@ -2,12 +2,9 @@
   <DefaultTable :configs="configs" />
 </template>
 <script>
-
 import { mapActions, mapGetters } from "vuex";
 export default {
-  components: {
-
-  },
+  components: {},
   props: {
     config: {
       required: true,
@@ -39,10 +36,12 @@ export default {
       context: this.config.context,
       company: "/people/" + this.config.people.id,
     };
-    this.$store.commit("imports" + "/SET_FILTERS", filters);
+    this.setFilters(filters);
   },
   methods: {
-    ...mapActions({}),
+    ...mapActions({
+      setFilters: "imports/SET_FILTERS",
+    }),
   },
 };
 </script>
