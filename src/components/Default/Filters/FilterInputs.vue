@@ -106,12 +106,10 @@ export default {
       return this.$store.getters[this.configs.store + "/isLoadingList"];
     },
     filters() {
-      return this.$store.getters[this.configs.store + "/filters"] || {};
+      return this.$store.getters[this.configs.store + "/filters"];
     },
     columns() {
-      return this.$copyObject(
-        this.$store.getters[this.configs.store + "/columns"]
-      );
+      return this.$store.getters[this.configs.store + "/columns"];
     },
   },
   data() {
@@ -152,7 +150,7 @@ export default {
     },
     changedDateInput(dateModel) {
       let filters = this.$copyObject(this.filters);
-      let filter = filters[this.column.key || this.column.name] || {};
+      let filter = filters[this.column.key || this.column.name];
       if (dateModel.from)
         filter.after = this.$formatter.buildAmericanDate(dateModel.from);
       else delete filter.after;

@@ -802,7 +802,7 @@ export default {
       return this.$store.getters[this.configs.store + "/isSaving"];
     },
     filters() {
-      return this.$store.getters[this.configs.store + "/filters"] || {};
+      return this.$store.getters[this.configs.store + "/filters"];
     },
     totalItems() {
       return this.$store.getters[this.configs.store + "/totalItems"];
@@ -817,7 +817,7 @@ export default {
       return this.$store.getters[this.configs.store + "/reload"];
     },
     selected() {
-      return this.$store.getters[this.configs.store + "/selected"] || [];
+      return this.$store.getters[this.configs.store + "/selected"];
     },
   },
   watch: {

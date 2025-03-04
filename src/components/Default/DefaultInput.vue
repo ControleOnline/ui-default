@@ -292,7 +292,7 @@ export default {
       myCompany: "people/currentCompany",
     }),
     items() {
-      return this.$store.getters[this.configs.store + "/items"] || [];
+      return this.$store.getters[this.configs.store + "/items"];
     },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
@@ -304,7 +304,7 @@ export default {
       return this.$store.getters[this.configs.store + "/isSaving"];
     },
     filters() {
-      return this.$store.getters[this.configs.store + "/filters"] || {};
+      return this.$store.getters[this.configs.store + "/filters"];
     },
     totalItems() {
       return this.$store.getters[this.configs.store + "/totalItems"];
@@ -319,7 +319,7 @@ export default {
       return this.$store.getters[this.configs.store + "/reload"];
     },
     selected() {
-      return this.$store.getters[this.configs.store + "/selected"] || [];
+      return this.$store.getters[this.configs.store + "/selected"];
     },
     column() {
       return this.getColumnByName(this.columnName);

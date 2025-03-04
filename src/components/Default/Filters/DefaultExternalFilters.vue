@@ -82,9 +82,7 @@ export default {
   },
   computed: {
     columns() {
-      return this.$copyObject(
-        this.$store.getters[this.configs.store + "/columns"]
-      );
+      return this.$store.getters[this.configs.store + "/columns"];
     },
     tableFilterComponent() {
       return this.configs?.components?.customFilters || [];
@@ -96,7 +94,7 @@ export default {
       );
     },
     filters() {
-      return this.$store.getters[this.configs.store + "/filters"] || {};
+      return this.$store.getters[this.configs.store + "/filters"];
     },
   },
   data() {
