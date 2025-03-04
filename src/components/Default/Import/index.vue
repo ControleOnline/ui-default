@@ -40,7 +40,7 @@ export default {
   },
   methods: {
     ...mapActions({
-      setFilters: "imports/SET_FILTERS",
+      setFilters: "imports/setFilters",
     }),
   },
 };

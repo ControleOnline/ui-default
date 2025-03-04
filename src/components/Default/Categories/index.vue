@@ -52,7 +52,7 @@ export default {
   },
   methods: {
     ...mapActions({
-      setFilters: "categories/SET_FILTERS",
+      setFilters: "categories/setFilters",
     }),
   },
 };

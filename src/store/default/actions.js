@@ -24,7 +24,10 @@ export const getItems = ({ commit, getters }, params = {}) => {
 export const get = ({ commit, getters }, id) => {
   commit(types.SET_ISLOADING, true);
   return api
-    .fetch(getters.resourceEndpoint + "/" + id.toString().replace(/\D/g, ""), {})
+    .fetch(
+      getters.resourceEndpoint + "/" + id.toString().replace(/\D/g, ""),
+      {}
+    )
     .then((data) => {
       commit(types.SET_ITEM, data);
       return data;
@@ -81,3 +84,11 @@ export const remove = ({ commit, getters }, id) => {
       commit(types.SET_ISSAVING, false);
     });
 };
+
+export const setFilters = ({ commit, getters }, params = {}) => {
+  commit(types.SET_FILTERS, params);
+};
+
+export const setItem = ({ commit, getters }, params = {}) => {
+  commit(types.SET_ITEM, params);
+}

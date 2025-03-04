@@ -46,7 +46,7 @@ export default {
   },
   methods: {
     ...mapActions({
-      setFilters: "status/SET_FILTERS",
+      setFilters: "status/setFilters",
     }),
   },
 };
