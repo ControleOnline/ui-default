@@ -124,7 +124,7 @@ export default {
     this.colFilter = this.$copyObject(this.filters);
     this.$store.commit(
       this.configs.store + "/SET_ITEM",
-      this.colFilter[this.column.key || this.column.name]
+      this.colFilter[this.column.key || this.column.name] || {}
     );
   },
 
