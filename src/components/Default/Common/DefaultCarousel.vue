@@ -10,6 +10,7 @@
       infinite
       swipeable
       thumbnails
+      :autoplay="5000"
     >
       <q-carousel-slide
         v-for="(slide, index) in slides"
