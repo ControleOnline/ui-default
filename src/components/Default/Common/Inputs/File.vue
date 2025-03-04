@@ -34,6 +34,9 @@ export default {
     data: {
       required: true,
     },
+    context: {
+      required: true,
+    },
     disable: {
       required: false,
     },
@@ -64,7 +67,7 @@ export default {
       return {
         icon:
           this.data && this.data.fileType == "image" ? "image" : "description",
-        context: "file",
+        context: this.context,
         "full-height": true,
         class: "upload-icon q-pa-xs btn-primary",
         label: this.label,

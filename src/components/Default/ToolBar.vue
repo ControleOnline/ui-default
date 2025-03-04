@@ -46,7 +46,14 @@
         @saved="$emit('saved')"
         @loadData="$emit('loadData')"
         :configs="{
-          icon: 'card_travel', // spoke, card_travel and stacks
+          components: {
+            customColumns: {
+              categoryFiles: {
+                component: this.$components.EditCarousel,
+              },
+            },
+          },
+          icon: 'card_travel',
           store: 'categories',
           context: category,
           component: component.Categories,

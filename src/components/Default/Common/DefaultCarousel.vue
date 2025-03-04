@@ -26,6 +26,7 @@
             :editable="true"
             :data="slide?.file"
             :fileType="['image']"
+            :context="configs.context"
             @save="selected"
           />
           <q-btn
@@ -96,9 +97,10 @@ export default {
       let slides = [];
 
       this.carousel.forEach((file, i) => {
-        if (!this.slide || slide) this.slide = slide || file.file.id;
+        if (!this.slide || slide)
+          this.slide = slide || file.file?.id || file?.file.replace(/\D/g, "");
         slides.push({
-          id: file.file.id,
+          id: file.file?.id || file?.file.replace(/\D/g, ""),
           file: file.file,
 
           src: this.$image(file.file),

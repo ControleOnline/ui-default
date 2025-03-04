@@ -22,7 +22,8 @@
   <template v-if="tableColumnComponent(column.key || column.name)">
     <DefaultComponent
       :componentConfig="tableColumnComponent(column.key || column.name)"
-      :row="data[column.key || column.name]"
+      :row="data"
+      :column="column"
       :configs="configs"
       @saved="saved"
       @loadData="loadData"
@@ -38,6 +39,7 @@
   </q-btn>
   <template v-else-if="column.inputType == 'file'">
     <File
+      :context="configs.context || configs.store"
       :disable="column.editable == false"
       :editable="column.editable"
       :fileType="column.fileType"
@@ -56,6 +58,7 @@
           ? ''
           : { position: 'absolute', 'z-index': 2, 'margin-top': '15px' }
       "
+      :context="configs.context || configs.store"
       :row="data[column.key || column.name]"
       :fileType="column.fileType"
       :disable="column.editable == false"
@@ -282,7 +285,7 @@ export default {
       key: 0,
       data: null,
       editing: [],
-      data: false,
+
       isItemSaved: [],
       tempValue: null,
     };

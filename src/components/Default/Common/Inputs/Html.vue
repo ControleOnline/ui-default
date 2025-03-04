@@ -17,6 +17,7 @@
           :data="item"
           :fileType="['text']"
           @save="changed"
+          :context="'mudar'"
         />
       </q-input>
     </label>

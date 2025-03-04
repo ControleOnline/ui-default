@@ -124,6 +124,10 @@ export default {
       required: false,
       default: true,
     },
+    context: {
+      type: String,
+      required: true,
+    },
     extraData: {
       type: Array,
       required: false,
@@ -185,6 +189,7 @@ export default {
     getFields() {
       let data = this.$copyObject(this.extraData);
       data.push({ name: "people", value: this.myCompany?.id });
+      data.push({ name: "context", value: this.context });
       let item = (this.item.id || this.item["@id"] || this.item).toString();
       if (item)
         data.push({

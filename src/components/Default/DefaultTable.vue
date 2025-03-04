@@ -546,6 +546,7 @@
                   :disable="column.editable == false"
                   :editable="column.editable"
                   :fileType="column.fileType"
+                  :context="configs.context || configs.store"
                   :data="formatData(column, props.row, true)"
                   @save="
                     (value) => {
