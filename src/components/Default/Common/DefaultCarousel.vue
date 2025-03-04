@@ -1,7 +1,7 @@
 <template>
   <div class="row img-box q-pa-md col-12">
     <q-carousel
-      class="full-width"
+      class="full-width default-carousel"
       animated
       v-model="slide"
       v-model:fullscreen="fullscreen"
@@ -124,5 +124,8 @@ export default {
   object-fit: cover;
   border-bottom: 1px solid #e0e0e0;
   background-repeat: no-repeat;
+}
+.q-carousel .q-carousel__control .q-btn i {
+  color: var(--primary) !important;
 }
 </style>
