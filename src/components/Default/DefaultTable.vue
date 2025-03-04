@@ -541,20 +541,7 @@
                 v-for="(column, index) in columns"
                 :key="column.key || column.name"
               >
-                <File
-                  v-if="column.inputType == 'file' && !column.isIdentity"
-                  :disable="column.editable == false"
-                  :editable="column.editable"
-                  :fileType="column.fileType"
-                  :context="configs.context || configs.store"
-                  :data="formatData(column, props.row, true)"
-                  @save="
-                    (value) => {
-                      this.saveFile(props.row, column, value);
-                    }
-                  "
-                />
-                <q-item v-else-if="!column.isIdentity">
+                <q-item v-if="!column.isIdentity">
                   <q-item-section>
                     <q-item-label>{{
                       $tt(configs.store, "input", column.label)
