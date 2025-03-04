@@ -5,19 +5,19 @@
       animated
       v-model="slide"
       v-model:fullscreen="fullscreen"
-      arrows
-      navigation
+      :arrows="configs.arrows != false && slides.length > 1"
       infinite
       swipeable
-      thumbnails
-      :autoplay="5000"
+      :thumbnails="configs.thumbnails != false && slides.length > 1"
+      :navigation="configs.navigation == true && slides.length > 1"
+      :autoplay="configs.autoplay == false ? false : configs.autoplay || 5000"
     >
       <q-carousel-slide
         v-for="(slide, index) in slides"
         :alt="slide.name"
         :name="slide.id"
         :img-src="slide.src"
-        class="product-image"
+        class="carosel-image full-width"
         height="300px"
       />
       <template v-slot:control>
@@ -31,6 +31,7 @@
             @save="selected"
           />
           <q-btn
+            v-if="configs.zoom != false"
             push
             round
             dense
@@ -118,12 +119,12 @@ export default {
   border-radius: 5px;
 }
 
-.product-image {
+.carosel-image {
   background-position: center;
-  background-size: contain;
   object-fit: cover;
   border-bottom: 1px solid #e0e0e0;
   background-repeat: no-repeat;
+  background-size: contain;
 }
 .q-carousel .q-carousel__control .q-btn i {
   color: var(--primary) !important;
