@@ -16,6 +16,24 @@ export function sendFilterColumn(colName) {
   }
   this.applyFilters(filters);
 }
+export function isSavingItem(data) {
+  let index = this.getIndex(data);
+  return this.isItemSaved[index] &&
+    this.isItemSaved[index][this.column.key || this.column.name]
+    ? true
+    : false;
+}
+export function getColor(column, data) {
+  return column.color || data[column.key || column.name]
+    ? data[column.key || column.name].color
+    : false;
+}
+
+export function getIcon(column, data) {
+  return column.icon || data[column.key || column.name]
+    ? data[column.key || column.name].icon
+    : false;
+}
 
 export function addFilter(key, value) {
   this.loadPersistentFilters();

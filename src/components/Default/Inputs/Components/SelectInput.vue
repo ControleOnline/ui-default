@@ -25,9 +25,12 @@
         : column.label
     "
     v-model="data"
-    @blur="this.$emit('blur', $event)"
+    @blur="save(data[column.key || column.name])"
     @focus="this.$emit('focus', $event)"
   >
+    <template v-slot:append v-if="isSavingItem(data)">
+      <q-spinner-ios class="loading-primary" size="2em" />
+    </template>
     <template v-slot:no-option v-if="!isLoadingList">
       <q-item>
         <q-item-section class="text-grey"> No results </q-item-section>
@@ -45,7 +48,6 @@ export default {
       required: false,
       default: false,
     },
-
     row: {
       type: Object,
       required: false,
@@ -54,12 +56,18 @@ export default {
       type: Object,
       required: false,
     },
+    isItemSaved: {
+      required: true,
+    },
     configs: {
       type: Object,
       required: true,
     },
   },
   computed: {
+    items() {
+      return this.$store.getters[this.configs.store + "/items"];
+    },
     isLoadingList() {
       return this.$store.getters[this.configs.store + "/isLoadingList"];
     },
@@ -88,13 +96,16 @@ export default {
   watch: {
     data: {
       handler: function (data) {
-        if (!this.loading) this.$emit("selected", data);
+        if (!this.loading) this.save(data);
       },
       deep: true,
     },
   },
   methods: {
     ...DefaultFiltersMethods,
+    save(data) {
+      this.$emit("save", data);
+    },
     searchList(input, update, abort) {
       let params = this.getSearchFilters(this.column, this.row);
       if (input.length > 0)

@@ -22,7 +22,7 @@
       />
       <template v-slot:control>
         <q-carousel-control position="bottom-right" :offset="[18, 18]">
-          <File
+          <DefaultFile
             v-if="configs.isAdmin"
             :editable="true"
             :data="slide?.file"

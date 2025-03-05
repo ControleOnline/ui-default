@@ -1,23 +1,5 @@
 <template>
-  <label
-    v-if="
-      configs.showLabels &&
-      configs.labelType != 'stack-label' &&
-      configs.store &&
-      (!column.preview || !data || !data['@id'])
-    "
-  >
-    {{ $tt(configs.store, "input", column.label) }}
-  </label>
-  <label
-    v-else-if="
-      configs.showLabels &&
-      configs.labelType != 'stack-label' &&
-      (!column.preview || !data || !data['@id'])
-    "
-  >
-    {{ column.label }}
-  </label>
+  <DefaultLabel :configs="configs" :column="column" />
 
   <template v-if="tableColumnComponent(column.key || column.name)">
     <DefaultComponent
@@ -37,48 +19,15 @@
     :icon="getIcon(column, data)"
     >{{ this.format(column, data, getNameFromList(column, data)) }}
   </q-btn>
-  <template v-else-if="column.inputType == 'file'">
-    <File
-      :context="configs.context || configs.store"
-      :disable="column.editable == false"
-      :editable="column.editable"
-      :fileType="column.fileType"
-      :labelType="configs.labelType || 'stack-label'"
-      :row="formatData(column, data, true)"
-      :label="column.name"
-      multiple
-      :key="key"
-      @save="save"
-    />
-    <File
-      v-if="!isPreview()"
-      class="file-preview"
-      :style="
-        !isPreview()
-          ? ''
-          : { position: 'absolute', 'z-index': 2, 'margin-top': '15px' }
-      "
-      :context="configs.context || configs.store"
-      :row="data[column.key || column.name]"
-      :fileType="column.fileType"
-      :disable="column.editable == false"
-      :editable="column.editable"
-      :labelType="configs.labelType"
-      :label="column.label"
-      multiple
-      :key="key"
-      @save="save"
-    />
-    <Html
-      v-if="column.inputType == 'file' && isPreview()"
-      :readonly="column.editInline != true"
-      :editInline="column.editInline"
-      :key="key"
-      :row="data[column.key || column.name]"
-      @saved="forceSave"
-      @changed="changed"
-    />
-  </template>
+
+  <FileInput
+    v-else-if="column.inputType == 'file'"
+    :configs="configs"
+    :row="data"
+    :column="column"
+    :isItemSaved="isItemSaved"
+    @save="save"
+  />
 
   <template v-else-if="editingInit(data, column) != true">
     <template v-if="column.multiline == true">
@@ -86,8 +35,9 @@
         <span :style="{ color: getColor(column, data) }">
           {{ column.prefix }}
           {{ v }}
-          {{ column.sufix }} </span
-        ><br />
+          {{ column.sufix }}
+        </span>
+        <br />
         <q-separator class="full-width" />
       </template>
     </template>
@@ -101,34 +51,13 @@
           color="grey"
           @click="decreaseQuantity(column, data)"
         />
-        <span
-          :style="{ color: getColor(column, data) }"
-          @click="startEditing(column, data)"
-          @mouseenter="isHover(true)"
-          @mouseleave="isHover(false)"
-        >
-          <template v-if="getIcon(column, data)">
-            <q-icon
-              :color="getColor(column, data)"
-              :name="getIcon(column, data)"
-            />
-          </template>
-          <template v-if="column.inputType == 'icon'">
-            <q-icon
-              :color="getColor(column, data)"
-              :name="formatData(column, data, true)"
-            />
-          </template>
-          {{ column.prefix }}
-          {{ tempValue != null ? tempValue : formatData(column, data, false) }}
-          {{ column.sufix }}
-          <q-icon
-            v-if="isEditable() && !isSaving"
-            size="1.0em"
-            :name="column.list ? 'unfold_more' : 'edit'"
-          />
-          <q-icon v-else="!isSaving" size="1.0em" name="" />
-        </span>
+        <DefaultSpan
+          :configs="configs"
+          :row="data"
+          :column="column"
+          :editing="editing"
+          @startEditing="startEditing"
+        />
         <q-btn
           v-if="column.inputType === 'increase' && column.editable == true"
           flat
@@ -142,111 +71,56 @@
   </template>
 
   <template v-else>
-    <q-input
-      :disable="column.editable == false"
-      outlined
-      dense
+    <DateInput
       v-if="column.inputType == 'date-range'"
-      v-model="data[column.key || column.name]"
-      mask="##/##/####"
-      :rules="['$formatter.validateBRDate']"
-      @keydown.enter="save(data[column.key || column.name])"
-    >
-      <template v-slot:append>
-        <q-icon name="event" class="cursor-pointer">
-          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-            <q-date
-              v-model="tempDate"
-              @update:modelValue="
-                (val) =>
-                  (data[column.key || column.name] =
-                    $formatter.formatDateToBR(val))
-              "
-            >
-              <div class="row items-center justify-end">
-                <q-btn
-                  v-close-popup
-                  :label="$tt(configs.store, 'btn', 'apply')"
-                  @click="save(row, column)"
-                  class="btn-primary"
-                  flat
-                />
-              </div>
-            </q-date>
-          </q-popup-proxy>
-        </q-icon>
-      </template>
-    </q-input>
-
+      :configs="configs"
+      :row="data"
+      :column="column"
+      :isItemSaved="isItemSaved"
+      @save="save"
+    />
     <SelectInput
       v-else-if="getList(configs, column)"
       multiple
       :configs="configs"
       :row="data"
       :column="column"
-      @blur="changed"
-      @selected="onSelected"
+      :isItemSaved="isItemSaved"
+      @save="save"
     />
-    <q-input
-      outlined
+    <TextInput
       v-else
-      :disable="column.editable == false"
-      dense
-      :stack-label="configs.labelType == 'stack-label'"
-      lazy-rules
-      v-model="data[column.key || column.name]"
-      :type="column.inputType == 'number' ? 'number' : 'text'"
-      @keydown.enter="save(data[column.key || column.name])"
-      :prefix="column.prefix"
-      :sufix="column.sufix"
-      @blur="changed"
-      :label="configs.labelType == 'stack-label' ? column.label : ''"
-      :rules="[isInvalid()]"
-      :reverse-fill-mask="
-        column.inputType == 'float' || column.inputType == 'number'
-      "
-      :mask="column.mask || column.inputType == 'float' ? '#,##' : column.mask"
-      :fill-mask="
-        column.inputType == 'float' || column.inputType == 'number' ? 0 : ''
-      "
-    >
-      <template v-slot:append v-if="isSavingItem(data)">
-        <q-spinner-ios class="loading-primary" size="2em" />
-      </template>
-      <template v-slot:append v-if="column.inputType == 'icon'">
-        <q-icon :name="data[column.key || column.name]" />
-      </template>
-      <template v-slot:append v-if="column.inputType == 'color'">
-        <q-icon name="colorize" class="cursor-pointer">
-          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-            <q-color v-model="data[column.key || column.name]"> </q-color>
-            <div class="row items-center justify-end">
-              <q-btn
-                v-close-popup
-                :label="$tt(configs.store, 'btn', 'apply')"
-                @click="save(data[column.key || column.name])"
-                class="btn-primary"
-                flat
-              />
-            </div>
-          </q-popup-proxy>
-        </q-icon>
-      </template>
-    </q-input>
+      :configs="configs"
+      :row="data"
+      :column="column"
+      :isItemSaved="isItemSaved"
+      @save="save"
+    />
   </template>
 </template>
 <script>
-import File from "@controleonline/ui-default/src/components/Default/Inputs/Components/File.vue";
+import File from "@controleonline/ui-default/src/components/Default/Common/DefaultFile.vue";
 import { mapActions, mapGetters } from "vuex";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import debounce from "lodash/debounce";
 import SelectInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/SelectInput";
-import Html from "@controleonline/ui-default/src/components/Default/Inputs/Components/Html.vue";
+import Html from "@controleonline/ui-default/src/components/Default/Common/DefaultHtml.vue";
+import DateInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/DateInput";
+import TextInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/TextInput";
+import DefaultLabel from "@controleonline/ui-default/src/components/Default/Inputs/Components/DefaultLabel";
+import FileInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/FileInput";
+import DefaultSpan from "@controleonline/ui-default/src/components/Default/Inputs/Components/DefaultSpan";
+
 export default {
   components: {
     File,
     SelectInput,
+    DateInput,
     Html,
+    TextInput,
+    DefaultLabel,
+    FileInput,
+    DefaultSpan,
   },
   props: {
     columnName: {
@@ -267,7 +141,7 @@ export default {
       key: 0,
       data: null,
       editing: [],
-      hover: [],
+
       isItemSaved: [],
       tempValue: null,
     };
@@ -310,7 +184,6 @@ export default {
       return this.getColumnByName(this.columnName);
     },
   },
-
   created() {
     this.data = this.$copyObject(this.row);
   },
@@ -351,27 +224,7 @@ export default {
       }
       return;
     },
-    isHover(value) {
-      this.hover[this.getIndex(this.data)] = [];
-      this.hover[this.getIndex(this.data)][
-        this.column.key || this.column.name
-      ] = value;
-    },
-    isEditable() {
-      return (
-        this.column.inputType !== "increase" &&
-        this.column.inputType != "image" &&
-        this.column.editable != false &&
-        ((this.hover[this.getIndex(this.data)] &&
-          this.hover[this.getIndex(this.data)][
-            this.column.key || this.column.name
-          ] == true) ||
-          this.configs.editOnHover != false)
-      );
-    },
-    forceSave() {
-      this.$emit("forceSave");
-    },
+
     isPreview() {
       return this.column.preview && this.data && this.data["@id"];
     },
@@ -394,41 +247,10 @@ export default {
       this.tempValue = value;
       this.save(parseFloat(value));
     },
-    getColor(column, data) {
-      return column.color || data[column.key || column.name]
-        ? data[column.key || column.name].color
-        : false;
-    },
-    getIcon(column, data) {
-      return column.icon || data[column.key || column.name]
-        ? data[column.key || column.name].icon
-        : false;
-    },
 
-    startEditing(col, data) {
-      let value = this.formatData(col, data, true);
-      let index = this.getIndex(data);
-      if (col.editable == false || (col.key && col.key.indexOf(".") != -1))
-        return;
-
-      //if (col.list) this.data[col.key || col.name] = this.formatList(col, data);
-      //else this.data[col.key || col.name] = this.format(col, data, value);
-      this.$store.commit(this.configs.store + "/SET_ITEM", data);
+    startEditing(col) {
+      let index = this.getIndex(this.data);
       this.editing[index] = { [col.key || col.name]: true };
-    },
-
-    isInvalid() {
-      return true;
-    },
-    isSavingItem(data) {
-      let index = this.getIndex(data);
-      return this.isItemSaved[index] &&
-        this.isItemSaved[index][this.column.key || this.column.name]
-        ? true
-        : false;
-    },
-    onSelected(value) {
-      this.save(value);
     },
 
     clearFields() {
@@ -442,7 +264,9 @@ export default {
       let editIndex = this.getIndex(data);
       if (editIndex >= 0) items[editIndex] = data;
       else items.push(data);
-      this.data = items;
+
+      this.data = data;
+
       this.$store.commit(this.configs.store + "/SET_ITEMS", this.data);
       this.$emit("saved", data);
       this.$emit("changed", data);

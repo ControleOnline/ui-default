@@ -11,7 +11,7 @@
         v-model="fileName"
         :readonly="readonly"
       >
-        <File
+        <DefaultFile
           v-if="readonly || editInline == true"
           :editable="true"
           :data="item"
