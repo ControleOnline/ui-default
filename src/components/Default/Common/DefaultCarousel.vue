@@ -25,7 +25,7 @@
           <DefaultFile
             v-if="configs.isAdmin"
             :editable="true"
-            :data="slide?.file"
+            :row="slide?.file"
             :fileType="['image']"
             :context="configs.context"
             @save="selected"

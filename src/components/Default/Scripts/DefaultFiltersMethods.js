@@ -167,6 +167,7 @@ export function shouldIncludeColumn(column) {
 }
 
 export function editingInit(data, col) {
+  if (!this.editing) return;
   let index = this.getIndex(data);
   return this.editing[index] && this.editing[index][col.key || col.name]
     ? true

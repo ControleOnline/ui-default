@@ -101,7 +101,6 @@
   </template>
 </template>
 <script>
-import File from "@controleonline/ui-default/src/components/Default/Common/DefaultFile.vue";
 import { mapActions, mapGetters } from "vuex";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import debounce from "lodash/debounce";
@@ -115,7 +114,6 @@ import DefaultSpan from "@controleonline/ui-default/src/components/Default/Input
 
 export default {
   components: {
-    File,
     SelectInput,
     DateInput,
     Html,
@@ -224,10 +222,6 @@ export default {
         } else this.$router.push(route);
       }
       return;
-    },
-
-    isPreview() {
-      return this.column.preview && this.data && this.data["@id"];
     },
 
     increaseQuantity(column, data) {
