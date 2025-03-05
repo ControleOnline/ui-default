@@ -55,7 +55,7 @@
         <component
           :context="configs.context || configs.store"
           :configs="configs.componentConfigs || configs"
-          :data="row"
+          :row="row"
           :is="configs.component"
           @loadData="loadData"
           @saved="saved"

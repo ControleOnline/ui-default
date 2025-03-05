@@ -1247,7 +1247,7 @@ export default {
       params[column.key || column.name] = selected["@id"];
       params.id = row["@id"].split("/").pop();
 
-      console.log(params);
+    
       this.$store
         .dispatch(this.configs.store + "/save", params)
         .then((data) => {

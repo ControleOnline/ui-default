@@ -82,7 +82,7 @@ export default {
   methods: {
     ...DefaultFiltersMethods,
     save(data) {
-      console.log('ddf');
+
       this.$emit("save", data);
     },
     isInvalid() {

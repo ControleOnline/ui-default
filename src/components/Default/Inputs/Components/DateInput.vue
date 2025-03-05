@@ -38,6 +38,8 @@
   </q-input>
 </template>
 <script>
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
+
 export default {
   props: {
     column: {
@@ -61,10 +63,22 @@ export default {
       data: null,
     };
   },
+  computed: {
+    items() {
+      return this.$store.getters[this.configs.store + "/items"];
+    },
+    isLoadingList() {
+      return this.$store.getters[this.configs.store + "/isLoadingList"];
+    },
+    item() {
+      return this.$store.getters[this.configs.store + "/item"];
+    },
+  },
   created() {
     this.data = this.$copyObject(this.row);
   },
   methods: {
+    ...DefaultFiltersMethods,
     save(data) {
       this.$emit("save", data);
     },

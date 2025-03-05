@@ -143,7 +143,6 @@ export default {
       key: 0,
       data: null,
       editing: [],
-
       isItemSaved: [],
       tempValue: null,
     };
@@ -287,7 +286,7 @@ export default {
       let item = this.row[col.key || col.name];
       let c = this.getValue(item);
       let d = this.getValue(value);
-      console.log(c, d);
+
       if (c == d) return this.clearFields();
       if (this.configs.isForm) return this.$emit("changed", value);
 
