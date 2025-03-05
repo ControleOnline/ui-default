@@ -12,9 +12,9 @@
           :class="getFilterSize(column)"
         >
           <DefaultInput
-            :row="data"
+            :row="item"
             :columnName="column.key || column.name"
-            :configs="{ ...configs, showLabels: true }"
+            :configs="{ ...configs, showLabels: true, isForm: true }"
             @focus="editingInit(column)"
             @forceSave="onSubmit"
             @changed="
@@ -27,7 +27,7 @@
       </template>
 
       <ExtraData
-        :entity="data"
+        :entity="item"
         :configs="configs"
         @changedExtraData="changedExtraData"
       />
@@ -69,7 +69,7 @@ export default {
       type: Object,
       required: true,
     },
-    data: {
+    row: {
       type: Object,
       required: false,
       default() {
@@ -96,11 +96,11 @@ export default {
   },
   created() {
     this.getFilteredColumns();
-    if (this.configs.loadOnEdit && this.data && this.data["@id"])
+    if (this.configs.loadOnEdit && this.row && this.row["@id"])
       this.$store
         .dispatch(
           this.configs.store + "/get",
-          this.data["@id"].replace(/\D/g, "")
+          this.row["@id"].replace(/\D/g, "")
         )
         .then((item) => {
           this.getData(item);
@@ -144,7 +144,7 @@ export default {
 
     getData(initialData) {
       let data = {};
-      let itemData = initialData || this.data;
+      let itemData = initialData || this.row;
 
       Object.keys(itemData).forEach((item, i) => {
         let column = this.columns.find((c) => {
@@ -219,7 +219,9 @@ export default {
             size) + " q-pa-xs"
       );
     },
-    changed(data, column) {},
+    changed(data, column) {
+      this.item[column.name || column.id] = data;
+    },
     changedExtraData(data) {
       this.extraData = data;
     },

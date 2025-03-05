@@ -25,7 +25,7 @@
         : column.label
     "
     v-model="data"
-    @blur="save(data[column.key || column.name])"
+    @blur="save()"
     @focus="this.$emit('focus', $event)"
   >
     <template v-slot:append v-if="isSavingItem(data)">
@@ -77,7 +77,7 @@ export default {
   },
   data() {
     return {
-      data: [],
+      data: {},
       options: [],
       loading: true,
       searchAction: null,
@@ -87,7 +87,7 @@ export default {
     this.searchAction = this.getList(this.configs, this.column);
     this.data = this.formatList(
       this.column,
-      this.item[this.column.key || this.column.name]
+      this.row[this.column.key || this.column.name]
     );
     setTimeout(() => {
       this.loading = false;
@@ -103,8 +103,11 @@ export default {
   },
   methods: {
     ...DefaultFiltersMethods,
-    save(data) {
-      this.$emit("save", data);
+    save() {
+      this.$emit(
+        "save",
+        this.data[this.column.key || this.column.name] || this.data
+      );
     },
     searchList(input, update, abort) {
       let params = this.getSearchFilters(this.column, this.row);

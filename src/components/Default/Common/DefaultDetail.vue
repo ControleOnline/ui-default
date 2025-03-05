@@ -5,7 +5,7 @@
         :configs="configs"
         @saved="saved"
         @error="error"
-        :data="data"
+        :row="data"
         v-if="data"
       />
     </q-card-section>

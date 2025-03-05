@@ -136,6 +136,7 @@ export function isProxyEmpty(proxy) {
 }
 
 export function getIndex(row) {
+  if (!row) return -1;
   return this.items.findIndex((item) => item["@id"] == row["@id"]);
 }
 

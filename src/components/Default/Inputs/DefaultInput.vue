@@ -29,7 +29,9 @@
     @save="save"
   />
 
-  <template v-else-if="editingInit(data, column) != true">
+  <template
+    v-else-if="editingInit(data, column) != true && configs.isForm != true"
+  >
     <template v-if="column.multiline == true">
       <template v-for="(v, index) in formatData(column, data, false)">
         <span :style="{ color: getColor(column, data) }">
@@ -274,7 +276,7 @@ export default {
 
     getValue(data) {
       let col = this.$copyObject(this.column);
-
+console.log(this.formatList(col, data));
       return col.list
         ? this.formatList(col, data)?.value
         : this.format(col, this.row, data);
@@ -283,11 +285,12 @@ export default {
       let data = this.$copyObject(this.data);
       let col = this.$copyObject(this.column);
       let index = this.getIndex(data);
-      let item = this.row[col.key || col.name] || value;
+      let item = this.row[col.key || col.name];
       let c = this.getValue(item);
       let d = this.getValue(value);
-
+console.log(c , d)
       if (c == d) return this.clearFields();
+      if (this.configs.isForm) return this.$emit("changed", value);
 
       this.isItemSaved[index] = {
         [col.key || col.name]: true,
