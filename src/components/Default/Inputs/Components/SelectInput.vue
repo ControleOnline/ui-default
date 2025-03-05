@@ -73,12 +73,10 @@ export default {
       options: [],
       loading: true,
       searchAction: null,
-      filters: {},
     };
   },
   created() {
     this.searchAction = this.getList(this.configs, this.column);
-    this.filters = this.getSearchFilters(this.column, this.row);
     this.data = this.formatList(
       this.column,
       this.item[this.column.key || this.column.name]
@@ -98,8 +96,9 @@ export default {
   methods: {
     ...DefaultFiltersMethods,
     searchList(input, update, abort) {
-      let params = this.filters;
-      if (input.length > 0) params[this.column.searchParam || "search"] = input;
+      let params = this.getSearchFilters(this.column, this.row);
+      if (input.length > 0)
+        params[this.column?.searchParam || "search"] = input;
       if (typeof this.searchAction == "string") {
         this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", true);
         this.options = [];

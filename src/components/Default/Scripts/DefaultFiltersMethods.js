@@ -207,7 +207,7 @@ export function getSearchFilters(column, row) {
   if (column.filters instanceof Function)
     params = Object.assign(params, column.filters(row));
 
-  return params;
+  return params || {};
 }
 
 export function formatList(column, value) {
