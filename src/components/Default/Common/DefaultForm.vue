@@ -1,6 +1,6 @@
 <template>
   <q-form ref="myForm" @submit="onSubmit" class="full-width">
-    <div class="row q-col-gutter-xs q-pb-xs" v-if="loaded">
+    <div class="row q-col-gutter-xs q-pb-xs col-4" v-if="loaded">
       <template v-for="(column, index) in columns">
         <div
           v-if="
@@ -14,12 +14,12 @@
           <DefaultInput
             :row="data"
             :columnName="column.key || column.name"
-            :configs="configs"
+            :configs="{ ...configs, showLabels: true }"
             @focus="editingInit(column)"
             @forceSave="onSubmit"
             @changed="
               (value) => {
-                changed(value,column)
+                changed(value, column);
               }
             "
           />
@@ -62,7 +62,6 @@
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import ExtraData from "@controleonline/ui-default/src/components/Default/Common/ExtraData";
 import { mapActions, mapGetters } from "vuex";
-import configs from "app/modules/controleonline/ui-config/src/store/configs";
 
 export default {
   props: {
@@ -220,9 +219,7 @@ export default {
             size) + " q-pa-xs"
       );
     },
-    changed(data,column){
-
-    },
+    changed(data, column) {},
     changedExtraData(data) {
       this.extraData = data;
     },

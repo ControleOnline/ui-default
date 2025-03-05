@@ -118,7 +118,7 @@
             />
           </template>
           {{ column.prefix }}
-          {{ tempValue != null ? tempValue : formatData(column, data, false) }}
+          {{ tempValue != null ? tempValue : formatData(column, data, false) }}pp
           {{ column.sufix }}
           <q-icon
             v-if="
@@ -193,14 +193,8 @@
     <SelectInput
       v-else-if="getList(configs, column)"
       multiple
-      :disable="column.editable == false"
-      :store="configs.store"
-      :labelType="configs.labelType || 'stack-label'"
-      :label="column.label"
-      :searchAction="getList(configs, column)"
-      :filters="getSearchFilters(column, data)"
-      :formatOptions="column.formatList"
-      :searchParam="column.searchParam || 'search'"
+      :configs="configs"
+      :row="data"
       :column="column"
       @blur="changed"
       @selected="onSelected"
@@ -254,12 +248,12 @@
   </template>
 </template>
 <script>
-import File from "@controleonline/ui-default/src/components/Default/Common/Inputs/File.vue";
+import File from "@controleonline/ui-default/src/components/Default/Inputs/Components/File.vue";
 import { mapActions, mapGetters } from "vuex";
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
 import debounce from "lodash/debounce";
-import SelectInput from "@controleonline/ui-default/src/components/Default/Common/Inputs/SelectInput";
-import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
+import SelectInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/SelectInput";
+import Html from "@controleonline/ui-default/src/components/Default/Inputs/Components/Html.vue";
 export default {
   components: {
     File,

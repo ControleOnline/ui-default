@@ -2,7 +2,7 @@
   <q-select
     outlined
     dense
-    :stack-label="labelType"
+    :stack-label="configs.labelType || 'stack-label'"
     lazy-rules
     use-input
     :use-chips="multiple == true"
@@ -15,14 +15,14 @@
     label-color="black"
     input-debounce="700"
     :loading="isLoadingList"
-    :disable="disable"
+    :disable="column.editable == false"
     :multiple="multiple == true"
     :label="
-      labelType != 'stack-label'
+      configs.labelType != 'stack-label'
         ? ''
         : store
-        ? $tt(store, 'input', label)
-        : label
+        ? $tt(store, 'input', column.label)
+        : column.label
     "
     v-model="data"
     @blur="this.$emit('blur', $event)"
@@ -45,51 +45,26 @@ export default {
       required: false,
       default: false,
     },
-    searchAction: {
-      required: true,
-    },
-    labelType: {
-      type: String,
-      required: false,
-      default: "stack-label",
-    },
-    label: {
-      type: String,
-      required: true,
-    },
-    filters: {
+
+    row: {
       type: Object,
       required: false,
-      default: {},
     },
     column: {
       type: Object,
       required: false,
     },
-    searchParam: {
-      type: String,
-      required: false,
-      default: "search",
-    },
-    formatOptions: {
-      type: Function,
-      required: true,
-    },
-    disable: {
-      type: Boolean,
-      required: false,
-    },
-    store: {
-      type: String,
+    configs: {
+      type: Object,
       required: true,
     },
   },
   computed: {
     isLoadingList() {
-      return this.$store.getters[this.store + "/isLoadingList"];
+      return this.$store.getters[this.configs.store + "/isLoadingList"];
     },
     item() {
-      return this.$store.getters[this.store + "/item"];
+      return this.$store.getters[this.configs.store + "/item"];
     },
   },
   data() {
@@ -97,9 +72,13 @@ export default {
       data: [],
       options: [],
       loading: true,
+      searchAction: null,
+      filters: {},
     };
   },
   created() {
+    this.searchAction = this.getList(this.configs, this.column);
+    this.filters = this.getSearchFilters(this.column, this.row);
     this.data = this.formatList(
       this.column,
       this.item[this.column.key || this.column.name]
@@ -120,28 +99,31 @@ export default {
     ...DefaultFiltersMethods,
     searchList(input, update, abort) {
       let params = this.filters;
-      if (input.length > 0) params[this.searchParam] = input;
+      if (input.length > 0) params[this.column.searchParam || "search"] = input;
       if (typeof this.searchAction == "string") {
-        this.$store.commit(this.store + "/SET_ISLOADINGLIST", true);
+        this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", true);
         this.options = [];
         if (this.$store.getters[this.searchAction]) {
           this.$store.getters[this.searchAction].forEach((item) => {
-            this.options.push(this.formatOptions(item));
+            this.options.push(this.column.formatList(item));
           });
           update();
-          this.$store.commit(this.store + "/SET_ISLOADINGLIST", false);
+          this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", false);
         } else {
           this.$store
             .dispatch(this.searchAction, params)
             .then((result) => {
               //this.options.push(null);
               result.forEach((item) => {
-                this.options.push(this.formatOptions(item));
+                this.options.push(this.column.formatList(item));
               });
               update();
             })
             .finally(() => {
-              this.$store.commit(this.store + "/SET_ISLOADINGLIST", false);
+              this.$store.commit(
+                this.configs.store + "/SET_ISLOADINGLIST",
+                false
+              );
             });
         }
       } else {
@@ -150,19 +132,21 @@ export default {
             return (
               item,
               !input ||
-                this.formatOptions(item)
+                this.column
+                  .formatList(item)
                   .value.toString()
                   .toLowerCase()
                   .includes(input.toLowerCase()) ||
-                this.formatOptions(item)
+                this.column
+                  .formatList(item)
                   .label.toString()
                   .toLowerCase()
                   .includes(input.toLowerCase())
             );
           })
           .map((item) => {
-            if (typeof this.formatOptions == "function")
-              return this.formatOptions(item);
+            if (typeof this.column.formatList == "function")
+              return this.column.formatList(item);
             else return item;
           });
         update();

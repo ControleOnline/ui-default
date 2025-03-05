@@ -1,11 +1,11 @@
 <template>
-  <label v-if="labelType != 'stack-label'">
+  <label v-if="configs.labelType != 'stack-label'">
     {{ $tt(configs.store, "input", column.label) }}
   </label>
   <DateRangeInput
     :initialRange="colFilter[column.key || column.name]"
     @changedDateInput="changedDateInput"
-    :labelType="labelType"
+    :labelType="configs.labelType || 'stack-label'"
     v-if="column.inputType == 'date-range'"
     :column="column"
     :configs="configs"
@@ -14,15 +14,10 @@
   <SelectInput
     outlined
     v-else-if="getList(configs, column)"
-    :store="configs.store"
-    :labelType="labelType"
-    :label="column.label"
+    :configs="configs"
+    :labelType="configs.labelType || 'stack-label'"
     :multiple="true"
-    :searchAction="getList(configs, column)"
-    :filters="getSearchFilters(column)"
-    :formatOptions="column.formatList"
     :column="column"
-    :searchParam="column.searchParam || 'search'"
     @selected="
       (value) => {
         colFilter[column.key || column.name] = $copyObject(value);
@@ -36,12 +31,12 @@
     outlined
     v-else
     dense
-    :stack-label="labelType"
+    :stack-label="configs.labelType || 'stack-label'"
     :type:="inputType"
     :prefix="prefix"
     :sufix="sufix"
     :label="
-      labelType != 'stack-label'
+      configs.labelType != 'stack-label'
         ? ''
         : $tt(configs.store, 'input', column.label)
     "
@@ -73,8 +68,8 @@
 </template>
 <script>
 import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
-import DateRangeInput from "../Common/Inputs/DateRangeInput";
-import SelectInput from "../Common/Inputs/SelectInput";
+import DateRangeInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/DateRangeInput";
+import SelectInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/SelectInput";
 
 export default {
   components: {
@@ -84,11 +79,6 @@ export default {
   props: {
     prefix: {},
     sufix: {},
-    labelType: {
-      type: String,
-      required: false,
-      default: "stack-label",
-    },
     column: {
       type: Object,
       required: true,
