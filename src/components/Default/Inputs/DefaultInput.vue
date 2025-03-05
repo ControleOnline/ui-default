@@ -104,6 +104,8 @@
         <span
           :style="{ color: getColor(column, data) }"
           @click="startEditing(column, data)"
+          @mouseenter="isHover(true)"
+          @mouseleave="isHover(false)"
         >
           <template v-if="getIcon(column, data)">
             <q-icon
@@ -118,28 +120,14 @@
             />
           </template>
           {{ column.prefix }}
-          {{ tempValue != null ? tempValue : formatData(column, data, false) }}pp
+          {{ tempValue != null ? tempValue : formatData(column, data, false) }}
           {{ column.sufix }}
           <q-icon
-            v-if="
-              column.inputType !== 'increase' &&
-              column.inputType != 'image' &&
-              column.editable != false &&
-              !isSaving &&
-              ((editing[getIndex(data)] &&
-                editing[getIndex(data)][column.key || column.name] == true) ||
-                configs.editOnHover != false)
-            "
+            v-if="isEditable() && !isSaving"
             size="1.0em"
             :name="column.list ? 'unfold_more' : 'edit'"
           />
-          <q-icon
-            v-else-if="
-              column.inputType !== 'increase' && column.editable == true
-            "
-            size="1.0em"
-            name=""
-          />
+          <q-icon v-else="!isSaving" size="1.0em" name="" />
         </span>
         <q-btn
           v-if="column.inputType === 'increase' && column.editable == true"
@@ -279,7 +267,7 @@ export default {
       key: 0,
       data: null,
       editing: [],
-
+      hover: [],
       isItemSaved: [],
       tempValue: null,
     };
@@ -363,7 +351,24 @@ export default {
       }
       return;
     },
-
+    isHover(value) {
+      this.hover[this.getIndex(this.data)] = [];
+      this.hover[this.getIndex(this.data)][
+        this.column.key || this.column.name
+      ] = value;
+    },
+    isEditable() {
+      return (
+        this.column.inputType !== "increase" &&
+        this.column.inputType != "image" &&
+        this.column.editable != false &&
+        ((this.hover[this.getIndex(this.data)] &&
+          this.hover[this.getIndex(this.data)][
+            this.column.key || this.column.name
+          ] == true) ||
+          this.configs.editOnHover != false)
+      );
+    },
     forceSave() {
       this.$emit("forceSave");
     },
