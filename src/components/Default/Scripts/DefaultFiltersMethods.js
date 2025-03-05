@@ -232,7 +232,13 @@ export function getSearchFilters(column, row) {
 export function formatList(column, value) {
   if (column && column.formatList instanceof Function)
     return column.formatList(value, column);
+  if (!value) return;
 
+  if (value.value || value["@id"])
+    return {
+      value: value["@id"]?.split("/").pop() || value.value,
+      label: value[column.name || column.id] || value.label,
+    };
   return value;
 }
 

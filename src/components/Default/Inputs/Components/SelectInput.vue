@@ -118,7 +118,7 @@ export default {
         this.options = [];
         if (this.$store.getters[this.searchAction]) {
           this.$store.getters[this.searchAction].forEach((item) => {
-            this.options.push(this.column.formatList(item));
+            this.options.push(this.formatList(this.column, item));
           });
           update();
           this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", false);
@@ -128,7 +128,7 @@ export default {
             .then((result) => {
               //this.options.push(null);
               result.forEach((item) => {
-                this.options.push(this.column.formatList(item));
+                this.options.push(this.formatList(this.column, item));
               });
               update();
             })
@@ -145,22 +145,18 @@ export default {
             return (
               item,
               !input ||
-                this.column
-                  .formatList(item)
+                this.formatList(this.column, item)
                   .value.toString()
                   .toLowerCase()
                   .includes(input.toLowerCase()) ||
-                this.column
-                  .formatList(item)
+                this.formatList(this.column, item)
                   .label.toString()
                   .toLowerCase()
                   .includes(input.toLowerCase())
             );
           })
           .map((item) => {
-            if (typeof this.column.formatList == "function")
-              return this.column.formatList(item);
-            else return item;
+            return this.formatList(this.column, item);
           });
         update();
       }

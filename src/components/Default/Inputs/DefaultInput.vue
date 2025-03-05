@@ -276,7 +276,6 @@ export default {
 
     getValue(data) {
       let col = this.$copyObject(this.column);
-console.log(this.formatList(col, data));
       return col.list
         ? this.formatList(col, data)?.value
         : this.format(col, this.row, data);
@@ -288,7 +287,7 @@ console.log(this.formatList(col, data));
       let item = this.row[col.key || col.name];
       let c = this.getValue(item);
       let d = this.getValue(value);
-console.log(c , d)
+      console.log(c, d);
       if (c == d) return this.clearFields();
       if (this.configs.isForm) return this.$emit("changed", value);
 
