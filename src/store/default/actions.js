@@ -92,3 +92,7 @@ export const setFilters = ({ commit, getters }, params = {}) => {
 export const setItem = ({ commit, getters }, params = {}) => {
   commit(types.SET_ITEM, params);
 }
+
+export const setItems = ({ commit, getters }, params = {}) => {
+  commit(types.SET_ITEMS, params);
+}
