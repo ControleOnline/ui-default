@@ -235,11 +235,14 @@ export function formatList(column, value) {
     return column.formatList(value, column);
   if (!value) return;
 
-  if (value.value || value["@id"])
+  if (value["@id"])
     return {
-      value: value["@id"]?.split("/").pop() || value.value,
-      label: value[column.name || column.id] || value.label,
+      value: value["@id"]?.split("/").pop(),
+      label: value[column.name || column.id],
     };
+
+  if (value.value) return { value: value.value, label: value.label };
+  
   return value;
 }
 
