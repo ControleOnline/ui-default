@@ -3,7 +3,10 @@
     v-if="configsLoaded"
     :class="
       (configs['full-height'] == false ? '' : 'full') +
-      ' full-height full-width default-table'
+      ' full-height full-width ' +
+      configs.expandedChild
+        ? ' default-table-expanded'
+        : ' default-table'
     "
   >
     <div
@@ -1247,7 +1250,6 @@ export default {
       params[column.key || column.name] = selected["@id"];
       params.id = row["@id"].split("/").pop();
 
-    
       this.$store
         .dispatch(this.configs.store + "/save", params)
         .then((data) => {
