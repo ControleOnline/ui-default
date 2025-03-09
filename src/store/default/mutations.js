@@ -37,7 +37,9 @@ export default {
   [types.SET_COLUMNS](state, columns) {
     state.columns = columns || [];
   },
-
+  [types.SET_OFFLINE](state, offline) {
+    state.offline = offline || [];
+  },
   [types.SET_STORE](state, store) {
     state.store = store || null;
   },
