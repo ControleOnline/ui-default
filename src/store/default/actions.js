@@ -13,7 +13,6 @@ export const saveOffline = ({commit, getters}, data) => {
 };
 
 export const getItems = ({commit, getters}, params = {}) => {
-
   commit(types.SET_ISLOADING, true);
 
   return api
