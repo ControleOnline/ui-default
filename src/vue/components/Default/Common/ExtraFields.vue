@@ -2,7 +2,7 @@
   <FieldsTypes :context="context" />
 </template>
 <script>
-import FieldsTypes from "@controleonline/ui-common/src/components/Fields/types";
+import FieldsTypes from "@controleonline/ui-common/src/vue/components/Fields/types";
 
 export default {
   props: {

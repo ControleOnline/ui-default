@@ -102,15 +102,15 @@
 </template>
 <script>
 import { mapActions, mapGetters } from "vuex";
-import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/vue/components/Default/Scripts/DefaultFiltersMethods.js";
 import debounce from "lodash/debounce";
-import SelectInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/SelectInput";
-import Html from "@controleonline/ui-default/src/components/Default/Common/DefaultHtml.vue";
-import DateInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/DateInput";
-import TextInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/TextInput";
-import DefaultLabel from "@controleonline/ui-default/src/components/Default/Inputs/Components/DefaultLabel";
-import FileInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/FileInput";
-import DefaultSpan from "@controleonline/ui-default/src/components/Default/Inputs/Components/DefaultSpan";
+import SelectInput from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/SelectInput";
+import Html from "@controleonline/ui-default/src/vue/components/Default/Common/DefaultHtml.vue";
+import DateInput from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/DateInput";
+import TextInput from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/TextInput";
+import DefaultLabel from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/DefaultLabel";
+import FileInput from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/FileInput";
+import DefaultSpan from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/DefaultSpan";
 
 export default {
   components: {

@@ -67,8 +67,8 @@
   </div>
 </template>
 <script>
-import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
-import FilterInputs from "@controleonline/ui-default/src/components/Default/Filters/FilterInputs";
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/vue/components/Default/Scripts/DefaultFiltersMethods.js";
+import FilterInputs from "@controleonline/ui-default/src/vue/components/Default/Filters/FilterInputs";
 
 export default {
   props: {

@@ -67,9 +67,9 @@
   </q-input>
 </template>
 <script>
-import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
-import DateRangeInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/DateRangeInput";
-import SelectInput from "@controleonline/ui-default/src/components/Default/Inputs/Components/SelectInput";
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/vue/components/Default/Scripts/DefaultFiltersMethods.js";
+import DateRangeInput from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/DateRangeInput";
+import SelectInput from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/SelectInput";
 
 export default {
   components: {

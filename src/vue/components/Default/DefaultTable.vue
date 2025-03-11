@@ -690,13 +690,13 @@
 </template>
 
 <script>
-import DefaultExternalFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultExternalFilters";
-import FilterInputs from "@controleonline/ui-default/src/components/Default/Filters/FilterInputs";
-import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
+import DefaultExternalFilters from "@controleonline/ui-default/src/vue/components/Default/Filters/DefaultExternalFilters";
+import FilterInputs from "@controleonline/ui-default/src/vue/components/Default/Filters/FilterInputs";
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/vue/components/Default/Scripts/DefaultFiltersMethods.js";
 import { mapActions, mapGetters } from "vuex";
 import isEqual from "lodash/isEqual";
-import ToolBar from "@controleonline/ui-default/src/components/Default/ToolBar";
-import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
+import ToolBar from "@controleonline/ui-default/src/vue/components/Default/ToolBar";
+import DefaultDelete from "@controleonline/ui-default/src/vue/components/Default/DefaultDelete";
 import { debounce } from "lodash";
 
 export default {

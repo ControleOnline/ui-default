@@ -116,13 +116,13 @@
 </template>
 
 <script>
-import Categories from "@controleonline/ui-default/src/components/Default/Categories";
-import Status from "@controleonline/ui-default/src/components/Default/Status";
-import ExtraFields from "@controleonline/ui-default/src/components/Default/Common/ExtraFields";
-import Imports from "@controleonline/ui-default/src/components/Default/Import";
+import Categories from "@controleonline/ui-default/src/vue/components/Default/Categories";
+import Status from "@controleonline/ui-default/src/vue/components/Default/Status";
+import ExtraFields from "@controleonline/ui-default/src/vue/components/Default/Common/ExtraFields";
+import Imports from "@controleonline/ui-default/src/vue/components/Default/Import";
 import { mapActions, mapGetters } from "vuex";
-import DefaultFilters from "@controleonline/ui-default/src/components/Default/Filters/DefaultFilters";
-import DefaultSearch from "@controleonline/ui-default/src/components/Default/Filters/DefaultSearch";
+import DefaultFilters from "@controleonline/ui-default/src/vue/components/Default/Filters/DefaultFilters";
+import DefaultSearch from "@controleonline/ui-default/src/vue/components/Default/Filters/DefaultSearch";
 
 export default {
   components: {

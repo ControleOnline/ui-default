@@ -59,8 +59,8 @@
 </template>
 
 <script>
-import * as DefaultFiltersMethods from "@controleonline/ui-default/src/components/Default/Scripts/DefaultFiltersMethods.js";
-import ExtraData from "@controleonline/ui-default/src/components/Default/Common/ExtraData";
+import * as DefaultFiltersMethods from "@controleonline/ui-default/src/vue/components/Default/Scripts/DefaultFiltersMethods.js";
+import ExtraData from "@controleonline/ui-default/src/vue/components/Default/Common/ExtraData";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
