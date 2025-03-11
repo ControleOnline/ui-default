@@ -1,7 +1,4 @@
-import { LocalStorage } from "quasar";
-
 export default class Filters {
-
   constructor(route, store) {
     this.route = route;
     this.store = store;
@@ -9,8 +6,7 @@ export default class Filters {
 
   getFilters() {
     if (!this.getRoute() || !this.store) return {};
-
-    let storedUser = this.getAllFilters();
+    const storedUser = this.getAllFilters();
     return storedUser && storedUser[this.getRoute()]
       ? storedUser[this.getRoute()][this.store] || {}
       : {};
@@ -18,16 +14,17 @@ export default class Filters {
 
   setFilters(data) {
     if (!this.getRoute() || !this.store) return;
-    let storedUser = this.getAllFilters();
-    if (!storedUser[this.getRoute()])
+    const storedUser = this.getAllFilters();
+    if (!storedUser[this.getRoute()]) {
       storedUser[this.getRoute()] = {};
+    }
     storedUser[this.getRoute()][this.store] = data;
-    LocalStorage.set("DefaultFilters", storedUser);
+    localStorage.setItem('DefaultFilters', JSON.stringify(storedUser));
   }
 
   getVisibleColumns() {
     if (!this.getRoute() || !this.store) return {};
-    let storedUser = this.getAllVisibleColumns();
+    const storedUser = this.getAllVisibleColumns();
     return storedUser && storedUser[this.getRoute()]
       ? storedUser[this.getRoute()][this.store] || {}
       : {};
@@ -35,16 +32,17 @@ export default class Filters {
 
   setVisibleColumns(visibleColumns) {
     if (!this.getRoute() || !this.store) return;
-    let storedUser = this.getAllVisibleColumns();
-    if (!storedUser[this.getRoute()])
+    const storedUser = this.getAllVisibleColumns();
+    if (!storedUser[this.getRoute()]) {
       storedUser[this.getRoute()] = {};
+    }
     storedUser[this.getRoute()][this.store] = visibleColumns;
-    LocalStorage.set("DefaultVisibleColumns", storedUser);
-
+    localStorage.setItem('DefaultVisibleColumns', JSON.stringify(storedUser));
   }
 
   getAllFilters() {
-    return LocalStorage.getItem("DefaultFilters") || {};
+    const data = localStorage.getItem('DefaultFilters');
+    return data ? JSON.parse(data) : {};
   }
 
   getRoute() {
@@ -52,7 +50,7 @@ export default class Filters {
   }
 
   getAllVisibleColumns() {
-    return LocalStorage.getItem("DefaultVisibleColumns") || {};
+    const data = localStorage.getItem('DefaultVisibleColumns');
+    return data ? JSON.parse(data) : {};
   }
-
 }
