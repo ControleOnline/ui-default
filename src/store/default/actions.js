@@ -1,30 +1,31 @@
-import { api } from "@controleonline/ui-common/src/api";
-import LocalDB from "@controleonline/ui-common/src/api/LocalDB";
-import * as types from "@controleonline/ui-default/src/store/default/mutation_types";
+import {api} from '@controleonline/ui-common/src/api';
+import LocalDB from '@controleonline/ui-common/src/api/LocalDB';
+import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 
 let db = null;
 
-export const saveOffline = ({ commit, getters }, data) => {
+export const saveOffline = ({commit, getters}, data) => {
   if (getters.offline) {
     db = new LocalDB(getters);
     if (Array.isArray(data)) db.saveItems(data);
-    else if (typeof data === "object" && data !== null) db.saveItem(data);
+    else if (typeof data === 'object' && data !== null) db.saveItem(data);
   }
 };
 
-export const getItems = ({ commit, getters }, params = {}) => {
+export const getItems = ({commit, getters}, params = {}) => {
+
   commit(types.SET_ISLOADING, true);
 
   return api
-    .fetch(getters.resourceEndpoint, { params: params })
-    .then((data) => {
-      commit(types.SET_ITEMS, data["hydra:member"]);
-      commit(types.SET_TOTALITEMS, data["hydra:totalItems"]);
+    .fetch(getters.resourceEndpoint, {params: params})
+    .then(data => {
+      commit(types.SET_ITEMS, data['hydra:member']);
+      commit(types.SET_TOTALITEMS, data['hydra:totalItems']);
 
-      saveOffline({ commit, getters }, data["hydra:member"]);
-      return data["hydra:member"];
+      saveOffline({commit, getters}, data['hydra:member']);
+      return data['hydra:member'];
     })
-    .catch((e) => {
+    .catch(e => {
       commit(types.SET_ERROR, e.message);
       throw e;
     })
@@ -33,24 +34,24 @@ export const getItems = ({ commit, getters }, params = {}) => {
     });
 };
 
-export const getOfflineItems = ({ commit, getters }, params = {}) => {
+export const getOfflineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
 
-  if (!getters.offline) return getItems({ commit, getters }, params);
+  if (!getters.offline) return getItems({commit, getters}, params);
 
   db = new LocalDB(getters);
 
   return db
     .getItemsByFilters()
-    .then(async (data) => {
+    .then(async data => {
       console.log(data);
       if (!data || (Array.isArray(data) && data.length === 0))
-        return getItems({ commit, getters }, params);
+        return getItems({commit, getters}, params);
 
       commit(types.SET_ITEMS, data);
       return data;
     })
-    .catch((e) => {
+    .catch(e => {
       commit(types.SET_ERROR, e.message);
       throw e;
     })
@@ -59,19 +60,19 @@ export const getOfflineItems = ({ commit, getters }, params = {}) => {
     });
 };
 
-export const get = ({ commit, getters }, id) => {
+export const get = ({commit, getters}, id) => {
   commit(types.SET_ISLOADING, true);
   return api
     .fetch(
-      getters.resourceEndpoint + "/" + id.toString().replace(/\D/g, ""),
-      {}
+      getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
+      {},
     )
-    .then((data) => {
+    .then(data => {
       commit(types.SET_ITEM, data);
-      saveOffline({ commit, getters }, data);
+      saveOffline({commit, getters}, data);
       return data;
     })
-    .catch((e) => {
+    .catch(e => {
       commit(types.SET_ERROR, e.message);
       throw e;
     })
@@ -80,22 +81,22 @@ export const get = ({ commit, getters }, id) => {
     });
 };
 
-export const save = ({ commit, getters }, params) => {
+export const save = ({commit, getters}, params) => {
   let id = params.id;
   delete params.id;
 
   let options = {
-    method: id ? "PUT" : "POST",
+    method: id ? 'PUT' : 'POST',
     body: params,
   };
   commit(types.SET_ISSAVING, true);
 
   return api
-    .fetch(getters.resourceEndpoint + (id ? "/" + id : ""), options)
-    .then((data) => {
+    .fetch(getters.resourceEndpoint + (id ? '/' + id : ''), options)
+    .then(data => {
       return data;
     })
-    .catch((e) => {
+    .catch(e => {
       commit(types.SET_ERROR, e.message);
       throw e;
     })
@@ -104,18 +105,18 @@ export const save = ({ commit, getters }, params) => {
     });
 };
 
-export const remove = ({ commit, getters }, id) => {
+export const remove = ({commit, getters}, id) => {
   let options = {
-    method: "DELETE",
+    method: 'DELETE',
   };
   commit(types.SET_ISSAVING, true);
 
   return api
-    .fetch(getters.resourceEndpoint + "/" + id, options)
-    .then((data) => {
+    .fetch(getters.resourceEndpoint + '/' + id, options)
+    .then(data => {
       return data;
     })
-    .catch((e) => {
+    .catch(e => {
       commit(types.SET_ERROR, e.message);
       throw e;
     })
@@ -124,14 +125,14 @@ export const remove = ({ commit, getters }, id) => {
     });
 };
 
-export const setFilters = ({ commit, getters }, params = {}) => {
+export const setFilters = ({commit, getters}, params = {}) => {
   commit(types.SET_FILTERS, params);
 };
 
-export const setItem = ({ commit, getters }, params = {}) => {
+export const setItem = ({commit, getters}, params = {}) => {
   commit(types.SET_ITEM, params);
 };
 
-export const setItems = ({ commit, getters }, params = {}) => {
+export const setItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ITEMS, params);
 };
