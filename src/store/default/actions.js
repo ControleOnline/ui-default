@@ -14,7 +14,8 @@ export const saveOffline = ({commit, getters}, data) => {
 
 export const getItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
-
+  commit(types.SET_ITEMS, []);
+  commit(types.SET_TOTALITEMS, 0);
   return api
     .fetch(getters.resourceEndpoint, {params: params})
     .then(data => {
@@ -61,6 +62,7 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
 
 export const get = ({commit, getters}, id) => {
   commit(types.SET_ISLOADING, true);
+  commit(types.SET_ITEM, {});
   return api
     .fetch(
       getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
