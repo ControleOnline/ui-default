@@ -19,7 +19,7 @@ export default class Filters {
       storedUser[this.getRoute()] = {};
     }
     storedUser[this.getRoute()][this.store] = data;
-    LocalStorage.setItem('DefaultFilters', JSON.stringify(storedUser));
+    localStorage.setItem('DefaultFilters', JSON.stringify(storedUser));
   }
 
   getVisibleColumns() {
@@ -37,11 +37,11 @@ export default class Filters {
       storedUser[this.getRoute()] = {};
     }
     storedUser[this.getRoute()][this.store] = visibleColumns;
-    LocalStorage.setItem('DefaultVisibleColumns', JSON.stringify(storedUser));
+    localStorage.setItem('DefaultVisibleColumns', JSON.stringify(storedUser));
   }
 
   getAllFilters() {
-    const data = LocalStorage.getItem('DefaultFilters');
+    const data = localStorage.getItem('DefaultFilters');
     return data ? JSON.parse(data) : {};
   }
 
@@ -50,7 +50,7 @@ export default class Filters {
   }
 
   getAllVisibleColumns() {
-    const data = LocalStorage.getItem('DefaultVisibleColumns');
+    const data = localStorage.getItem('DefaultVisibleColumns');
     return data ? JSON.parse(data) : {};
   }
 }
