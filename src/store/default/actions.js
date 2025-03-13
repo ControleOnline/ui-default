@@ -44,7 +44,6 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
   return db
     .getItemsByFilters()
     .then(async data => {
-      console.log(data);
       if (!data || (Array.isArray(data) && data.length === 0))
         return getItems({commit, getters}, params);
 
