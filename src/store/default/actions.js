@@ -5,6 +5,7 @@ import * as types from '@controleonline/ui-default/src/store/default/mutation_ty
 let db = null;
 
 export const saveOffline = ({commit, getters}, data) => {
+  return;
   if (getters.offline) {
     db = new LocalDB(getters);
     if (Array.isArray(data)) db.saveItems(data);
