@@ -82,7 +82,7 @@ export const get = ({commit, getters}, id) => {
 };
 
 export const save = ({commit, getters}, params) => {
-  let id = params.id;
+  let id = params.id?.toString().replace(/\D/g, '');
   delete params.id;
 
   let options = {
@@ -112,7 +112,10 @@ export const remove = ({commit, getters}, id) => {
   commit(types.SET_ISSAVING, true);
 
   return api
-    .fetch(getters.resourceEndpoint + '/' + id, options)
+    .fetch(
+      getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
+      options,
+    )
     .then(data => {
       return data;
     })
@@ -135,4 +138,8 @@ export const setItem = ({commit, getters}, params = {}) => {
 
 export const setItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ITEMS, params);
+};
+
+export const forceReload = ({commit, getters}, reload = false) => {
+  commit(types.SET_RELOAD, reload);
 };
