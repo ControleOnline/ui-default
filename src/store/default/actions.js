@@ -140,6 +140,6 @@ export const setItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ITEMS, params);
 };
 
-export const forceReload = ({commit, getters}, reload = false) => {
+export const setReload = ({commit, getters}, reload = false) => {
   commit(types.SET_RELOAD, reload);
 };
