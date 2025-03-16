@@ -144,3 +144,49 @@ export const setItems = ({commit, getters}, params = {}) => {
 export const setReload = ({commit, getters}, reload = false) => {
   commit(types.SET_RELOAD, reload);
 };
+
+export const setError = ({commit, getters}, error = null) => {
+  commit(types.SET_ERROR, error);
+};
+
+export const setIsSaving = ({commit, getters}, IsSaving = null) => {
+  commit(types.SET_ISSAVING, IsSaving);
+};
+export const setIsLoading = ({commit, getters}, IsLoading = null) => {
+  commit(types.SET_ISLOADING, IsLoading);
+};
+
+export const setTotalItems = ({commit, getters}, totalItems = null) => {
+  commit(types.SET_TOTALITEMS, totalItems);
+};
+
+export const setColumns = ({commit, getters}, columns = null) => {
+  commit(types.SET_COLUMNS, columns);
+};
+
+export const setResourceEndpoint = (
+  {commit, getters},
+  resourceEndpoint = null,
+) => {
+  commit(types.SET_RESOURCEENDPOINT, resourceEndpoint);
+};
+
+export const setSelected = ({commit, getters}, selected = null) => {
+  commit(types.SET_SELECTED, selected);
+};
+
+export const setVisibleColumns = ({commit, getters}, visibleColumns = null) => {
+  commit(types.SET_VISIBLECOLUMNS, visibleColumns);
+};
+
+export const setIsLoadingList = ({commit, getters}, isLoadingList = null) => {
+  commit(types.SET_ISLOADINGLIST, isLoadingList);
+};
+
+export const setStore = ({commit, getters}, store = null) => {
+  commit(types.SET_STORE, store);
+};
+
+export const setOffline = ({commit, getters}, offline = null) => {
+  commit(types.SET_OFFLINE, offline);
+};

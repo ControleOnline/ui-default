@@ -1,5 +1,5 @@
-import * as types from "./mutation_types";
-import Filters from "@controleonline/ui-default/src/utils/filters";
+import * as types from './mutation_types';
+import Filters from '@controleonline/ui-default/src/utils/filters';
 
 export default {
   [types.SET_ERROR](state, error) {
@@ -15,17 +15,11 @@ export default {
   [types.SET_ISSAVING](state, isSaving = true) {
     state.isSaving = isSaving || false;
     return 'isSaving';
-
   },
 
   [types.SET_ISLOADINGLIST](state, isLoadingList = true) {
     state.isLoadingList = isLoadingList || false;
     return 'isLoadingList';
-  },
-
-  [types.SET_VIOLATIONS](state, violations) {
-    state.violations = violations || null;
-    return 'violations';
   },
 
   [types.SET_TOTALITEMS](state, totalItems) {
@@ -41,7 +35,6 @@ export default {
   [types.SET_ITEM](state, item) {
     state.item = item || {};
     return 'item';
-
   },
 
   [types.SET_COLUMNS](state, columns) {
@@ -60,7 +53,7 @@ export default {
   [types.SET_FILTERS](state, filters) {
     const persistentFilter = new Filters(
       this.$router.currentRoute.value.name,
-      state.store || state.resourceEndpoint
+      state.store || state.resourceEndpoint,
     );
     persistentFilter.setFilters(filters);
     state.filters = filters || {};
@@ -86,7 +79,7 @@ export default {
     state.visibleColumns = visibleColumns || [];
     const persistentFilter = new Filters(
       state.$router?.currentRoute?.value?.name,
-      state.store || state.resourceEndpoint
+      state.store || state.resourceEndpoint,
     );
     persistentFilter.setVisibleColumns(visibleColumns);
     return 'visibleColumns';
