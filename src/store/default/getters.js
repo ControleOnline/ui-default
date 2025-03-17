@@ -13,4 +13,5 @@ export const isLoadingList = (state) => state.isLoadingList;
 export const reload = (state) => state.reload;
 export const store = (state) => state.store;
 export const offline = (state) => state.offline;
+export const payable = (state) => state.payable;
 

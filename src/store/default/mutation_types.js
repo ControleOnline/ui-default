@@ -13,3 +13,4 @@ export const SET_ISLOADINGLIST = "SET_ISLOADINGLIST";
 export const SET_RELOAD = "SET_RELOAD";
 export const SET_STORE = "SET_STORE";
 export const SET_OFFLINE = "SET_OFFLINE";
+export const SET_PAYABLE = "SET_PAYABLE";

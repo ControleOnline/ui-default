@@ -190,3 +190,6 @@ export const setStore = ({commit, getters}, store = null) => {
 export const setOffline = ({commit, getters}, offline = null) => {
   commit(types.SET_OFFLINE, offline);
 };
+export const setPayable = ({commit, getters}, payable = 0) => {
+  commit(types.SET_PAYABLE, payable);
+};

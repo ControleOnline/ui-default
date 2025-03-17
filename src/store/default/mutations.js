@@ -70,6 +70,11 @@ export default {
     return 'selected';
   },
 
+  [types.SET_PAYABLE](state, payable) {
+    state.payable = payable || 0;
+    return 'payable';
+  },
+
   [types.SET_RELOAD](state, reload) {
     state.reload = reload || false;
     return 'reload';
