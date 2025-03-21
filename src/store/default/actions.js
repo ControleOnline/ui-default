@@ -15,7 +15,7 @@ export const saveOffline = ({commit, getters}, data) => {
 
 export const getItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
-  commit(types.SET_ITEMS, []);
+  if (getters.items != null) commit(types.SET_ITEMS, []);
   commit(types.SET_TOTALITEMS, 0);
   return api
     .fetch(getters.resourceEndpoint, {params: params})
@@ -62,7 +62,7 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
 
 export const get = ({commit, getters}, id) => {
   commit(types.SET_ISLOADING, true);
-  commit(types.SET_ITEM, {});
+  if (getters.item != null) commit(types.SET_ITEM, {});
   return api
     .fetch(
       getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
@@ -129,38 +129,38 @@ export const remove = ({commit, getters}, id) => {
     });
 };
 
-export const setFilters = ({commit, getters}, params = {}) => {
+export const setFilters = ({commit, getters}, params) => {
   commit(types.SET_FILTERS, params);
 };
 
-export const setItem = ({commit, getters}, params = {}) => {
+export const setItem = ({commit, getters}, params) => {
   commit(types.SET_ITEM, params);
 };
 
-export const setItems = ({commit, getters}, params = {}) => {
+export const setItems = ({commit, getters}, params) => {
   commit(types.SET_ITEMS, params);
 };
 
-export const setReload = ({commit, getters}, reload = false) => {
+export const setReload = ({commit, getters}, reload) => {
   commit(types.SET_RELOAD, reload);
 };
 
-export const setError = ({commit, getters}, error = null) => {
+export const setError = ({commit, getters}, error) => {
   commit(types.SET_ERROR, error);
 };
 
-export const setIsSaving = ({commit, getters}, IsSaving = null) => {
+export const setIsSaving = ({commit, getters}, IsSaving) => {
   commit(types.SET_ISSAVING, IsSaving);
 };
-export const setIsLoading = ({commit, getters}, IsLoading = null) => {
+export const setIsLoading = ({commit, getters}, IsLoading) => {
   commit(types.SET_ISLOADING, IsLoading);
 };
 
-export const setTotalItems = ({commit, getters}, totalItems = null) => {
+export const setTotalItems = ({commit, getters}, totalItems) => {
   commit(types.SET_TOTALITEMS, totalItems);
 };
 
-export const setColumns = ({commit, getters}, columns = null) => {
+export const setColumns = ({commit, getters}, columns) => {
   commit(types.SET_COLUMNS, columns);
 };
 
@@ -171,25 +171,25 @@ export const setResourceEndpoint = (
   commit(types.SET_RESOURCEENDPOINT, resourceEndpoint);
 };
 
-export const setSelected = ({commit, getters}, selected = null) => {
+export const setSelected = ({commit, getters}, selected) => {
   commit(types.SET_SELECTED, selected);
 };
 
-export const setVisibleColumns = ({commit, getters}, visibleColumns = null) => {
+export const setVisibleColumns = ({commit, getters}, visibleColumns) => {
   commit(types.SET_VISIBLECOLUMNS, visibleColumns);
 };
 
-export const setIsLoadingList = ({commit, getters}, isLoadingList = null) => {
+export const setIsLoadingList = ({commit, getters}, isLoadingList) => {
   commit(types.SET_ISLOADINGLIST, isLoadingList);
 };
 
-export const setStore = ({commit, getters}, store = null) => {
+export const setStore = ({commit, getters}, store) => {
   commit(types.SET_STORE, store);
 };
 
-export const setOffline = ({commit, getters}, offline = null) => {
+export const setOffline = ({commit, getters}, offline) => {
   commit(types.SET_OFFLINE, offline);
 };
-export const setPayable = ({commit, getters}, payable = 0) => {
+export const setPayable = ({commit, getters}, payable) => {
   commit(types.SET_PAYABLE, payable);
 };
