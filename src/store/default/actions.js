@@ -95,6 +95,18 @@ export const save = ({commit, getters}, params) => {
   return api
     .fetch(getters.resourceEndpoint + (id ? '/' + id : ''), options)
     .then(data => {
+      let items = getters.items ? [...getters.items] : [];
+
+      if (id) {
+        const index = items.findIndex(
+          i => i['@id'].toString().replace(/\D/g, '') === id,
+        );
+        if (index >= 0) items[index] = data;
+        else items.push(data);
+      } else items.push(data);
+
+      commit(types.SET_ITEMS, items);
+
       return data;
     })
     .catch(e => {
@@ -117,8 +129,20 @@ export const remove = ({commit, getters}, id) => {
       getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
       options,
     )
-    .then(data => {
-      return data;
+    .then(() => {
+      let items = getters.items ? [...getters.items] : [];
+      const index = items.findIndex(
+        i =>
+          i['@id'].toString().replace(/\D/g, '') ===
+          id.toString().replace(/\D/g, ''),
+      );
+
+      if (index >= 0) items.splice(index, 1);
+      else items = [];
+
+      commit(types.SET_ITEMS, items);
+
+      return;
     })
     .catch(e => {
       commit(types.SET_ERROR, e.message);
