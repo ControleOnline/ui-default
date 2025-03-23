@@ -119,23 +119,19 @@ export const save = ({commit, getters}, params) => {
 };
 
 export const remove = ({commit, getters}, id) => {
+  id = id.toString().replace(/\D/g, '');
   let options = {
     method: 'DELETE',
   };
   commit(types.SET_ISSAVING, true);
 
   return api
-    .fetch(
-      getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
-      options,
-    )
+    .fetch(getters.resourceEndpoint + '/' + id, options)
     .then(() => {
       let items = getters.items ? [...getters.items] : [];
-      const index = items.findIndex(
-        i =>
-          i['@id'].toString().replace(/\D/g, '') ===
-          id.toString().replace(/\D/g, ''),
-      );
+      const index = items.findIndex(i => {
+        if (i && i['@id']) return i['@id'].toString().replace(/\D/g, '') === id;
+      });
 
       if (index >= 0) items.splice(index, 1);
       else items = [];
