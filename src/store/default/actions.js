@@ -10,6 +10,7 @@ export const addToQueue = ({commit, getters}, func, id, time = 1000) => {
 };
 
 export const saveOffline = ({commit, getters}, data) => {
+  return;
   db = new localDB(getters);
   if (Array.isArray(data)) db.saveItems(data);
   else if (typeof data === 'object' && data !== null) db.saveItem(data);
@@ -24,12 +25,11 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
     .getItemsByFilters()
     .then(async data => {
       if (!data || (Array.isArray(data) && data.length === 0))
-        return getOnlineItems({commit, getters}, params).then(() => {
-          saveOffline({commit, getters}, data);
+        return getOnlineItems({commit, getters}, params).then(data => {
+          commit(types.SET_ITEM, data);
+          if (getters.offline) saveOffline({commit, getters}, data);
+          return data;
         });
-
-      commit(types.SET_ITEMS, data);
-      return data;
     })
     .catch(e => {
       commit(types.SET_ERROR, e.message);
@@ -62,8 +62,8 @@ export const getOnlineItems = ({commit, getters}, params = {}) => {
 };
 
 export const getItems = ({commit, getters}, params = {}) => {
-  if (getters.offline) return getOfflineItems({commit, getters}, params);
-  else return getOnlineItems({commit, getters}, params);
+  //if (getters.offline) return getOfflineItems({commit, getters}, params); else
+  return getOnlineItems({commit, getters}, params);
 };
 
 export const get = ({commit, getters}, id) => {
