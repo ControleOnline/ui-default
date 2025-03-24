@@ -4,14 +4,6 @@ import * as types from '@controleonline/ui-default/src/store/default/mutation_ty
 
 let db = null;
 
-export const saveOffline = ({commit, getters}, data) => {
-  console.log('Off');
-  return;
-  db = new LocalDB(getters);
-  if (Array.isArray(data)) db.saveItems(data);
-  else if (typeof data === 'object' && data !== null) db.saveItem(data);
-};
-
 export const queue = ({commit, getters}, functionName, time = 1000) => {
   let queue = [];
   let isProcessing = false;
@@ -47,32 +39,14 @@ export const queue = ({commit, getters}, functionName, time = 1000) => {
   return debounced;
 };
 
-export const getItems = ({commit, getters}, params = {}) => {
-  commit(types.SET_ISLOADING, true);
-  if (getters.items != null) commit(types.SET_ITEMS, []);
-  commit(types.SET_TOTALITEMS, 0);
-  return api
-    .fetch(getters.resourceEndpoint, {params: params})
-    .then(data => {
-      commit(types.SET_ITEMS, data['hydra:member']);
-      commit(types.SET_TOTALITEMS, data['hydra:totalItems']);
-
-      if (getters.offline) saveOffline({commit, getters}, data['hydra:member']);
-      return data['hydra:member'];
-    })
-    .catch(e => {
-      commit(types.SET_ERROR, e.message);
-      throw e;
-    })
-    .finally(() => {
-      commit(types.SET_ISLOADING, false);
-    });
+export const saveOffline = ({commit, getters}, data) => {
+  db = new LocalDB(getters);
+  if (Array.isArray(data)) db.saveItems(data);
+  else if (typeof data === 'object' && data !== null) db.saveItem(data);
 };
 
 export const getOfflineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
-
-  if (!getters.offline) return getItems({commit, getters}, params);
 
   db = new LocalDB(getters);
 
@@ -80,7 +54,9 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
     .getItemsByFilters()
     .then(async data => {
       if (!data || (Array.isArray(data) && data.length === 0))
-        return getItems({commit, getters}, params);
+        return getOnlineItems({commit, getters}, params).then(() => {
+          saveOffline({commit, getters}, data);
+        });
 
       commit(types.SET_ITEMS, data);
       return data;
@@ -92,6 +68,32 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
     .finally(() => {
       commit(types.SET_ISLOADING, false);
     });
+};
+
+export const getOnlineItems = ({commit, getters}, params = {}) => {
+  commit(types.SET_ISLOADING, true);
+  if (getters.items != null) commit(types.SET_ITEMS, []);
+  commit(types.SET_TOTALITEMS, 0);
+  return api
+    .fetch(getters.resourceEndpoint, {params: params})
+    .then(data => {
+      commit(types.SET_ITEMS, data['hydra:member']);
+      commit(types.SET_TOTALITEMS, data['hydra:totalItems']);
+
+      return data['hydra:member'];
+    })
+    .catch(e => {
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    })
+    .finally(() => {
+      commit(types.SET_ISLOADING, false);
+    });
+};
+
+export const getItems = ({commit, getters}, params = {}) => {
+  if (getters.offline) return getOfflineItems({commit, getters}, params);
+  else return getOnlineItems({commit, getters}, params);
 };
 
 export const get = ({commit, getters}, id) => {
