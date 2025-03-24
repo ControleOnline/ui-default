@@ -1,46 +1,16 @@
 import {api} from '@controleonline/ui-common/src/api';
-import LocalDB from '@controleonline/ui-common/src/api/LocalDB';
+import localDB from '@controleonline/ui-common/src/api/localDB';
+import {execute} from '@controleonline/ui-common/src/api/queue';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 
 let db = null;
 
-export const queue = ({commit, getters}, functionName, time = 1000) => {
-  let queue = [];
-  let isProcessing = false;
-  let timeout;
-
-  const processQueue = () => {
-    if (isProcessing || queue.length === 0) return;
-
-    isProcessing = true;
-    const product = queue[0];
-
-    functionName(product).then(() => {
-      queue.shift();
-      isProcessing = false;
-      processQueue();
-    });
-  };
-
-  const debounced = product => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      queue.push(product);
-      if (!isProcessing) {
-        processQueue();
-      }
-    }, time);
-  };
-
-  debounced.cancel = () => {
-    clearTimeout(timeout);
-  };
-
-  return debounced;
+export const addToQueue = ({commit, getters}, func, id, time = 1000) => {
+  return execute(func, id, time);
 };
 
 export const saveOffline = ({commit, getters}, data) => {
-  db = new LocalDB(getters);
+  db = new localDB(getters);
   if (Array.isArray(data)) db.saveItems(data);
   else if (typeof data === 'object' && data !== null) db.saveItem(data);
 };
@@ -48,7 +18,7 @@ export const saveOffline = ({commit, getters}, data) => {
 export const getOfflineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
 
-  db = new LocalDB(getters);
+  db = new localDB(getters);
 
   return db
     .getItemsByFilters()
