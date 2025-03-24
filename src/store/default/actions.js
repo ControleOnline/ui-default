@@ -5,12 +5,11 @@ import * as types from '@controleonline/ui-default/src/store/default/mutation_ty
 let db = null;
 
 export const saveOffline = ({commit, getters}, data) => {
+  console.log('Off');
   return;
-  if (getters.offline) {
-    db = new LocalDB(getters);
-    if (Array.isArray(data)) db.saveItems(data);
-    else if (typeof data === 'object' && data !== null) db.saveItem(data);
-  }
+  db = new LocalDB(getters);
+  if (Array.isArray(data)) db.saveItems(data);
+  else if (typeof data === 'object' && data !== null) db.saveItem(data);
 };
 
 export const queue = ({commit, getters}, functionName, time = 1000) => {
@@ -58,7 +57,7 @@ export const getItems = ({commit, getters}, params = {}) => {
       commit(types.SET_ITEMS, data['hydra:member']);
       commit(types.SET_TOTALITEMS, data['hydra:totalItems']);
 
-      saveOffline({commit, getters}, data['hydra:member']);
+      if (getters.offline) saveOffline({commit, getters}, data['hydra:member']);
       return data['hydra:member'];
     })
     .catch(e => {
@@ -105,7 +104,7 @@ export const get = ({commit, getters}, id) => {
     )
     .then(data => {
       commit(types.SET_ITEM, data);
-      saveOffline({commit, getters}, data);
+      if (getters.offline) saveOffline({commit, getters}, data);
       return data;
     })
     .catch(e => {
