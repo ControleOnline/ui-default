@@ -13,6 +13,41 @@ export const saveOffline = ({commit, getters}, data) => {
   }
 };
 
+export const queue = ({commit, getters}, functionName, time = 1000) => {
+  let queue = [];
+  let isProcessing = false;
+  let timeout;
+
+  const processQueue = () => {
+    if (isProcessing || queue.length === 0) return;
+
+    isProcessing = true;
+    const product = queue[0];
+
+    functionName(product).then(() => {
+      queue.shift();
+      isProcessing = false;
+      processQueue();
+    });
+  };
+
+  const debounced = product => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      queue.push(product);
+      if (!isProcessing) {
+        processQueue();
+      }
+    }, time);
+  };
+
+  debounced.cancel = () => {
+    clearTimeout(timeout);
+  };
+
+  return debounced;
+};
+
 export const getItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
   if (getters.items != null) commit(types.SET_ITEMS, []);
