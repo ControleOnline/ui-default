@@ -72,6 +72,7 @@ export const get = ({commit, getters}, id) => {
   return api
     .fetch(
       getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
+
       {},
     )
     .then(data => {
