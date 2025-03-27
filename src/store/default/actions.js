@@ -1,12 +1,16 @@
 import {api} from '@controleonline/ui-common/src/api';
 import localDB from '@controleonline/ui-common/src/api/localDB';
-import {execute} from '@controleonline/ui-common/src/api/queue';
+import {queue} from '@controleonline/ui-common/src/api/queue';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 
 let db = null;
 
-export const addToQueue = ({commit, getters}, func, id, time = 1000) => {
-  return execute(func, id, time);
+export const addToQueue = ({commit, getters}, func) => {
+  queue.addToQueue(func);
+};
+export const initQueue = ({commit, getters}) => {
+  queue.initQueue();
+  return queue;
 };
 
 export const saveOffline = ({commit, getters}, data) => {
