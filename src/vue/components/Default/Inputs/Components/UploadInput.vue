@@ -162,7 +162,7 @@ export default {
       headers: [
         {
           name: "API-TOKEN",
-          value: this.$auth.user.api_key,
+          value: this.user.api_key,
         },
       ],
     };
@@ -175,6 +175,7 @@ export default {
   computed: {
     ...mapGetters({
       myCompany: "people/currentCompany",
+      user: "auth/user",
     }),
 
     myClass() {

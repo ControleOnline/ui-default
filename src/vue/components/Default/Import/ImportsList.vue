@@ -252,6 +252,7 @@
 
 <script>
 import { api } from "app/modules/controleonline/ui-common/src/api";
+import { mapGetters, mapActions } from "vuex";
 
 const SETTINGS = {
   columns: [
@@ -366,7 +367,7 @@ export default {
       uploadHeaders: [
         {
           name: "API-TOKEN",
-          value: this.$auth.user.api_key,
+          value: this.user.api_key,
         },
       ],
       uploadAccepted: ".csv",
@@ -374,6 +375,9 @@ export default {
   },
 
   computed: {
+    ...mapGetters({
+      user: "auth/user",
+    }),
     myClass() {
       return `q-upd q-upd-single`;
     },

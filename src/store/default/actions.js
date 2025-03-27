@@ -194,7 +194,7 @@ export const setResourceEndpoint = (
   {commit, getters},
   resourceEndpoint = null,
 ) => {
-  commit(types.SET_RESOURCEENDPOINT, resourceEndpoint);
+  commit(types.SET_RESOURCE_ENDPOINT, resourceEndpoint);
 };
 
 export const setSelected = ({commit, getters}, selected) => {
