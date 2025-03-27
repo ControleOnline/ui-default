@@ -116,7 +116,7 @@
               }"
               :row="props.row"
               @click="editItem(props.row)"
-              @saved="saved"
+              @saved="savedComponent"
               @error="error"
             />
 
@@ -131,7 +131,7 @@
               :componentConfig="tableActionsComponent()"
               :row="props.row"
               :configs="configs"
-              @saved="saved"
+              @saved="savedComponent"
               @loadData="loadData"
               @reload="reloadData"
             />
@@ -336,7 +336,7 @@
                 componentConfigs: configs,
               }"
               @click="editItem({})"
-              @saved="saved"
+              @saved="savedComponent"
               @error="error"
             />
             <q-space v-if="configs.editable != false"></q-space>
@@ -490,7 +490,7 @@
                         "
                         :row="props.row"
                         :configs="configs"
-                        @saved="saved"
+                        @saved="savedComponent"
                         @loadData="loadData"
                         @reload="reloadData"
                       />
@@ -583,7 +583,7 @@
                     }"
                     :row="props.row"
                     @click="editItem(props.row)"
-                    @saved="saved"
+                    @saved="savedComponent"
                     @error="error"
                   />
                   <DefaultDelete
@@ -596,7 +596,7 @@
                     :componentConfig="tableActionsComponent()"
                     :row="props.row"
                     :configs="configs"
-                    @saved="saved"
+                    @saved="savedComponent"
                     @loadData="loadData"
                     @reload="reloadData"
                   />
@@ -905,13 +905,16 @@ export default {
       items = items.filter((i) => i["@id"] != item["@id"]);
       this.updateItems(items);
       this.reloadData();
-
-      //this.tableKey++;
+      this.tableKey++;
+    },
+    savedComponent(data) {
+      console.log(data);
+      this.tableKey++;
     },
     updateItems(items) {
       this.$store.commit(this.configs.store + "/SET_ITEMS", items);
       this.items = items;
-      //this.tableKey++;
+      this.tableKey++;
     },
     discoverySelected() {
       if (!this.configs.selection) return;
@@ -1052,7 +1055,7 @@ export default {
 
       if (index != -1) items[index] = data;
       else items.push(data);
-
+      console.log("eee");
       this.updateItems(items);
 
       if (this.configs.expandedChild != true) this.$emit("saved", data);

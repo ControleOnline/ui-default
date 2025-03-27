@@ -364,12 +364,7 @@ export default {
         rowsNumber: 10,
       },
       uploadEndpoint: `${this.$entrypoint}/import `,
-      uploadHeaders: [
-        {
-          name: "API-TOKEN",
-          value: this.user.api_key,
-        },
-      ],
+      uploadHeaders: this.uploadHeaders,
       uploadAccepted: ".csv",
     };
   },
@@ -378,6 +373,14 @@ export default {
     ...mapGetters({
       user: "auth/user",
     }),
+    uploadHeaders() {
+      return [
+        {
+          name: "API-TOKEN",
+          value: this.user.api_key,
+        },
+      ];
+    },
     myClass() {
       return `q-upd q-upd-single`;
     },

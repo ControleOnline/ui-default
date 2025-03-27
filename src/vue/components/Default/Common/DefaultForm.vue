@@ -89,7 +89,6 @@ export default {
       extraData: {},
       editing: [],
       periodo: false,
-      item: {},
       id: null,
       loaded: false,
     };
@@ -120,6 +119,9 @@ export default {
     },
     filters() {
       return this.$store.getters[this.configs.store + "/filters"];
+    },
+    item() {
+      return this.$store.getters[this.configs.store + "/item"];
     },
     columns() {
       return this.$store.getters[this.configs.store + "/columns"];
@@ -168,7 +170,8 @@ export default {
       });
 
       if (itemData["@id"]) data["id"] = itemData["@id"].split("/").pop();
-      this.item = data;
+
+      this.$store.commit(this.configs.store + "/SET_ITEM", data);
       this.loaded = true;
     },
 
@@ -220,7 +223,10 @@ export default {
       );
     },
     changed(data, column) {
-      this.item[column.name || column.id] = data;
+      let item = this.$copyObject(this.item);
+      item[column.name || column.id] = data;
+
+      this.$store.commit(this.configs.store + "/SET_ITEM", item);
     },
     changedExtraData(data) {
       this.extraData = data;

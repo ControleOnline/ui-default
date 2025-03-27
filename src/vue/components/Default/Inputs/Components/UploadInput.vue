@@ -157,27 +157,19 @@ export default {
       required: true,
     },
   },
-  data() {
-    return {
-      headers: [
-        {
-          name: "API-TOKEN",
-          value: this.user.api_key,
-        },
-      ],
-    };
-  },
-  watch: {
-    open(newVal) {
-      if (newVal) this.openUploader();
-    },
-  },
   computed: {
     ...mapGetters({
       myCompany: "people/currentCompany",
       user: "auth/user",
     }),
-
+    headers() {
+      return [
+        {
+          name: "API-TOKEN",
+          value: this.user.api_key,
+        },
+      ];
+    },
     myClass() {
       return (
         `q-upd ${this.multiple ? "q-upd-multiple" : "q-upd-single"}` +
@@ -185,6 +177,18 @@ export default {
       );
     },
   },
+  data() {
+    return {};
+  },
+  created() {
+    console.log(this.user);
+  },
+  watch: {
+    open(newVal) {
+      if (newVal) this.openUploader();
+    },
+  },
+
   methods: {
     ...DefaultFiltersMethods,
     getFields() {
