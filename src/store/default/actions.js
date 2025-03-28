@@ -116,7 +116,6 @@ export const save = ({ commit, getters }, params) => {
         else items.push(data);
       } else items.push(data);
       commit(types.SET_ITEMS, items);
-      console.log("D", data);
       return data;
     })
     .catch((e) => {
