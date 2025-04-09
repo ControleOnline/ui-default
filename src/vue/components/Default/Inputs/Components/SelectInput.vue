@@ -104,6 +104,7 @@ export default {
   methods: {
     ...DefaultFiltersMethods,
     save() {
+      if (!this.data) return;
       this.$emit(
         "save",
         this.data[this.column.key || this.column.name] || this.data

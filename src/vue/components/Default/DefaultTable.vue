@@ -1,13 +1,11 @@
 <template>
   <div
     v-if="configsLoaded"
-    :class="
-      (configs['full-height'] == false ? '' : 'full') +
-      ' full-height full-width ' +
-      configs.expandedChild
-        ? ' default-table-expanded'
-        : ' default-table'
-    "
+    :class="[
+      configs['full-height'] == false ? '' : 'full',
+      'full-height full-width ',
+      'default-table',
+    ]"
   >
     <div
       class="q-gutter-sm full-height"
@@ -116,7 +114,7 @@
               }"
               :row="props.row"
               @click="editItem(props.row)"
-              @saved="savedComponent"
+              @saved="saved"
               @error="error"
             />
 
@@ -336,7 +334,7 @@
                 componentConfigs: configs,
               }"
               @click="editItem({})"
-              @saved="savedComponent"
+              @saved="saved"
               @error="error"
             />
             <q-space v-if="configs.editable != false"></q-space>
@@ -583,7 +581,7 @@
                     }"
                     :row="props.row"
                     @click="editItem(props.row)"
-                    @saved="savedComponent"
+                    @saved="saved"
                     @error="error"
                   />
                   <DefaultDelete
@@ -907,10 +905,7 @@ export default {
       this.reloadData();
       this.tableKey++;
     },
-    savedComponent(data) {
-      console.log(data);
-      this.tableKey++;
-    },
+
     updateItems(items) {
       this.$store.commit(this.configs.store + "/SET_ITEMS", items);
       this.items = items;
@@ -1049,10 +1044,13 @@ export default {
     error(error) {
       this.$emit("error", error);
     },
+    savedComponent(data) {
+      //this.saved(data);
+    },
     saved(data) {
       let index = this.getIndex(data);
       let items = this.$copyObject(this.items);
-
+      console.log(items,data);
       if (index != -1) items[index] = data;
       else items.push(data);
       console.log("eee");

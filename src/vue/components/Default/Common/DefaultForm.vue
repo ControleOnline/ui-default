@@ -19,6 +19,7 @@
             @forceSave="onSubmit"
             @changed="
               (value) => {
+                console.log(value)
                 changed(value, column);
               }
             "
@@ -285,12 +286,14 @@ export default {
     },
 
     onSubmit() {
-      this.$refs.myForm.validate().then((success) => {
-        if (success) {
-          let payload = this.item;
-          this.save(payload);
-        }
-      });
+      setTimeout(() => {
+        this.$refs.myForm.validate().then((success) => {
+          if (success) {
+            let payload = this.item;
+            this.save(payload);
+          }
+        });
+      }, 100);
     },
   },
 };
