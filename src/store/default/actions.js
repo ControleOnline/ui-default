@@ -51,10 +51,10 @@ export const getOnlineItems = ({ commit, getters }, params = {}) => {
   return api
     .fetch(getters.resourceEndpoint, { params: params })
     .then((data) => {
-      commit(types.SET_ITEMS, data["hydra:member"]);
-      commit(types.SET_TOTALITEMS, data["hydra:totalItems"]);
+      commit(types.SET_ITEMS, data["member"]);
+      commit(types.SET_TOTALITEMS, data["totalItems"]);
 
-      return data["hydra:member"];
+      return data["member"];
     })
     .catch((e) => {
       commit(types.SET_ERROR, e.message);
