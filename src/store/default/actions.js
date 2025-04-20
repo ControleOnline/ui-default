@@ -168,6 +168,10 @@ export const setItems = ({commit, getters}, params) => {
   commit(types.SET_ITEMS, params);
 };
 
+export const setPrint = ({commit, getters}, params) => {
+  commit(types.SET_PRINT, params);
+};
+
 export const setReload = ({commit, getters}, reload) => {
   commit(types.SET_RELOAD, reload);
 };

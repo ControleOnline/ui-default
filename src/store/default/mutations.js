@@ -22,6 +22,11 @@ export default {
     return 'isLoadingList';
   },
 
+  [types.SET_PRINT](state, print) {
+    state.print = print;
+    return 'print';
+  },
+
   [types.SET_TOTALITEMS](state, totalItems) {
     state.totalItems = totalItems || 0;
     return 'totalItems';
