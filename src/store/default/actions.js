@@ -5,7 +5,7 @@ import * as types from '@controleonline/ui-default/src/store/default/mutation_ty
 
 let db = null;
 
-export const addToQueue = ({commit, getters}, func) => {
+export const addToQueue =  ({commit, getters}, func) => {
   queue.addToQueue(func);
 };
 export const initQueue = ({commit, getters}, func) => {
