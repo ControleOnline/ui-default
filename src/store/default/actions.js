@@ -206,6 +206,14 @@ export const setSelected = ({commit, getters}, selected) => {
   commit(types.SET_SELECTED, selected);
 };
 
+export const setMessage = ({commit, getters}, message) => {
+  commit(types.SET_MESSAGE, message);
+};
+
+export const setMessages = ({commit, getters}, messages) => {
+  commit(types.SET_MESSAGES, messages);
+};
+
 export const setVisibleColumns = ({commit, getters}, visibleColumns) => {
   commit(types.SET_VISIBLECOLUMNS, visibleColumns);
 };

@@ -41,7 +41,14 @@ export default {
     state.item = item;
     return 'item';
   },
-
+  [types.SET_MESSAGE](state, message) {
+    state.message = message;
+    return 'message';
+  },
+  [types.SET_MESSAGES](state, messages) {
+    state.messages = messages;
+    return 'messages';
+  },
   [types.SET_COLUMNS](state, columns) {
     state.columns = columns;
     return 'columns';
