@@ -1032,7 +1032,6 @@ export default {
         this.tableKey += 1;
       }
     },
-
     tableColumnComponent(name) {
       if (this.configs.components?.customColumns)
         return this.configs.components?.customColumns[name];
@@ -1050,7 +1049,7 @@ export default {
     saved(data) {
       let index = this.getIndex(data);
       let items = this.$copyObject(this.items);
-      console.log(items,data);
+      console.log(items, data);
       if (index != -1) items[index] = data;
       else items.push(data);
       console.log("eee");

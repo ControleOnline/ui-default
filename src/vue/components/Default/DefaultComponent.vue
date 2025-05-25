@@ -4,7 +4,7 @@
     :is="componentConfig.component"
     :componentProps="componentConfig.props"
     :row="row"
-    :configs="configs"
+    :configs="componentConfig.configs || configs"
     @saved="saved"
     @loadData="loadData"
     @reload="reload"
