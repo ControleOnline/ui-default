@@ -1,5 +1,6 @@
 <template>
   <span
+    outlined
     :style="{ color: getColor(column, data) }"
     @click="startEditing(column, data)"
     @mouseenter="isHover(true)"

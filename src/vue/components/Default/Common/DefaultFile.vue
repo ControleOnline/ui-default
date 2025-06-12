@@ -5,6 +5,7 @@
         ? 'image-upload-wrapper'
         : 'q-pt-xs'
     "
+    :style="size"
     @blur="this.$emit('blur', $event)"
   >
     <img
@@ -57,6 +58,9 @@ export default {
       required: false,
       default: () => ["image"],
     },
+    size: {
+      required: false,
+    }
   },
   data() {
     return { open: false };
@@ -65,11 +69,12 @@ export default {
     ...mapGetters({}),
     configs() {
       return {
-        icon:
-          this.data && this.data.fileType == "image" ? "image" : "description",
+       // icon:
+       //   this.data && this.data.fileType == "image" ? "image" : "description",
+       icon: "upload",
         context: this.context,
         "full-height": true,
-        class: "upload-icon q-pa-xs btn-primary",
+        class: "upload-icon q-pa-xs btn-primary full-width",
         label: this.label,
         fileType: this.fileType,
         component: this.$components.FileExplorer,

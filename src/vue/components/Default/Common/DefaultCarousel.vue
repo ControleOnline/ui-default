@@ -17,17 +17,22 @@
         :alt="slide.name"
         :name="slide.id"
         :img-src="slide.src"
-        class="carosel-image full-width"
-        height="300px"
+        class="carosel-image"
+        height="150px"
       />
       <template v-slot:control>
         <q-carousel-control position="bottom-right" :offset="[18, 18]">
-          <DefaultFile
+          
+        </q-carousel-control>
+      </template>
+    </q-carousel>
+    <DefaultFile
             v-if="configs.isAdmin"
             :editable="true"
             :row="slide?.file"
             :fileType="['image']"
             :context="configs.context"
+            size="width:100%"
             @save="selected"
           />
           <q-btn
@@ -39,10 +44,7 @@
             text-color="primary"
             :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'"
             @click="fullscreen = !fullscreen"
-          />
-        </q-carousel-control>
-      </template>
-    </q-carousel>
+      />
   </div>
 </template>
 
@@ -114,7 +116,12 @@ export default {
 };
 </script>
 <style>
-.img-box > div {
+.carousel-container,
+.q-carousel {
+  height: 200px !important;
+}
+
+.default-carousel {
   border: 2px #bcbcbc dotted;
   border-radius: 5px;
 }
