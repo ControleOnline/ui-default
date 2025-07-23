@@ -113,6 +113,7 @@ import FileInput from "@controleonline/ui-default/src/vue/components/Default/Inp
 import DefaultSpan from "@controleonline/ui-default/src/vue/components/Default/Inputs/Components/DefaultSpan";
 
 export default {
+  emits: ["saved", "loadData", "reload", "changed", "error"],
   components: {
     SelectInput,
     DateInput,
@@ -124,7 +125,6 @@ export default {
   },
   props: {
     columnName: {
-      type: Object,
       required: true,
     },
     row: {

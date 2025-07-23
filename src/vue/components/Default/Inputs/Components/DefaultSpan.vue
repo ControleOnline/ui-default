@@ -52,11 +52,15 @@ export default {
     return {
       data: null,
       hover: [],
+      tempValue:null
     };
   },
   computed: {
     items() {
       return this.$store.getters[this.configs.store + "/items"];
+    },
+    isSaving() {
+      return this.$store.getters[this.configs.store + "/isSaving"];
     },
   },
   created() {
