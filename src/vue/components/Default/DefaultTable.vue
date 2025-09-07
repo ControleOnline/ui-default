@@ -26,6 +26,7 @@
       class="default-table full-height"
       dense
       flat
+      :hide-bottom="totalItems <= pagination.rowsPerPage"
       :rows="items"
       :loading="isLoading"
       :row-key="columns[0].name"
@@ -33,7 +34,6 @@
       @request="loadData"
       :rows-per-page-options="rowsOptions"
       :key="tableKey"
-      binary-state-sort
     >
       <template v-slot:body="props">
         <q-tr
@@ -316,7 +316,10 @@
         </div>
       </template>
 
-      <template v-slot:top-right="props" v-if="configs.headers != false && configs.toolbar != false">
+      <template
+        v-slot:top-right="props"
+        v-if="configs.headers != false && configs.toolbar != false"
+      >
         <div class="table-toolbar">
           <q-toolbar class="q-gutter-sm">
             <DefaultButtonDialog
