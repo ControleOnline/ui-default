@@ -85,10 +85,8 @@ export default {
   },
   created() {
     this.searchAction = this.getList(this.configs, this.column);
-    this.data = this.formatList(
-      this.column,
-      this.row[this.column.key || this.column.name]
-    );
+    if (this.formatList)
+    this.data = this.formatList(      this.column,      this.row[this.column.key || this.column.name]    );
     setTimeout(() => {
       this.loading = false;
     }, 300);

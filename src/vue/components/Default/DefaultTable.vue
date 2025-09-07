@@ -25,6 +25,7 @@
       :grid="isTableView"
       class="default-table full-height"
       dense
+      flat
       :rows="items"
       :loading="isLoading"
       :row-key="columns[0].name"
@@ -315,7 +316,7 @@
         </div>
       </template>
 
-      <template v-slot:top-right="props" v-if="configs.headers != false">
+      <template v-slot:top-right="props" v-if="configs.headers != false && configs.toolbar != false">
         <div class="table-toolbar">
           <q-toolbar class="q-gutter-sm">
             <DefaultButtonDialog

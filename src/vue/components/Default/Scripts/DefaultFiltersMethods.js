@@ -18,7 +18,7 @@ export function sendFilterColumn(colName) {
 }
 export function isSavingItem(data) {
   let index = this.getIndex(data);
-  return this.isItemSaved[index] &&
+  return  this.isItemSaved && this.isItemSaved[index] &&
     this.isItemSaved[index][this.column.key || this.column.name]
     ? true
     : false;
