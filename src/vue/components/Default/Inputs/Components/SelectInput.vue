@@ -51,6 +51,7 @@ export default {
     row: {
       type: Object,
       required: false,
+      default:{}
     },
     column: {
       type: Object,
@@ -77,7 +78,7 @@ export default {
   },
   data() {
     return {
-      data: {},
+      data: null,
       options: [],
       loading: true,
       searchAction: null,
