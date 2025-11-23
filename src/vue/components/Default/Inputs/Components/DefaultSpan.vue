@@ -16,8 +16,16 @@
       />
     </template>
     {{ column.prefix }}
-    {{ tempValue != null ? tempValue : formatData(column, data, false) }}
+
+    <!-- ALEMAC // 21/11/2025 // para traduzir ou não cada coluna -->
+    {{ 
+        column.translate == true
+        ? (tempValue != null ? tempValue : this.$tt(this.configs.store, "label", formatData(column, data, false)))
+        : (tempValue != null ? tempValue : formatData(column, data, false))
+    }}
+
     {{ column.sufix }}
+
     <q-icon
       v-if="isEditable() && !isSaving"
       size="1.0em"
