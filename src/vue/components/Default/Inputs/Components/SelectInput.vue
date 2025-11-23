@@ -86,8 +86,11 @@ export default {
   },
   created() {
     this.searchAction = this.getList(this.configs, this.column);
-    if (this.formatList)
-    this.data = this.formatList(      this.column,      this.row[this.column.key || this.column.name]    );
+
+    if (this.formatList){
+      this.data = this.formatList(this.column, this.row[this.column.key || this.column.name]);
+    }
+
     setTimeout(() => {
       this.loading = false;
     }, 300);
@@ -126,10 +129,19 @@ export default {
           this.$store
             .dispatch(this.searchAction, params)
             .then((result) => {
-              //this.options.push(null);
+              
+              // popula a lista no filtro, já com a tradução se necessário
               result.forEach((item) => {
-                this.options.push(this.formatList(this.column, item));
+                let list = this.formatList(this.column, item);
+                this.options.push({
+                  value: list.value,
+                  label: this.column.translate
+                    ? this.$tt(this.configs.store, "input", list.label)
+                    : list.label,
+                });
               });
+
+
               update();
             })
             .finally(() => {
@@ -164,3 +176,4 @@ export default {
   },
 };
 </script>
+
