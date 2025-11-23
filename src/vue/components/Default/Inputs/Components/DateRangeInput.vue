@@ -1,5 +1,5 @@
 <template>
-    <div class="row outlined-div">
+    <div class="row outlined-div range-date-filter">
         <div class="col-11 col-sm-11col-md-11 col-lg-11 col-xg-11 col-xs-11 flex">
             <div class="label-range-date row" v-if="labelType == 'stack-label'">
                 {{ $tt(configs.store, 'input', column.label) }}
@@ -134,5 +134,10 @@ export default {
 .custom-input .q-field__label {
     top: 25px;
     font-size: 14px;
+}
+
+.range-date-filter input {
+  position: absolute;
+  right: 15px;
 }
 </style>
