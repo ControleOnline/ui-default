@@ -119,12 +119,28 @@ export default {
       if (typeof this.searchAction == "string") {
         this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", true);
         this.options = [];
+
+        // popula a lista no filtro quando é string, já com a tradução se necessário
+        // if (this.$store.getters[this.searchAction]) {
+        //   this.$store.getters[this.searchAction].forEach((item) => {
+        //     this.options.push(this.formatList(this.column, item));
+        //   });
+        //   update();
+        //   this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", false);
         if (this.$store.getters[this.searchAction]) {
           this.$store.getters[this.searchAction].forEach((item) => {
-            this.options.push(this.formatList(this.column, item));
+            let list = this.formatList(this.column, item);
+            this.options.push({
+              value: list.value,
+              label: this.column.translate
+                ? this.$tt(this.configs.store, "input", list.label)
+                : list.label,
+            });
           });
           update();
           this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", false);
+
+        
         } else {
           this.$store
             .dispatch(this.searchAction, params)
