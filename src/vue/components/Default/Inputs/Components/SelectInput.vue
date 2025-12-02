@@ -21,8 +21,8 @@
       configs.labelType != 'stack-label'
         ? ''
         : store
-        ? $tt(store, 'input', column.label)
-        : column.label
+          ? $tt(store, 'input', column.label)
+          : column.label
     "
     v-model="data"
     @blur="save()"
@@ -51,7 +51,7 @@ export default {
     row: {
       type: Object,
       required: false,
-      default:{}
+      default: {},
     },
     column: {
       type: Object,
@@ -87,8 +87,11 @@ export default {
   created() {
     this.searchAction = this.getList(this.configs, this.column);
 
-    if (this.formatList){
-      this.data = this.formatList(this.column, this.row[this.column.key || this.column.name]);
+    if (this.formatList && this.row[this.column.key || this.column.name]) {
+      this.data = this.formatList(
+        this.column,
+        this.row[this.column.key || this.column.name],
+      );
     }
 
     setTimeout(() => {
@@ -109,7 +112,7 @@ export default {
       if (!this.data) return;
       this.$emit(
         "save",
-        this.data[this.column.key || this.column.name] || this.data
+        this.data[this.column.key || this.column.name] || this.data,
       );
     },
     searchList(input, update, abort) {
@@ -132,38 +135,30 @@ export default {
             let list = this.formatList(this.column, item);
             this.options.push({
               value: list.value,
-              label: this.column.translate
-                ? this.$tt(this.configs.store, "input", list.label)
-                : list.label,
+              label: list.label,
             });
           });
           update();
           this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", false);
-
-        
         } else {
           this.$store
             .dispatch(this.searchAction, params)
             .then((result) => {
-              
               // popula a lista no filtro, já com a tradução se necessário
               result.forEach((item) => {
                 let list = this.formatList(this.column, item);
                 this.options.push({
                   value: list.value,
-                  label: this.column.translate
-                    ? this.$tt(this.configs.store, "input", list.label)
-                    : list.label,
+                  label: list.label,
                 });
               });
-
 
               update();
             })
             .finally(() => {
               this.$store.commit(
                 this.configs.store + "/SET_ISLOADINGLIST",
-                false
+                false,
               );
             });
         }
@@ -192,4 +187,3 @@ export default {
   },
 };
 </script>
-

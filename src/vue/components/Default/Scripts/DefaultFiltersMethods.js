@@ -18,7 +18,8 @@ export function sendFilterColumn(colName) {
 }
 export function isSavingItem(data) {
   let index = this.getIndex(data);
-  return  this.isItemSaved && this.isItemSaved[index] &&
+  return this.isItemSaved &&
+    this.isItemSaved[index] &&
     this.isItemSaved[index][this.column.key || this.column.name]
     ? true
     : false;
@@ -46,7 +47,7 @@ export function loadPersistentFilters() {
   const persistentFilter = new Filters(
     this.$route.name,
     this.$store.getters[this.configs.store + "/store"] ||
-      this.$store.getters[this.configs.store + "/resourceEndpoint"]
+      this.$store.getters[this.configs.store + "/resourceEndpoint"],
   );
   let filters = persistentFilter.getFilters();
   let visibleColumns = persistentFilter.getVisibleColumns();
@@ -145,7 +146,7 @@ export function formatData(column, row, editing) {
     column,
     row,
     this.getNameFromList(column, row),
-    editing
+    editing,
   );
 
   return data;
@@ -200,8 +201,8 @@ export function getNameFromList(column, row) {
                   .trim()
               : row[column.key || column.name].value
             : row[column.key || column.name]
-            ? row[column.key || column.name].toString().trim()
-            : null)
+              ? row[column.key || column.name].toString().trim()
+              : null)
       );
     });
     return name instanceof Object && !editing
@@ -231,19 +232,40 @@ export function getSearchFilters(column, row) {
 }
 
 export function formatList(column, value) {
-  if (column && column.formatList instanceof Function)
-    return column.formatList(value, column);
-  if (!value) return;
+  if (!value || (typeof value == "object" && Object.keys(value).length === 0))
+    return;
+  let translateInputType = "list";
+
+  if (column && column.formatList instanceof Function) {
+    let formatedList = column.formatList(value, column);
+    if (column.translate)
+      return this.$tt(this.configs.store, translateInputType, formatedList);
+    return formatedList;
+  }
 
   if (value["@id"])
     return {
       value: value["@id"]?.split("/").pop(),
-      label: value[column.name || column.id],
+      label: column.translate
+        ? this.$tt(
+            this.configs.store,
+            translateInputType,
+            value[column.name || column.id],
+          )
+        : value[column.name || column.id],
     };
 
-  if (value.value) return { value: value.value, label: value.label };
-  
-  return value;
+  if (value.value)
+    return {
+      value: value.value,
+      label: column.translate
+        ? this.$tt(this.configs.store, translateInputType, value.label)
+        : value.label,
+    };
+
+  return column.translate && typeof value == "string"
+    ? this.$tt(this.configs.store, translateInputType, value)
+    : value;
 }
 
 export function selectionDisabled(row, configs) {

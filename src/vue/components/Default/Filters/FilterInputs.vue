@@ -18,11 +18,9 @@
     :labelType="configs.labelType || 'stack-label'"
     :multiple="true"
     :column="column"
-    @selected="
-      (value) => {
-        colFilter[column.key || column.name] = $copyObject(value);
-      }
-    "
+    :row="colFilter"
+    @save="selectedOption"
+    @selected="selectedOption"
     @focus="this.$emit('focus', $event)"
     @blur="fireBlur"
   />
@@ -32,7 +30,7 @@
     v-else
     dense
     :stack-label="configs.labelType || 'stack-label'"
-    :type:="inputType"
+    :type="inputType"
     :prefix="prefix"
     :sufix="sufix"
     :label="
@@ -114,7 +112,7 @@ export default {
     this.colFilter = this.$copyObject(this.filters);
     this.$store.commit(
       this.configs.store + "/SET_ITEM",
-      this.colFilter[this.column.key || this.column.name]
+      this.colFilter[this.column.key || this.column.name],
     );
   },
 
@@ -128,6 +126,9 @@ export default {
   },
   methods: {
     ...DefaultFiltersMethods,
+    selectedOption(value) {
+      this.colFilter[this.column.key || this.column.name] = value;
+    },
     fireBlur($event) {
       if (!this.blurLoop) {
         this.sendFilterColumn(this.column.key || this.column.name);

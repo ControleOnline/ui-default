@@ -771,7 +771,7 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
-      this.colFilter = this.$copyObject(this.filters);
+      this.colFilter = this.$copyObject([{'status':{}},{id:{}}]);
       this.search = this.colFilter["search"];
       this.saveVisibleColumns();
       if (this.myCompany) {
