@@ -141,16 +141,24 @@ export function getIndex(row) {
   return this.items?.findIndex((item) => item["@id"] == row["@id"]);
 }
 
-export function formatData(column, row, editing) {
-  let data = this.format(
-    column,
-    row,
-    this.getNameFromList(column, row),
-    editing,
-  );
 
-  return data;
+export function formatData(column, row, editing) {
+
+  let data = this.format(
+      column,
+      row,
+      this.getNameFromList(column, row),
+      editing,
+    );
+
+  // AleMac // 02/12/2025 // para retornar o valor traduzido
+  // return data;
+  return column.translate
+    ? this.$tt(this.configs.store, "span", data)
+    : data;  
 }
+
+
 
 export function getList(configs, column) {
   if (configs?.list && configs?.list[column.key || column.name])
@@ -268,15 +276,6 @@ export function formatList(column, value) {
     : value;
 }
 
-export function selectionDisabled(row, configs) {
-  if (!configs || !configs.selectionDisabled) return;
-  let disabled;
-
-  if (configs.selectionDisabled instanceof Function)
-    disabled = configs.selectionDisabled(row);
-  return disabled;
-}
-
 export function format(column, row, value, editing) {
   if (editing && column && column.editFormat instanceof Function)
     return column.editFormat(value, column, row, editing);
@@ -285,6 +284,7 @@ export function format(column, row, value, editing) {
 
   return value instanceof Object && !editing ? value.label : value;
 }
+
 
 export function getColumnByName(columnName) {
   return this.columns.find((col) => {

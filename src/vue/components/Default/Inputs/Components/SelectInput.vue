@@ -123,13 +123,6 @@ export default {
         this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", true);
         this.options = [];
 
-        // popula a lista no filtro quando é string, já com a tradução se necessário
-        // if (this.$store.getters[this.searchAction]) {
-        //   this.$store.getters[this.searchAction].forEach((item) => {
-        //     this.options.push(this.formatList(this.column, item));
-        //   });
-        //   update();
-        //   this.$store.commit(this.configs.store + "/SET_ISLOADINGLIST", false);
         if (this.$store.getters[this.searchAction]) {
           this.$store.getters[this.searchAction].forEach((item) => {
             let list = this.formatList(this.column, item);
@@ -144,7 +137,7 @@ export default {
           this.$store
             .dispatch(this.searchAction, params)
             .then((result) => {
-              // popula a lista no filtro, já com a tradução se necessário
+ 
               result.forEach((item) => {
                 let list = this.formatList(this.column, item);
                 this.options.push({
