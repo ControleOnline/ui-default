@@ -44,7 +44,6 @@
       </template>
     </template>
     <template v-else>
-      <div class="flex items-center">
         <q-btn
           v-if="column.inputType === 'increase' && column.editable == true"
           flat
@@ -68,7 +67,6 @@
           color="primary"
           @click="increaseQuantity(column, data)"
         />
-      </div>
     </template>
   </template>
 
