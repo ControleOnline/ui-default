@@ -173,12 +173,17 @@ export default {
       this.countFilters = count.length;
     },
     getUsedFilters() {
-      let filters = Object.keys(this.$copyObject(this.filters) || {});
-      return Object.keys(
-        this.columns.filter((column) => {
-          return Object.values(filters).includes(column.name);
-        }) || {}
-      );
+      const filters = Object.entries(this.filters || {})
+        .filter(([_, v]) => {
+          if (Array.isArray(v)) return v.length > 0;
+          if (v && typeof v === "object") return Object.keys(v).length > 0;
+          return v !== null && v !== "";
+        })
+        .map(([k]) => k);
+
+      return this.columns
+        .filter((col) => filters.includes(col.name))
+        .map((col) => col.name);
     },
   },
 };
