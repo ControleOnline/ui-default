@@ -17,3 +17,5 @@ export const payable = state => state.payable;
 export const print = state => state.print;
 export const message = state => state.message;
 export const messages = state => state.messages;
+export const filterId = state => state?.filters?.id || null;
+export const filterDueDate = state => state?.filters?.dueDate || null;

@@ -63,11 +63,14 @@ export default {
   },
 
   [types.SET_FILTERS](state, filters) {
-    const persistentFilter = new Filters(
-      this.$router.currentRoute.value.name,
-      state.store || state.resourceEndpoint,
-    );
-    persistentFilter.setFilters(filters);
+    const routeName = this?.$router?.currentRoute?.value?.name;
+    if (routeName) {
+      const persistentFilter = new Filters(
+        routeName,
+        state.store || state.resourceEndpoint,
+      );
+      persistentFilter.setFilters(filters);
+    }
     state.filters = filters;
     return 'filters';
   },
