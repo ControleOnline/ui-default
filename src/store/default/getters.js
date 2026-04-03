@@ -2,6 +2,7 @@ export const error = state => state.error;
 export const isLoading = state => state.isLoading;
 export const isSaving = state => state.isSaving;
 export const totalItems = state => state.totalItems;
+export const summary = state => state.summary;
 export const items = state => state.items;
 export const item = state => state.item;
 export const columns = state => state.columns;

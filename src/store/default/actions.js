@@ -26,6 +26,7 @@ export const saveOffline = ({commit, getters}, data) => {
 
 export const getOfflineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
+  commit(types.SET_SUMMARY, {});
 
   db = new localDB(getters);
 
@@ -52,11 +53,13 @@ export const getOnlineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
   if (getters.items != null) commit(types.SET_ITEMS, []);
   commit(types.SET_TOTALITEMS, 0);
+  commit(types.SET_SUMMARY, {});
   return api
     .fetch(getters.resourceEndpoint, {params: params})
     .then(data => {
       commit(types.SET_ITEMS, data['member']);
       commit(types.SET_TOTALITEMS, data['totalItems']);
+      commit(types.SET_SUMMARY, data['summary']);
 
       return data['member'];
     })
@@ -193,6 +196,10 @@ export const setIsLoading = ({commit, getters}, IsLoading) => {
 
 export const setTotalItems = ({commit, getters}, totalItems) => {
   commit(types.SET_TOTALITEMS, totalItems);
+};
+
+export const setSummary = ({commit, getters}, summary) => {
+  commit(types.SET_SUMMARY, summary);
 };
 
 export const setColumns = ({commit, getters}, columns) => {

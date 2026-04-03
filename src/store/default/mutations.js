@@ -32,6 +32,11 @@ export default {
     return 'totalItems';
   },
 
+  [types.SET_SUMMARY](state, summary) {
+    state.summary = summary || {};
+    return 'summary';
+  },
+
   [types.SET_ITEMS](state, items) {
     state.items = items;
     return 'items';

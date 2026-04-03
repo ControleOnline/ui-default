@@ -649,19 +649,22 @@
               { hidden: !shouldIncludeColumn(column) },
             ]"
           >
-            <span
-              v-if="
-                sumColumn[column.key || column.name] != false &&
-                sumColumn[column.key || column.name] != undefined
-              "
+            <template
+              v-for="summaryValue in getColumnSummaryValues(column)"
+              :key="summaryValue.key"
             >
-              {{
-                (column.prefix || "") +
-                format(column, {}, sumColumn[column.key || column.name]) +
-                (column.sufix || "")
-              }}
-              <q-icon size="1.0em" name="" />
-            </span>
+              <div v-if="summaryValue.value !== undefined">
+                <span v-if="summaryValue.showLabel">
+                  {{ summaryValue.label }}:
+                </span>
+                {{
+                  (column.prefix || "") +
+                  format(column, {}, summaryValue.value) +
+                  (column.sufix || "")
+                }}
+                <q-icon size="1.0em" name="" />
+              </div>
+            </template>
           </q-td>
           <q-td
             v-if="
@@ -799,6 +802,9 @@ export default {
     },
     totalItems() {
       return this.$store.getters[this.configs.store + "/totalItems"];
+    },
+    summary() {
+      return this.$store.getters[this.configs.store + "/summary"] || {};
     },
     visibleColumns() {
       return this.$store.getters[this.configs.store + "/visibleColumns"];
@@ -1168,6 +1174,59 @@ export default {
     },
     isInvalid() {
       return true;
+    },
+    getColumnSummaryOperations(column) {
+      if (typeof column.summary === "string") return [column.summary];
+      if (Array.isArray(column.summary)) return column.summary;
+      if (column.summary && typeof column.summary === "object") {
+        return Object.entries(column.summary)
+          .filter(([, value]) => value)
+          .map(([operation]) => operation);
+      }
+
+      return ["sum", "count"].filter((operation) => column[operation] === true);
+    },
+    getColumnSummaryField(column, operation) {
+      if (column.summary && typeof column.summary === "object") {
+        const summaryField = column.summary[operation];
+        if (typeof summaryField === "string") return summaryField;
+      }
+
+      return column.key || column.name;
+    },
+    getColumnSummaryValues(column) {
+      const operations = this.getColumnSummaryOperations(column);
+      const values = operations
+        .map((operation) => {
+          const field = this.getColumnSummaryField(column, operation);
+          const value = this.summary?.[operation]?.[field];
+
+          if (value === undefined) return undefined;
+
+          return {
+            key: `${column.key || column.name}-${operation}`,
+            label: operation,
+            operation,
+            showLabel: operations.length > 1 || operation !== "sum",
+            value,
+          };
+        })
+        .filter((value) => value !== undefined);
+
+      if (values.length > 0) return values;
+
+      const fallbackValue = this.sumColumn[column.key || column.name];
+      if (fallbackValue === false || fallbackValue === undefined) return [];
+
+      return [
+        {
+          key: `${column.key || column.name}-sum-fallback`,
+          label: "sum",
+          operation: "sum",
+          showLabel: false,
+          value: fallbackValue,
+        },
+      ];
     },
     sum(column, value) {
       if (column.sum == true) {
