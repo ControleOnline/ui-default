@@ -225,6 +225,25 @@ export const setMessages = ({commit, getters}, messages) => {
   commit(types.SET_MESSAGES, messages);
 };
 
+export const setSelections = ({commit, getters}, selections) => {
+  commit(types.SET_SELECTIONS, selections);
+};
+
+export const setSelectorModalKey = ({commit, getters}, selectorModalKey) => {
+  commit(types.SET_SELECTOR_MODAL_KEY, selectorModalKey);
+};
+
+export const setActiveRequestKey = ({commit, getters}, activeRequestKey) => {
+  commit(types.SET_ACTIVE_REQUEST_KEY, activeRequestKey);
+};
+
+export const setLastCompletedRequest = (
+  {commit, getters},
+  lastCompletedRequest,
+) => {
+  commit(types.SET_LAST_COMPLETED_REQUEST, lastCompletedRequest);
+};
+
 export const setVisibleColumns = ({commit, getters}, visibleColumns) => {
   commit(types.SET_VISIBLECOLUMNS, visibleColumns);
 };

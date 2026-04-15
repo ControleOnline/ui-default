@@ -54,6 +54,22 @@ export default {
     state.messages = messages;
     return 'messages';
   },
+  [types.SET_SELECTIONS](state, selections) {
+    state.selections = selections || {};
+    return 'selections';
+  },
+  [types.SET_SELECTOR_MODAL_KEY](state, selectorModalKey) {
+    state.selectorModalKey = selectorModalKey || '';
+    return 'selectorModalKey';
+  },
+  [types.SET_ACTIVE_REQUEST_KEY](state, activeRequestKey) {
+    state.activeRequestKey = activeRequestKey || '';
+    return 'activeRequestKey';
+  },
+  [types.SET_LAST_COMPLETED_REQUEST](state, lastCompletedRequest) {
+    state.lastCompletedRequest = lastCompletedRequest || null;
+    return 'lastCompletedRequest';
+  },
   [types.SET_COLUMNS](state, columns) {
     state.columns = columns;
     return 'columns';
