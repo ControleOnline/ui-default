@@ -111,6 +111,16 @@ export default {
     return 'payable';
   },
 
+  [types.SET_LOADED_KEY](state, loadedKey) {
+    state.loadedKey = loadedKey || '';
+    return 'loadedKey';
+  },
+
+  [types.SET_LOADED_AT](state, loadedAt) {
+    state.loadedAt = Number(loadedAt) || 0;
+    return 'loadedAt';
+  },
+
   [types.SET_RELOAD](state, reload) {
     state.reload = reload;
     return 'reload';

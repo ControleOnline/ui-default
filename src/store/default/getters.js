@@ -15,6 +15,8 @@ export const reload = state => state.reload;
 export const store = state => state.store;
 export const offline = state => state.offline;
 export const payable = state => state.payable;
+export const loadedKey = state => state.loadedKey || '';
+export const loadedAt = state => Number(state.loadedAt) || 0;
 export const print = state => state.print;
 export const message = state => state.message;
 export const messages = state => state.messages;
