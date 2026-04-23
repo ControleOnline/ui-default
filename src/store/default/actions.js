@@ -26,6 +26,7 @@ export const saveOffline = ({commit, getters}, data) => {
 
 export const getOfflineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
+  commit(types.SET_ERROR, null);
   commit(types.SET_SUMMARY, {});
 
   db = new localDB(getters);
@@ -51,12 +52,14 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
 
 export const getOnlineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
+  commit(types.SET_ERROR, null);
   if (getters.items != null) commit(types.SET_ITEMS, []);
   commit(types.SET_TOTALITEMS, 0);
   commit(types.SET_SUMMARY, {});
   return api
     .fetch(getters.resourceEndpoint, {params: params})
     .then(data => {
+      commit(types.SET_ERROR, null);
       commit(types.SET_ITEMS, data['member']);
       commit(types.SET_TOTALITEMS, data['totalItems']);
       commit(types.SET_SUMMARY, data['summary']);
@@ -79,6 +82,7 @@ export const getItems = ({commit, getters}, params = {}) => {
 
 export const get = ({commit, getters}, id) => {
   commit(types.SET_ISLOADING, true);
+  commit(types.SET_ERROR, null);
   if (getters.item != null) commit(types.SET_ITEM, {});
   return api
     .fetch(
@@ -87,6 +91,7 @@ export const get = ({commit, getters}, id) => {
       {},
     )
     .then(data => {
+      commit(types.SET_ERROR, null);
       commit(types.SET_ITEM, data);
       if (getters.offline) saveOffline({commit, getters}, data);
       return data;
@@ -109,10 +114,12 @@ export const save = ({commit, getters}, params) => {
     body: params,
   };
   commit(types.SET_ISSAVING, true);
+  commit(types.SET_ERROR, null);
 
   return api
     .fetch(getters.resourceEndpoint + (id ? '/' + id : ''), options)
     .then(data => {
+      commit(types.SET_ERROR, null);
       delete data['@context'];
       let items = getters.items ? [...getters.items] : [];
       if (id) {
@@ -140,10 +147,12 @@ export const remove = ({commit, getters}, id) => {
     method: 'DELETE',
   };
   commit(types.SET_ISSAVING, true);
+  commit(types.SET_ERROR, null);
 
   return api
     .fetch(getters.resourceEndpoint + '/' + id, options)
     .then(() => {
+      commit(types.SET_ERROR, null);
       let items = getters.items ? [...getters.items] : [];
       const index = items.findIndex(i => {
         if (i && i['@id']) return i['@id'].toString().replace(/\D/g, '') === id;
