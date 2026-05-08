@@ -296,6 +296,8 @@ const styles = StyleSheet.create({
   emptyBox: {
     padding: 20,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   emptyText: {
     color: '#64748B',

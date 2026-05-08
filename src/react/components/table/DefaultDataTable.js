@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   Text,
@@ -246,6 +247,9 @@ const DefaultDataTable = ({
     () => (tableWidth > 0 ? { minWidth: tableWidth, width: tableWidth } : null),
     [tableWidth],
   );
+  const emptyStateLabel = isLoading
+    ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
+    : 'Nenhum registro encontrado';
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(data) ? [...data] : [];
@@ -754,7 +758,10 @@ const DefaultDataTable = ({
           <View style={styles.cardsGrid}>
             {sortedData.length === 0 ? (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>Nenhum registro encontrado</Text>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={accentColor} />
+                ) : null}
+                <Text style={styles.emptyText}>{emptyStateLabel}</Text>
               </View>
             ) : (
               sortedData.map(renderCardItem)
@@ -812,7 +819,10 @@ const DefaultDataTable = ({
             <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={160}>
               {sortedData.length === 0 ? (
                 <View style={[styles.emptyBox, tableLayoutStyle]}>
-                  <Text style={styles.emptyText}>Nenhum registro encontrado</Text>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={accentColor} />
+                  ) : null}
+                  <Text style={styles.emptyText}>{emptyStateLabel}</Text>
                 </View>
               ) : (
                 sortedData.map(row => (
