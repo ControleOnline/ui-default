@@ -811,7 +811,7 @@ const DefaultDataTable = ({
 
             <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={160}>
               {sortedData.length === 0 ? (
-                <View style={styles.emptyBox}>
+                <View style={[styles.emptyBox, tableLayoutStyle]}>
                   <Text style={styles.emptyText}>Nenhum registro encontrado</Text>
                 </View>
               ) : (
