@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores } from '@store';
@@ -16,11 +17,12 @@ import {
 } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import CompactFilterSelector from '../filters/CompactFilterSelector';
 import DateShortcutFilter from '../filters/DateShortcutFilter';
-import styles from './DefaultDataTable.styles';
+import styles from './DefaultTable.styles';
 
 const normalizeText = value => String(value ?? '').trim();
 const getColumnKey = column => column?.key || column?.name || '';
 const DEFAULT_CELL_MIN_WIDTH = 118;
+const DEFAULT_COMPACT_BREAKPOINT = 768;
 const IDENTITY_CELL_MIN_WIDTH = 76;
 const MONEY_CELL_MIN_WIDTH = 132;
 const ACTIONS_CELL_WIDTH = 60;
@@ -179,9 +181,10 @@ const getColumnMinWidth = column => {
   return DEFAULT_CELL_MIN_WIDTH;
 };
 
-const DefaultDataTable = ({
+const DefaultTable = ({
   accentColor = '#2563EB',
   actions = {},
+  compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
   columns = [],
   data = [],
   filters = {},
@@ -198,6 +201,7 @@ const DefaultDataTable = ({
   sort = null,
   storeName = '',
 }) => {
+  const { width } = useWindowDimensions();
   const [draftValue, setDraftValue] = useState('');
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
@@ -247,6 +251,8 @@ const DefaultDataTable = ({
     () => (tableWidth > 0 ? { minWidth: tableWidth, width: tableWidth } : null),
     [tableWidth],
   );
+  const isCompactView = width > 0 && width <= compactBreakpoint;
+  const effectiveViewMode = isCompactView ? 'cards' : viewMode;
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
     : 'Nenhum registro encontrado';
@@ -718,13 +724,15 @@ const DefaultDataTable = ({
               <Text style={[styles.toolbarBadgeText, { color: accentColor }]}>{activeFilterCount}</Text>
             ) : null}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.toolbarButton}
-            activeOpacity={0.82}
-            onPress={() => setViewMode(prev => (prev === 'table' ? 'cards' : 'table'))}
-          >
-            <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color="#64748B" />
-          </TouchableOpacity>
+          {!isCompactView ? (
+            <TouchableOpacity
+              style={styles.toolbarButton}
+              activeOpacity={0.82}
+              onPress={() => setViewMode(prev => (prev === 'table' ? 'cards' : 'table'))}
+            >
+              <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color="#64748B" />
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity style={styles.toolbarButton} activeOpacity={0.82} onPress={() => setIsColumnMenuOpen(prev => !prev)}>
             <Icon name="columns" size={14} color="#64748B" />
           </TouchableOpacity>
@@ -753,7 +761,7 @@ const DefaultDataTable = ({
         ) : null}
       </View>
 
-      {viewMode === 'cards' ? (
+      {effectiveViewMode === 'cards' ? (
         <ScrollView style={styles.cardsScroll} onScroll={handleScroll} scrollEventThrottle={160}>
           <View style={styles.cardsGrid}>
             {sortedData.length === 0 ? (
@@ -766,6 +774,12 @@ const DefaultDataTable = ({
             ) : (
               sortedData.map(renderCardItem)
             )}
+            {isLoading && sortedData.length > 0 ? (
+              <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color={accentColor} />
+                <Text style={styles.emptyText}>Carregando mais registros...</Text>
+              </View>
+            ) : null}
           </View>
         </ScrollView>
       ) : (
@@ -850,4 +864,4 @@ const DefaultDataTable = ({
   );
 };
 
-export default DefaultDataTable;
+export default DefaultTable;

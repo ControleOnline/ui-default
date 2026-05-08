@@ -299,6 +299,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  loadingFooter: {
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   emptyText: {
     color: '#64748B',
     fontSize: 12,
