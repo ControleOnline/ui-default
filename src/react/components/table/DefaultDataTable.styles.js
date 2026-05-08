@@ -56,6 +56,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.35,
     textTransform: 'uppercase',
   },
+  sortableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   cellText: {
     color: '#0F172A',
     fontSize: 12,
@@ -71,7 +76,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     backgroundColor: '#EFF6FF',
   },
+  editingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   input: {
+    flex: 1,
     height: 32,
     borderWidth: 1,
     borderColor: '#93C5FD',
@@ -103,6 +114,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
+  },
+  cancelButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
   emptyBox: {
     padding: 20,

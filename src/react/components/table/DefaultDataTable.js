@@ -25,9 +25,11 @@ const shouldIncludeColumn = column =>
   column?.table !== false;
 
 const isEditableColumn = column =>
-  column?.editable !== false &&
+  column?.editable === true &&
   !column?.isIdentity &&
   !String(getColumnKey(column)).includes('.');
+
+const isSortableColumn = column => column?.sortable === true;
 
 const normalizeId = value => {
   if (!value) return '';
@@ -109,6 +111,12 @@ const resolveCellText = ({ column, row, storeName }) => {
   return normalizeText(formattedValue) || '-';
 };
 
+const normalizeSortText = value =>
+  normalizeText(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 const resolveEditValue = (column, row) => {
   const value = row?.[getColumnKey(column)];
   if (column?.list) {
@@ -157,6 +165,8 @@ const DefaultDataTable = ({
   onEditRow = null,
   onEndReached = null,
   onSaved = null,
+  onSortChange = null,
+  sort = null,
   storeName = '',
 }) => {
   const [editingCell, setEditingCell] = useState(null);
@@ -167,6 +177,28 @@ const DefaultDataTable = ({
     () => columns.filter(shouldIncludeColumn),
     [columns],
   );
+
+  const sortedData = useMemo(() => {
+    const items = Array.isArray(data) ? [...data] : [];
+    const sortField = sort?.field;
+    const sortDirection = sort?.direction === 'desc' ? 'desc' : 'asc';
+    const sortColumn = tableColumns.find(column => getColumnKey(column) === sortField);
+
+    if (!sortField || !sortColumn) return items;
+
+    return items.sort((left, right) => {
+      const leftValue = resolveCellText({ column: sortColumn, row: left, storeName });
+      const rightValue = resolveCellText({ column: sortColumn, row: right, storeName });
+      const leftNumber = Number(String(leftValue).replace(/[^0-9,.-]/g, '').replace(',', '.'));
+      const rightNumber = Number(String(rightValue).replace(/[^0-9,.-]/g, '').replace(',', '.'));
+
+      const comparison = Number.isFinite(leftNumber) && Number.isFinite(rightNumber)
+        ? leftNumber - rightNumber
+        : normalizeSortText(leftValue).localeCompare(normalizeSortText(rightValue));
+
+      return sortDirection === 'desc' ? comparison * -1 : comparison;
+    });
+  }, [data, sort?.direction, sort?.field, storeName, tableColumns]);
 
   const beginEdit = useCallback((row, column) => {
     if (!isEditableColumn(column)) return;
@@ -183,6 +215,16 @@ const DefaultDataTable = ({
   const saveCell = useCallback((row, column, nextValue = draftValue) => {
     const fieldName = getColumnKey(column);
     if (!fieldName || typeof actions.save !== 'function') {
+      clearEdit();
+      return Promise.resolve(null);
+    }
+
+    const currentValue = resolveEditValue(column, row);
+    const normalizedNextValue = nextValue && typeof nextValue === 'object'
+      ? normalizeOptionKey(nextValue)
+      : normalizeText(nextValue);
+
+    if (normalizeText(currentValue) === normalizeText(normalizedNextValue)) {
       clearEdit();
       return Promise.resolve(null);
     }
@@ -209,6 +251,21 @@ const DefaultDataTable = ({
         clearEdit();
       });
   }, [actions, clearEdit, draftValue, onSaved]);
+
+  const requestSort = useCallback(column => {
+    if (!isSortableColumn(column)) return;
+
+    const fieldName = getColumnKey(column);
+    const nextDirection =
+      sort?.field === fieldName && sort?.direction === 'asc'
+        ? 'desc'
+        : 'asc';
+
+    onSortChange?.({
+      direction: nextDirection,
+      field: fieldName,
+    });
+  }, [onSortChange, sort?.direction, sort?.field]);
 
   const editFirstColumn = useCallback(row => {
     if (typeof onEditRow === 'function') {
@@ -247,24 +304,34 @@ const DefaultDataTable = ({
 
       return (
         <View style={[getColumnStyle(column), styles.editingCell]}>
-          <CompactFilterSelector
-            dense
-            store={storeName}
-            field={fieldName}
-            active={Boolean(draftValue)}
-            label={selected?.label || label}
-            options={options}
-            selectedKey={draftValue}
-            onSelect={optionKey => {
-              const option = options.find(item => item.key === optionKey);
-              saveCell(row, column, {
-                value: optionKey,
-                label: option?.label,
-                object: option?.raw,
-              });
-              return true;
-            }}
-          />
+          <View style={styles.editingRow}>
+            <CompactFilterSelector
+              dense
+              store={storeName}
+              field={fieldName}
+              active={Boolean(draftValue)}
+              label={selected?.label || label}
+              options={options}
+              selectedKey={draftValue}
+              onClose={clearEdit}
+              onSelect={optionKey => {
+                const option = options.find(item => item.key === optionKey);
+                saveCell(row, column, {
+                  value: optionKey,
+                  label: option?.label,
+                  object: option?.raw,
+                });
+                return true;
+              }}
+            />
+            <TouchableOpacity
+              style={styles.cancelButton}
+              activeOpacity={0.8}
+              onPress={clearEdit}
+            >
+              <Icon name="x" size={14} color="#64748B" />
+            </TouchableOpacity>
+          </View>
           {isSaving ? <Text style={styles.savingText}>Salvando</Text> : null}
         </View>
       );
@@ -273,15 +340,24 @@ const DefaultDataTable = ({
     if (isEditing) {
       return (
         <View style={[getColumnStyle(column), styles.editingCell]}>
-          <TextInput
-            style={styles.input}
-            value={draftValue}
-            onChangeText={setDraftValue}
-            onBlur={() => saveCell(row, column)}
-            onSubmitEditing={() => saveCell(row, column)}
-            autoFocus
-            selectTextOnFocus
-          />
+          <View style={styles.editingRow}>
+            <TextInput
+              style={styles.input}
+              value={draftValue}
+              onChangeText={setDraftValue}
+              onBlur={() => saveCell(row, column)}
+              onSubmitEditing={() => saveCell(row, column)}
+              autoFocus
+              selectTextOnFocus
+            />
+            <TouchableOpacity
+              style={styles.cancelButton}
+              activeOpacity={0.8}
+              onPress={clearEdit}
+            >
+              <Icon name="x" size={14} color="#64748B" />
+            </TouchableOpacity>
+          </View>
           {isSaving ? <Text style={styles.savingText}>Salvando</Text> : null}
         </View>
       );
@@ -321,11 +397,25 @@ const DefaultDataTable = ({
               });
 
               return (
-                <View key={fieldName} style={getColumnStyle(column)}>
-                  <Text style={styles.headerText} numberOfLines={1}>
-                    {label}
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  key={fieldName}
+                  style={getColumnStyle(column)}
+                  activeOpacity={isSortableColumn(column) ? 0.8 : 1}
+                  onPress={() => requestSort(column)}
+                >
+                  <View style={styles.sortableHeader}>
+                    <Text style={styles.headerText} numberOfLines={1}>
+                      {label}
+                    </Text>
+                    {isSortableColumn(column) && sort?.field === fieldName ? (
+                      <Icon
+                        name={sort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'}
+                        size={12}
+                        color="#64748B"
+                      />
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
               );
             })}
             <View style={[styles.cell, styles.actionsCell]}>
@@ -338,12 +428,12 @@ const DefaultDataTable = ({
             onScroll={handleScroll}
             scrollEventThrottle={160}
           >
-            {(Array.isArray(data) ? data : []).length === 0 ? (
+            {sortedData.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyText}>Nenhum registro encontrado</Text>
               </View>
             ) : (
-              (Array.isArray(data) ? data : []).map(row => (
+              sortedData.map(row => (
                 <View key={row?.['@id'] || row?.id} style={styles.row}>
                   {tableColumns.map(column => (
                     <React.Fragment key={getColumnKey(column)}>

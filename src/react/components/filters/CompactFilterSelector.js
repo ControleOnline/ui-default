@@ -69,6 +69,7 @@ const CompactFilterSelector = ({
   icon = 'sliders',
   label = '',
   labelCaption = '',
+  onClose = null,
   onSelect = null,
   options = [],
   selectedKey = '',
@@ -90,7 +91,8 @@ const CompactFilterSelector = ({
 
   const closeModal = useCallback(() => {
     setVisible(false);
-  }, []);
+    onClose?.();
+  }, [onClose]);
 
   const openModal = useCallback(() => {
     if (!disabled) {
