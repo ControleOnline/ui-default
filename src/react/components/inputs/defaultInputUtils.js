@@ -1,4 +1,5 @@
 import { getAllStores } from '@store';
+import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnValue } from '@controleonline/ui-common/src/react/utils/storeColumns';
 
 export const normalizeText = value => String(value ?? '').trim();
@@ -110,6 +111,10 @@ export const resolveEditValue = (column, row, value) => {
 
   if (typeof column?.editFormat === 'function') {
     return normalizeText(column.editFormat(rawValue, column, row, true));
+  }
+
+  if ((column?.inputType === 'date' || column?.inputType === 'date-range') && rawValue) {
+    return normalizeText(Formatter.formatDateYmdTodmY(rawValue));
   }
 
   return normalizeText(rawValue);

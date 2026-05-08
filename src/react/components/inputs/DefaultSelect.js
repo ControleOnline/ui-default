@@ -11,12 +11,14 @@ import Icon from 'react-native-vector-icons/Feather';
 import {
   buildOptionsFromColumn,
   getColumnKey,
+  isEditableColumn,
   normalizeOptionKey,
   normalizeText,
   resolveCellText,
   resolveEditValue,
 } from './defaultInputUtils';
-import styles from './DefaultInput.styles';
+import inputStyles from './DefaultInput.styles';
+import styles from './DefaultSelect.styles';
 
 const DefaultSelect = ({
   accentColor = '#2563EB',
@@ -55,7 +57,7 @@ const DefaultSelect = ({
     displayValue ??
     selected?.label ??
     resolveCellText({ column, columns, row, storeName, value });
-  const canEdit = column?.editable !== false && typeof onStartEditing === 'function';
+  const canEdit = isEditableColumn(column) && typeof onStartEditing === 'function';
   const isForm = variant === 'form';
   const filteredOptions = useMemo(() => {
     const query = normalizeText(searchText).toLowerCase();
@@ -97,24 +99,25 @@ const DefaultSelect = ({
   };
 
   const open = () => {
+    if (!canEdit && !isForm) return;
     if (!editing && !isForm) onStartEditing?.();
     setIsOpen(true);
   };
 
   return (
-    <View style={[styles.wrap, containerStyle]}>
-      {showLabel ? <Text style={styles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
+    <View style={[inputStyles.wrap, containerStyle]}>
+      {showLabel ? <Text style={inputStyles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
 
       <TouchableOpacity
-        style={[styles.readButton, isForm ? styles.readButtonForm : null]}
+        style={[inputStyles.readButton, isForm ? inputStyles.readButtonForm : null]}
         activeOpacity={canEdit || isForm ? 0.78 : 1}
         disabled={!canEdit && !isForm}
         onPress={open}
       >
         <Text
           style={[
-            styles.readText,
-            resolvedLabel === '-' ? styles.mutedText : null,
+            inputStyles.readText,
+            resolvedLabel === '-' ? inputStyles.mutedText : null,
             readTextStyle,
           ]}
           numberOfLines={numberOfLines}
@@ -122,49 +125,27 @@ const DefaultSelect = ({
           {resolvedLabel || '-'}
         </Text>
         {saving ? (
-          <Text style={[styles.savingText, { color: accentColor }]}>Salvando</Text>
+          <Text style={[inputStyles.savingText, { color: accentColor }]}>Salvando</Text>
         ) : canEdit || isForm ? (
-          <Icon style={styles.editIcon} name="chevron-down" size={14} color="#64748B" />
+          <Icon style={inputStyles.editIcon} name="chevron-down" size={14} color="#64748B" />
         ) : null}
       </TouchableOpacity>
 
       <Modal visible={isOpen} transparent animationType="fade" onRequestClose={close}>
-        <View style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 16,
-          backgroundColor: 'rgba(15,23,42,0.38)',
-        }}>
-          <View style={{
-            width: '100%',
-            maxWidth: 420,
-            maxHeight: '78%',
-            borderRadius: 12,
-            backgroundColor: '#FFFFFF',
-            overflow: 'hidden',
-          }}>
-            <View style={{
-              minHeight: 48,
-              paddingHorizontal: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: '#E2E8F0',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}>
-              <Text style={{ flex: 1, color: '#0F172A', fontSize: 15, fontWeight: '900' }} numberOfLines={1}>
+        <View style={styles.overlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle} numberOfLines={1}>
                 {label || column?.label || fieldName}
               </Text>
-              <TouchableOpacity style={styles.cancelButton} onPress={close}>
+              <TouchableOpacity style={inputStyles.cancelButton} onPress={close}>
                 <Icon name="x" size={16} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <View style={{ padding: 10 }}>
+            <View style={styles.searchBox}>
               <TextInput
-                style={[styles.input, styles.formInput]}
+                style={[inputStyles.input, inputStyles.formInput]}
                 value={searchText}
                 placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search') || 'Buscar'}
                 onChangeText={setSearchText}
@@ -178,16 +159,7 @@ const DefaultSelect = ({
                   return (
                     <TouchableOpacity
                       key={`${option.key}_${option.label}`}
-                      style={{
-                        minHeight: 40,
-                        paddingHorizontal: 14,
-                        paddingVertical: 9,
-                        borderTopWidth: 1,
-                        borderTopColor: '#F1F5F9',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
+                      style={styles.optionRow}
                       activeOpacity={0.78}
                       onPress={() => selectOption(option)}
                     >
@@ -196,15 +168,15 @@ const DefaultSelect = ({
                         size={15}
                         color={isSelected ? accentColor : '#CBD5E1'}
                       />
-                      <Text style={{ flex: 1, color: '#0F172A', fontSize: 13, fontWeight: '700' }}>
+                      <Text style={styles.optionText}>
                         {option.label}
                       </Text>
                     </TouchableOpacity>
                   );
                 })
               ) : (
-                <View style={{ padding: 18, alignItems: 'center' }}>
-                  <Text style={{ color: '#64748B', fontSize: 12, fontWeight: '700' }}>
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>
                     Nenhum resultado encontrado
                   </Text>
                 </View>

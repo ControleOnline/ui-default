@@ -15,6 +15,7 @@
 - Toda tela nova ou alterada deve partir dos defaults e dos stores, sem excecao. A tela dona pode organizar contexto e visual especifico, mas nao deve recriar comportamento default de tabela, filtro, toolbar, input, select, formatacao ou edicao.
 - Desktop deve seguir o padrao do `DefaultTable`: visao em tabela, colunas vindas do store, edicao por celula/linha e botoes de acao no toolbar.
 - Mobile deve ser responsabilidade do `DefaultTable`: em React, ele alterna para cards em largura compacta e pode receber um renderer/componente de card customizado da tela. A tela dona nao deve criar `FlatList`/cards paralelos para substituir a listagem default.
+- Toda edicao do `DefaultTable` React deve usar `DefaultInput`/`DefaultSelect` deste modulo. Isso vale para celulas desktop, campos de card customizado via `renderField` e modal fallback.
 - A configuracao de cada coluna vem do store. Use `columns` para `list`, `label`, `format`, `formatList`, `formatFilter`, `saveFormat`, `inputType`, `visible`, `editable`, `filter`, `externalFilter`, `filterClass` e metadados equivalentes. Nao duplicar lista, label, formatacao ou regra de edicao na tela.
 - Acoes globais da listagem e atalhos de contexto pertencem ao toolbar default. Quando houver espaco, devem ficar na mesma linha da toolbar para economizar altura vertical.
 

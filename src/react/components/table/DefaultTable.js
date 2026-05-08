@@ -4,23 +4,26 @@ import {
   Modal,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { getAllStores } from '@store';
+import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
+import DefaultColumnFilter from '../filters/DefaultColumnFilter';
+import DefaultInput from '../inputs/DefaultInput';
 import {
-  formatStoreColumnLabel,
-  formatStoreColumnValue,
-} from '@controleonline/ui-common/src/react/utils/storeColumns';
-import CompactFilterSelector from '../filters/CompactFilterSelector';
-import DateShortcutFilter from '../filters/DateShortcutFilter';
+  formatSaveValue,
+  getColumnKey,
+  isEditableColumn,
+  normalizeId,
+  normalizeOptionKey,
+  normalizeText,
+  resolveCellText,
+  resolveEditValue,
+} from '../inputs/defaultInputUtils';
 import styles from './DefaultTable.styles';
 
-const normalizeText = value => String(value ?? '').trim();
-const getColumnKey = column => column?.key || column?.name || '';
 const DEFAULT_CELL_MIN_WIDTH = 118;
 const DEFAULT_COMPACT_BREAKPOINT = 768;
 const IDENTITY_CELL_MIN_WIDTH = 76;
@@ -32,136 +35,13 @@ const shouldIncludeColumn = column =>
   column?.visible !== false &&
   column?.table !== false;
 
-const isEditableColumn = column =>
-  column?.editable !== false &&
-  !column?.isIdentity &&
-  column?.inputType !== 'increase' &&
-  column?.inputType !== 'image' &&
-  !String(getColumnKey(column)).includes('.');
-
 const isSortableColumn = column => column?.sortable === true;
-
-const normalizeId = value => {
-  if (!value) return '';
-  if (typeof value === 'number') return String(value);
-  if (typeof value === 'string') {
-    const match = value.match(/\d+/g);
-    return match ? match[match.length - 1] : value;
-  }
-  return normalizeId(value?.id || value?.['@id'] || '');
-};
-
-const normalizeOptionKey = option => {
-  if (!option) return '';
-  if (typeof option !== 'object') return normalizeId(option) || normalizeText(option);
-  return normalizeText(
-    option.value ??
-      option.id ??
-      normalizeId(option['@id']) ??
-      option.key ??
-      '',
-  );
-};
-
-const resolveOptionLabel = (column, option) => {
-  if (!option) return '';
-
-  if (typeof column?.formatList === 'function') {
-    const formatted = column.formatList(option, null, column);
-    if (formatted && typeof formatted === 'object') {
-      return normalizeText(formatted.label ?? formatted.value);
-    }
-    if (formatted) return normalizeText(formatted);
-  }
-
-  return normalizeText(
-    option.label ??
-      option[column?.searchParam] ??
-      option[column?.name] ??
-      option.name ??
-      option.status ??
-      option.wallet ??
-      option.paymentType ??
-      option.alias ??
-      option.id,
-  );
-};
-
-const resolveStoreNameFromList = list => normalizeText(list).split('/')[0] || '';
-
-const mapOptions = (column, items = []) =>
-  (Array.isArray(items) ? items : []).map(item => ({
-    key: normalizeOptionKey(
-      typeof column?.formatList === 'function'
-        ? column.formatList(item, null, column)
-        : item,
-    ) || normalizeOptionKey(item),
-    label: resolveOptionLabel(column, item) || '-',
-    raw: item,
-  }));
-
-const buildOptionsFromColumn = (column, getOptionsForColumn = null) => {
-  const explicitOptions = getOptionsForColumn?.(column);
-  if (Array.isArray(explicitOptions) && explicitOptions.length > 0) {
-    return mapOptions(column, explicitOptions);
-  }
-
-  const listStoreName = resolveStoreNameFromList(column?.list);
-  if (!listStoreName) return [];
-
-  const listStore = getAllStores()?.[listStoreName];
-  return mapOptions(column, listStore?.getters?.items || []);
-};
-
-const resolveCellText = ({ column, row, storeName }) => {
-  const fieldName = getColumnKey(column);
-  const value = row?.[fieldName];
-  const formattedValue = formatStoreColumnValue({
-    columns: [column],
-    fieldName,
-    row,
-    storeName,
-    value,
-  });
-
-  return normalizeText(formattedValue) || '-';
-};
 
 const normalizeSortText = value =>
   normalizeText(value)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-
-const resolveEditValue = (column, row) => {
-  const value = row?.[getColumnKey(column)];
-  if (column?.list) {
-    return normalizeOptionKey(
-      typeof column?.formatList === 'function'
-        ? column.formatList(value, row, column)
-        : value,
-    );
-  }
-
-  if (typeof column?.editFormat === 'function') {
-    return normalizeText(column.editFormat(value, column, row, true));
-  }
-
-  return normalizeText(value);
-};
-
-const formatSaveValue = (column, value, row) => {
-  if (typeof column?.saveFormat === 'function') {
-    return column.saveFormat(value, column, row);
-  }
-
-  if (value && typeof value === 'object') {
-    if (value.value) return Number.isNaN(Number(value.value)) ? value.value : Number(value.value);
-    if (value['@id']) return value['@id'];
-  }
-
-  return Number.isNaN(Number(value)) || value === '' ? value : Number(value);
-};
 
 const getColumnStyle = column => {
   const key = getColumnKey(column);
@@ -202,7 +82,6 @@ const DefaultTable = ({
   storeName = '',
 }) => {
   const { width } = useWindowDimensions();
-  const [draftValue, setDraftValue] = useState('');
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [formDraft, setFormDraft] = useState({});
@@ -282,15 +161,13 @@ const DefaultTable = ({
   const beginEdit = useCallback((row, column) => {
     if (!isEditableColumn(column)) return;
     setEditingCell(`${row?.id || row?.['@id']}:${getColumnKey(column)}`);
-    setDraftValue(resolveEditValue(column, row));
   }, []);
 
   const clearEdit = useCallback(() => {
     setEditingCell(null);
-    setDraftValue('');
   }, []);
 
-  const saveCell = useCallback((row, column, nextValue = draftValue) => {
+  const saveCell = useCallback((row, column, nextValue) => {
     const fieldName = getColumnKey(column);
     if (!fieldName || typeof actions.save !== 'function') {
       clearEdit();
@@ -328,7 +205,7 @@ const DefaultTable = ({
         setSavingCell(null);
         clearEdit();
       });
-  }, [actions, clearEdit, draftValue, onSaved]);
+  }, [actions, clearEdit, onSaved]);
 
   const requestSort = useCallback(column => {
     if (!isSortableColumn(column)) return;
@@ -448,158 +325,123 @@ const DefaultTable = ({
     const cellKey = `${row?.id || row?.['@id']}:${fieldName}`;
     const isEditing = editingCell === cellKey;
     const isSaving = savingCell === cellKey;
-    const label = resolveCellText({ column, row, storeName });
-
-    if (isEditing && column?.list) {
-      const options = buildOptionsFromColumn(column, getOptionsForColumn);
-      const selected = options.find(option => option.key === draftValue);
-
-      return (
-        <View style={[getColumnStyle(column), styles.editingCell]}>
-          <View style={styles.editingRow}>
-            <CompactFilterSelector
-              dense
-              store={storeName}
-              field={fieldName}
-              active={Boolean(draftValue)}
-              label={selected?.label || label}
-              options={options}
-              selectedKey={draftValue}
-              onClose={clearEdit}
-              onSelect={optionKey => {
-                const option = options.find(item => item.key === optionKey);
-                saveCell(row, column, {
-                  value: optionKey,
-                  label: option?.label,
-                  object: option?.raw,
-                });
-                return true;
-              }}
-            />
-            <TouchableOpacity style={styles.cancelButton} activeOpacity={0.8} onPress={clearEdit}>
-              <Icon name="x" size={14} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-          {isSaving ? <Text style={styles.savingText}>Salvando</Text> : null}
-        </View>
-      );
-    }
-
-    if (isEditing) {
-      return (
-        <View style={[getColumnStyle(column), styles.editingCell]}>
-          <View style={styles.editingRow}>
-            <TextInput
-              style={styles.input}
-              value={draftValue}
-              onChangeText={setDraftValue}
-              onBlur={() => saveCell(row, column)}
-              onSubmitEditing={() => saveCell(row, column)}
-              autoFocus
-              selectTextOnFocus
-            />
-            <TouchableOpacity style={styles.cancelButton} activeOpacity={0.8} onPress={clearEdit}>
-              <Icon name="x" size={14} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-          {isSaving ? <Text style={styles.savingText}>Salvando</Text> : null}
-        </View>
-      );
-    }
 
     return (
-      <TouchableOpacity
-        style={[getColumnStyle(column), isEditableColumn(column) ? styles.editableCell : null]}
-        activeOpacity={isEditableColumn(column) ? 0.78 : 1}
-        onPress={() => beginEdit(row, column)}
-      >
-        <Text style={[styles.cellText, label === '-' ? styles.mutedCellText : null]} numberOfLines={1}>
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderColumnFilter = column => {
-    const fieldName = getColumnKey(column);
-
-    if (column?.filter === false || column?.filters === false) {
-      return <View style={getColumnStyle(column)} />;
-    }
-
-    if (column?.inputType === 'date-range') {
-      const filterValue = filters?.[fieldName] || {};
-      return (
-        <View style={[getColumnStyle(column), styles.filterCell]}>
-          <DateShortcutFilter
-            dense
-            store={storeName}
-            field={fieldName}
-            value={filterValue.shortcut || 'all'}
-            customRange={filterValue.customRange || { from: '', to: '' }}
-            onChange={optionKey => updateFilter(fieldName, optionKey === 'all' ? null : {
-              ...(filterValue || {}),
-              shortcut: optionKey,
-            })}
-            onCustomRangeChange={range => updateFilter(fieldName, {
-              ...(filterValue || {}),
-              shortcut: 'custom',
-              customRange: range,
-            })}
-          />
-        </View>
-      );
-    }
-
-    if (column?.list) {
-      const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn);
-      const options = [
-        { key: '', label: global.t?.t(storeName, 'label', 'select') || 'Todos' },
-        ...rawOptions,
-      ];
-      const selectedKey = normalizeOptionKey(filters?.[fieldName]);
-      const selected = options.find(option => option.key === selectedKey);
-
-      return (
-        <View style={[getColumnStyle(column), styles.filterCell]}>
-          <CompactFilterSelector
-            dense
-            store={storeName}
-            field={fieldName}
-            icon="filter"
-            accentColor={accentColor}
-            active={Boolean(selectedKey)}
-            label={selected?.label || options[0]?.label || ''}
-            options={options}
-            selectedKey={selectedKey}
-            onSelect={optionKey => {
-              updateFilter(fieldName, optionKey);
-              return true;
-            }}
-          />
-        </View>
-      );
-    }
-
-    return (
-      <View style={[getColumnStyle(column), styles.filterCell]}>
-        <TextInput
-          style={styles.filterInput}
-          value={normalizeText(filters?.[fieldName])}
-          placeholder={global.t?.t(storeName, 'input', column?.label || fieldName)}
-          onChangeText={value => updateFilter(fieldName, value)}
+      <View style={[getColumnStyle(column), isEditing ? styles.editingCell : null]}>
+        <DefaultInput
+          accentColor={accentColor}
+          column={column}
+          columns={columns}
+          editing={isEditing}
+          getOptionsForColumn={getOptionsForColumn}
+          onCancelEditing={clearEdit}
+          onSave={value => saveCell(row, column, value)}
+          onStartEditing={() => beginEdit(row, column)}
+          row={row}
+          saving={isSaving}
+          storeName={storeName}
+          variant="cell"
         />
       </View>
     );
   };
 
+  const renderColumnFilter = column => {
+    return (
+      <DefaultColumnFilter
+        accentColor={accentColor}
+        column={column}
+        filters={filters}
+        getOptionsForColumn={getOptionsForColumn}
+        onChange={updateFilter}
+        storeName={storeName}
+        style={getColumnStyle(column)}
+      />
+    );
+  };
+
+  const getColumnByField = useCallback(
+    fieldName => columns.find(column => getColumnKey(column) === fieldName),
+    [columns],
+  );
+
+  const buildRowHelpers = useCallback(
+    row => {
+      const openEdit = () => openEditModal(row);
+      const renderValue = (fieldName, fallback = '-') => {
+        const column = getColumnByField(fieldName);
+        if (!column) return fallback;
+        return resolveCellText({ column, columns, row, storeName });
+      };
+      const renderField = (fieldName, options = {}) => {
+        const column = getColumnByField(fieldName);
+        if (!column) return null;
+
+        const cellKey = `${row?.id || row?.['@id']}:${fieldName}`;
+        const isEditing = editingCell === cellKey;
+        const isSaving = savingCell === cellKey;
+
+        return (
+          <DefaultInput
+            accentColor={options.accentColor || accentColor}
+            column={column}
+            columns={columns}
+            containerStyle={options.containerStyle}
+            displayValue={options.displayValue}
+            editing={isEditing}
+            getOptionsForColumn={getOptionsForColumn}
+            inputStyle={options.inputStyle}
+            label={options.label}
+            numberOfLines={options.numberOfLines}
+            onCancelEditing={clearEdit}
+            onSave={value => saveCell(row, column, value)}
+            onStartEditing={() => beginEdit(row, column)}
+            readTextStyle={options.readTextStyle || options.textStyle}
+            row={row}
+            saving={isSaving}
+            showLabel={options.showLabel}
+            storeName={storeName}
+            variant={options.variant || 'card'}
+          />
+        );
+      };
+
+      return {
+        openEdit,
+        renderField,
+        renderValue,
+      };
+    },
+    [
+      accentColor,
+      beginEdit,
+      clearEdit,
+      columns,
+      editingCell,
+      getColumnByField,
+      getOptionsForColumn,
+      openEditModal,
+      saveCell,
+      savingCell,
+      storeName,
+    ],
+  );
+
   const renderCardItem = row => {
+    const helpers = buildRowHelpers(row);
+
     if (typeof renderCard === 'function') {
       return (
         <View key={row?.['@id'] || row?.id} style={styles.cardItem}>
-          {renderCard({ item: row })}
+          {renderCard({
+            item: row,
+            openEdit: helpers.openEdit,
+            renderField: helpers.renderField,
+            renderValue: helpers.renderValue,
+            row,
+          })}
           <View style={styles.cardActions}>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
+            <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={helpers.openEdit}>
               <Icon name="edit-2" size={14} color="#64748B" />
             </TouchableOpacity>
           </View>
@@ -619,12 +461,13 @@ const DefaultTable = ({
                 storeName,
               })}
             </Text>
-            <Text style={styles.defaultCardValue} numberOfLines={1}>
-              {resolveCellText({ column, row, storeName })}
-            </Text>
+            {helpers.renderField(getColumnKey(column), {
+              readTextStyle: styles.defaultCardValue,
+              numberOfLines: 1,
+            })}
           </View>
         ))}
-        <TouchableOpacity style={styles.cardEditButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
+        <TouchableOpacity style={styles.cardEditButton} activeOpacity={0.82} onPress={helpers.openEdit}>
           <Icon name="edit-2" size={14} color="#64748B" />
         </TouchableOpacity>
       </View>
@@ -653,39 +496,23 @@ const DefaultTable = ({
                   storeName,
                 });
 
-                if (column?.list) {
-                  const options = buildOptionsFromColumn(column, getOptionsForColumn);
-                  const selectedKey = normalizeOptionKey(formDraft[fieldName]);
-                  const selected = options.find(option => option.key === selectedKey);
-
-                  return (
-                    <View key={fieldName} style={styles.formField}>
-                      <Text style={styles.formLabel}>{label}</Text>
-                      <CompactFilterSelector
-                        dense
-                        store={storeName}
-                        field={fieldName}
-                        active={Boolean(selectedKey)}
-                        label={selected?.label || '-'}
-                        options={options}
-                        selectedKey={selectedKey}
-                        onSelect={optionKey => {
-                          setFormDraft(prev => ({ ...prev, [fieldName]: optionKey }));
-                          return true;
-                        }}
-                      />
-                    </View>
-                  );
-                }
-
                 return (
                   <View key={fieldName} style={styles.formField}>
-                    <Text style={styles.formLabel}>{label}</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={normalizeText(formDraft[fieldName])}
-                      keyboardType={column?.inputType === 'number' || column?.inputType === 'float' ? 'numeric' : 'default'}
-                      onChangeText={value => setFormDraft(prev => ({ ...prev, [fieldName]: value }))}
+                    <DefaultInput
+                      autoFocus={false}
+                      autoSave={false}
+                      column={column}
+                      columns={columns}
+                      editing
+                      getOptionsForColumn={getOptionsForColumn}
+                      label={label}
+                      onChangeValue={value => setFormDraft(prev => ({ ...prev, [fieldName]: value }))}
+                      readTextStyle={styles.defaultCardValue}
+                      row={editingRow}
+                      showLabel
+                      storeName={storeName}
+                      value={formDraft[fieldName]}
+                      variant="form"
                     />
                   </View>
                 );
