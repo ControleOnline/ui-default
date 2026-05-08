@@ -245,13 +245,15 @@ const DefaultExternalFilters = ({
         );
       })}
 
-      <TouchableOpacity
-        style={styles.clearButton}
-        activeOpacity={0.82}
-        onPress={clearFilters}
-      >
-        <Icon name="filter" size={14} color="#64748B" />
-      </TouchableOpacity>
+      {activeCount > 0 ? (
+        <TouchableOpacity
+          style={styles.clearButton}
+          activeOpacity={0.82}
+          onPress={clearFilters}
+        >
+          <Icon name="x" size={14} color="#64748B" />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };
