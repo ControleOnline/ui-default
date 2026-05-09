@@ -38,11 +38,76 @@ const shouldIncludeColumn = column =>
 
 const isSortableColumn = column => column?.sortable === true;
 
+const getSortField = column => column?.sortField || getColumnKey(column);
+
+const readValueByPath = (object, path) => {
+  if (!object || !path) return object;
+
+  return String(path)
+    .split('.')
+    .reduce((currentValue, key) => {
+      if (currentValue === null || currentValue === undefined) return currentValue;
+      return currentValue?.[key];
+    }, object);
+};
+
 const normalizeSortText = value =>
   normalizeText(value)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+
+const isDateLikeColumn = column =>
+  column?.inputType === 'date' ||
+  column?.inputType === 'date-range' ||
+  column?.type === 'date' ||
+  column?.type === 'range-date' ||
+  /date/i.test(getColumnKey(column));
+
+const resolveSortComparable = ({ column, row, storeName, columns }) => {
+  const fieldName = getColumnKey(column);
+  const sortField = getSortField(column);
+  const rawValue = sortField === fieldName ? row?.[fieldName] : readValueByPath(row, sortField);
+
+  if (isDateLikeColumn(column)) {
+    const dateValue =
+      rawValue && typeof rawValue === 'object'
+        ? rawValue?.value ??
+          rawValue?.date ??
+          rawValue?.createdAt ??
+          rawValue?.updatedAt ??
+          rawValue?.['@id'] ??
+          rawValue?.[fieldName] ??
+          rawValue
+        : rawValue;
+    const parsedDate = Date.parse(dateValue);
+    return Number.isFinite(parsedDate) ? parsedDate : Number.NEGATIVE_INFINITY;
+  }
+
+  const resolvedValue = sortField === fieldName
+    ? resolveCellText({
+        column,
+        columns,
+        row,
+        storeName,
+      })
+    : normalizeText(rawValue ?? resolveCellText({
+        column,
+        columns,
+        row,
+        storeName,
+      }));
+
+  const normalizedNumber = Number(
+    String(resolvedValue).replace(/[^0-9,.-]/g, '').replace(',', '.'),
+  );
+
+  if (Number.isFinite(normalizedNumber) && String(resolvedValue).match(/[0-9]/)) {
+    return normalizedNumber;
+  }
+
+  return normalizeSortText(resolvedValue);
+};
 
 const getColumnStyle = column => {
   const key = getColumnKey(column);
@@ -147,19 +212,28 @@ const DefaultTable = ({
     const items = Array.isArray(data) ? [...data] : [];
     const sortField = sort?.field;
     const sortDirection = sort?.direction === 'desc' ? 'desc' : 'asc';
-    const sortColumn = tableColumns.find(column => getColumnKey(column) === sortField);
+    const sortColumn = tableColumns.find(column => getSortField(column) === sortField);
 
     if (!sortField || !sortColumn) return items;
 
     return items.sort((left, right) => {
-      const leftValue = resolveCellText({ column: sortColumn, row: left, storeName });
-      const rightValue = resolveCellText({ column: sortColumn, row: right, storeName });
-      const leftNumber = Number(String(leftValue).replace(/[^0-9,.-]/g, '').replace(',', '.'));
-      const rightNumber = Number(String(rightValue).replace(/[^0-9,.-]/g, '').replace(',', '.'));
+      const leftValue = resolveSortComparable({
+        column: sortColumn,
+        columns: tableColumns,
+        row: left,
+        storeName,
+      });
+      const rightValue = resolveSortComparable({
+        column: sortColumn,
+        columns: tableColumns,
+        row: right,
+        storeName,
+      });
 
-      const comparison = Number.isFinite(leftNumber) && Number.isFinite(rightNumber)
-        ? leftNumber - rightNumber
-        : normalizeSortText(leftValue).localeCompare(normalizeSortText(rightValue));
+      const comparison =
+        typeof leftValue === 'number' && typeof rightValue === 'number'
+          ? leftValue - rightValue
+          : normalizeSortText(leftValue).localeCompare(normalizeSortText(rightValue));
 
       return sortDirection === 'desc' ? comparison * -1 : comparison;
     });
@@ -217,7 +291,7 @@ const DefaultTable = ({
   const requestSort = useCallback(column => {
     if (!isSortableColumn(column)) return;
 
-    const fieldName = getColumnKey(column);
+    const fieldName = getSortField(column);
     const nextDirection =
       sort?.field === fieldName && sort?.direction === 'asc'
         ? 'desc'
@@ -688,6 +762,8 @@ const DefaultTable = ({
                   storeName,
                 });
 
+                const sortFieldName = getSortField(column);
+
                 return (
                   <TouchableOpacity
                     key={fieldName}
@@ -697,7 +773,7 @@ const DefaultTable = ({
                   >
                     <View style={styles.sortableHeader}>
                       <Text style={styles.headerText} numberOfLines={1}>{label}</Text>
-                      {isSortableColumn(column) && sort?.field === fieldName ? (
+                      {isSortableColumn(column) && sort?.field === sortFieldName ? (
                         <Icon name={sort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color="#64748B" />
                       ) : isSortableColumn(column) ? (
                         <Icon name="chevrons-up" size={12} color="#CBD5E1" />

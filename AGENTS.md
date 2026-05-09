@@ -30,6 +30,7 @@
 - Novas telas React que substituam esse comportamento devem manter o mesmo contrato: filtros aparecem ou somem por configuracao de store/columns, e filtros compartilhados em `ui-default` devem receber `store` e `field` para resolverem a coluna/label internamente.
 - `DateShortcutFilter` e `CompactFilterSelector` pertencem a `ui-default/src/react/components/filters`. Nao recriar esses componentes em `ui-common` ou nos modulos donos das telas.
 - Busca textual padrao em listagens React deve entrar via `searchProps` do `DefaultTable`, renderizada pequena na toolbar com `DefaultSearch` de `ui-default/src/react/components/filters`, sincronizando `filters.search` quando a listagem usa store/default filters.
+- Quando uma tela React usar `DefaultTable`, o backend/store correspondente tambem precisa expor o contrato completo da listagem: ordenacao, pesquisa, filtros e paginacao. Campos de data devem ordenar pelo valor real no backend, e a busca deve ser implementada no backend com `CustomOrFilter` ou mecanismo equivalente, nunca por filtragem local escondida na tela.
 - Em React, `DefaultExternalFilters` e responsavel pelo comportamento responsivo dos filtros externos: desktop exibe os campos inline; largura compacta exibe um botao que abre modal. Telas consumidoras nao devem criar accordion/header mobile paralelo para esses filtros.
 
 ## Sumarios
