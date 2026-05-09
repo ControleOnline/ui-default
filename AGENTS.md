@@ -29,6 +29,7 @@
 - `FilterInputs.vue` escolhe o tipo de campo pela coluna: `inputType == 'date-range'` usa `DateRangeInput`, colunas com `list` usam `SelectInput`, e o restante usa `q-input`.
 - Novas telas React que substituam esse comportamento devem manter o mesmo contrato: filtros aparecem ou somem por configuracao de store/columns, e filtros compartilhados em `ui-default` devem receber `store` e `field` para resolverem a coluna/label internamente.
 - `DateShortcutFilter` e `CompactFilterSelector` pertencem a `ui-default/src/react/components/filters`. Nao recriar esses componentes em `ui-common` ou nos modulos donos das telas.
+- Em React, `DefaultExternalFilters` e responsavel pelo comportamento responsivo dos filtros externos: desktop exibe os campos inline; largura compacta exibe um botao que abre modal. Telas consumidoras nao devem criar accordion/header mobile paralelo para esses filtros.
 
 ## Sumarios
 - Toda listagem que exibe totais deve consumir `getters.summary` preenchido pelo backend/store.
