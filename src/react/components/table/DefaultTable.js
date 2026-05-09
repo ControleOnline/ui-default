@@ -11,6 +11,7 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
+import DefaultSearch from '../filters/DefaultSearch';
 import DefaultInput from '../inputs/DefaultInput';
 import {
   formatSaveValue,
@@ -75,9 +76,13 @@ const DefaultTable = ({
   onEditRow = null,
   onEndReached = null,
   onFilterChange = null,
+  onRowPress = null,
   onSaved = null,
   onSortChange = null,
   renderCard = null,
+  searchProps = null,
+  showColumnFiltersButton = true,
+  showRowActions = true,
   sort = null,
   storeName = '',
 }) => {
@@ -117,13 +122,14 @@ const DefaultTable = ({
     () => Object.values(filters || {}).filter(value => normalizeText(value) !== '').length,
     [filters],
   );
+  const hasRowActions = showRowActions !== false;
   const tableMinimumWidth = useMemo(
     () =>
       tableColumns.reduce(
         (totalWidth, column) => totalWidth + getColumnMinWidth(column),
-        ACTIONS_CELL_WIDTH,
+        hasRowActions ? ACTIONS_CELL_WIDTH : 0,
       ),
-    [tableColumns],
+    [hasRowActions, tableColumns],
   );
   const tableWidth = Math.max(tableContainerWidth, tableMinimumWidth);
   const tableLayoutStyle = useMemo(
@@ -325,9 +331,15 @@ const DefaultTable = ({
     const cellKey = `${row?.id || row?.['@id']}:${fieldName}`;
     const isEditing = editingCell === cellKey;
     const isSaving = savingCell === cellKey;
+    const shouldDelegatePress =
+      typeof onRowPress === 'function' &&
+      !isEditableColumn(column);
 
     return (
-      <View style={[getColumnStyle(column), isEditing ? styles.editingCell : null]}>
+      <View
+        style={[getColumnStyle(column), isEditing ? styles.editingCell : null]}
+        pointerEvents={shouldDelegatePress ? 'none' : 'auto'}
+      >
         <DefaultInput
           accentColor={accentColor}
           column={column}
@@ -440,11 +452,13 @@ const DefaultTable = ({
             renderValue: helpers.renderValue,
             row,
           })}
-          <View style={styles.cardActions}>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={helpers.openEdit}>
-              <Icon name="edit-2" size={14} color="#64748B" />
-            </TouchableOpacity>
-          </View>
+          {hasRowActions ? (
+            <View style={styles.cardActions}>
+              <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={helpers.openEdit}>
+                <Icon name="edit-2" size={14} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </View>
       );
     }
@@ -467,9 +481,11 @@ const DefaultTable = ({
             })}
           </View>
         ))}
-        <TouchableOpacity style={styles.cardEditButton} activeOpacity={0.82} onPress={helpers.openEdit}>
-          <Icon name="edit-2" size={14} color="#64748B" />
-        </TouchableOpacity>
+        {hasRowActions ? (
+          <TouchableOpacity style={styles.cardEditButton} activeOpacity={0.82} onPress={helpers.openEdit}>
+            <Icon name="edit-2" size={14} color="#64748B" />
+          </TouchableOpacity>
+        ) : null}
       </View>
     );
   };
@@ -541,16 +557,27 @@ const DefaultTable = ({
     <View style={styles.wrap} onLayout={handleLayout}>
       <View style={styles.toolbar}>
         <View style={styles.toolbarLeft}>
-          <TouchableOpacity
-            style={[styles.toolbarButton, showColumnFilters ? styles.toolbarButtonActive : null]}
-            activeOpacity={0.82}
-            onPress={() => setShowColumnFilters(prev => !prev)}
-          >
-            <Icon name="filter" size={14} color={showColumnFilters ? accentColor : '#64748B'} />
-            {activeFilterCount > 0 ? (
-              <Text style={[styles.toolbarBadgeText, { color: accentColor }]}>{activeFilterCount}</Text>
-            ) : null}
-          </TouchableOpacity>
+          {searchProps ? (
+            <DefaultSearch
+              accentColor={accentColor}
+              compact
+              storeName={storeName}
+              {...searchProps}
+              style={[styles.toolbarSearch, searchProps?.style]}
+            />
+          ) : null}
+          {showColumnFiltersButton ? (
+            <TouchableOpacity
+              style={[styles.toolbarButton, showColumnFilters ? styles.toolbarButtonActive : null]}
+              activeOpacity={0.82}
+              onPress={() => setShowColumnFilters(prev => !prev)}
+            >
+              <Icon name="filter" size={14} color={showColumnFilters ? accentColor : '#64748B'} />
+              {activeFilterCount > 0 ? (
+                <Text style={[styles.toolbarBadgeText, { color: accentColor }]}>{activeFilterCount}</Text>
+              ) : null}
+            </TouchableOpacity>
+          ) : null}
           {!isCompactView ? (
             <TouchableOpacity
               style={styles.toolbarButton}
@@ -641,19 +668,21 @@ const DefaultTable = ({
                   </TouchableOpacity>
                 );
               })}
-              <View style={[styles.cell, styles.actionsCell]}>
-                <Text style={styles.headerText}>Acoes</Text>
-              </View>
+              {hasRowActions ? (
+                <View style={[styles.cell, styles.actionsCell]}>
+                  <Text style={styles.headerText}>Acoes</Text>
+                </View>
+              ) : null}
             </View>
 
-            {showColumnFilters ? (
+            {showColumnFiltersButton && showColumnFilters ? (
               <View style={[styles.filterRow, tableLayoutStyle]}>
                 {tableColumns.map(column => (
                   <React.Fragment key={getColumnKey(column)}>
                     {renderColumnFilter(column)}
                   </React.Fragment>
                 ))}
-                <View style={[styles.cell, styles.actionsCell]} />
+                {hasRowActions ? <View style={[styles.cell, styles.actionsCell]} /> : null}
               </View>
             ) : null}
 
@@ -666,20 +695,37 @@ const DefaultTable = ({
                   <Text style={styles.emptyText}>{emptyStateLabel}</Text>
                 </View>
               ) : (
-                sortedData.map(row => (
-                  <View key={row?.['@id'] || row?.id} style={[styles.row, tableLayoutStyle]}>
-                    {tableColumns.map(column => (
-                      <React.Fragment key={getColumnKey(column)}>
-                        {renderEditableCell(row, column)}
-                      </React.Fragment>
-                    ))}
-                    <View style={[styles.cell, styles.actionsCell]}>
-                      <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
-                        <Icon name="edit-2" size={14} color="#64748B" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))
+                sortedData.map(row => {
+                  const hasRowPress = typeof onRowPress === 'function';
+                  const RowComponent = hasRowPress ? TouchableOpacity : View;
+                  const rowPressProps = hasRowPress
+                    ? {
+                      activeOpacity: 0.84,
+                      onPress: () => onRowPress(row),
+                    }
+                    : {};
+
+                  return (
+                    <RowComponent
+                      key={row?.['@id'] || row?.id}
+                      style={[styles.row, tableLayoutStyle]}
+                      {...rowPressProps}
+                    >
+                      {tableColumns.map(column => (
+                        <React.Fragment key={getColumnKey(column)}>
+                          {renderEditableCell(row, column)}
+                        </React.Fragment>
+                      ))}
+                      {hasRowActions ? (
+                        <View style={[styles.cell, styles.actionsCell]}>
+                          <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
+                            <Icon name="edit-2" size={14} color="#64748B" />
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
+                    </RowComponent>
+                  );
+                })
               )}
             </ScrollView>
           </View>

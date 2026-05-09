@@ -38,7 +38,14 @@ const styles = StyleSheet.create({
   toolbarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
     gap: 6,
+    minWidth: 0,
+  },
+  toolbarSearch: {
+    width: 190,
+    maxWidth: 220,
+    flexShrink: 1,
   },
   toolbarButton: {
     minWidth: 28,
