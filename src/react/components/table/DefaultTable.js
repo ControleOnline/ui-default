@@ -81,6 +81,7 @@ const DefaultTable = ({
   onSortChange = null,
   renderCard = null,
   searchProps = null,
+  toolbarActions = [],
   showColumnFiltersButton = true,
   showRowActions = true,
   sort = null,
@@ -372,6 +373,39 @@ const DefaultTable = ({
     );
   };
 
+  const renderToolbarAction = action => {
+    if (!action || action.hidden) return null;
+
+    const isActive = action.active === true;
+
+    return (
+      <TouchableOpacity
+        key={action.key || action.icon || action.label}
+        style={[
+          styles.toolbarButton,
+          isActive ? styles.toolbarButtonActive : null,
+          action.style,
+        ]}
+        activeOpacity={0.82}
+        disabled={action.disabled === true}
+        onPress={action.onPress}
+      >
+        {action.icon ? (
+          <Icon
+            name={action.icon}
+            size={action.iconSize || 14}
+            color={action.color || (isActive ? accentColor : '#64748B')}
+          />
+        ) : null}
+        {action.badge !== undefined && action.badge !== null ? (
+          <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || accentColor }]}>
+            {action.badge}
+          </Text>
+        ) : null}
+      </TouchableOpacity>
+    );
+  };
+
   const getColumnByField = useCallback(
     fieldName => columns.find(column => getColumnKey(column) === fieldName),
     [columns],
@@ -380,6 +414,7 @@ const DefaultTable = ({
   const buildRowHelpers = useCallback(
     row => {
       const openEdit = () => openEditModal(row);
+      const openRow = typeof onRowPress === 'function' ? () => onRowPress(row) : null;
       const renderValue = (fieldName, fallback = '-') => {
         const column = getColumnByField(fieldName);
         if (!column) return fallback;
@@ -420,6 +455,7 @@ const DefaultTable = ({
 
       return {
         openEdit,
+        openRow,
         renderField,
         renderValue,
       };
@@ -433,6 +469,7 @@ const DefaultTable = ({
       getColumnByField,
       getOptionsForColumn,
       openEditModal,
+      onRowPress,
       saveCell,
       savingCell,
       storeName,
@@ -448,6 +485,7 @@ const DefaultTable = ({
           {renderCard({
             item: row,
             openEdit: helpers.openEdit,
+            openRow: helpers.openRow,
             renderField: helpers.renderField,
             renderValue: helpers.renderValue,
             row,
@@ -590,6 +628,7 @@ const DefaultTable = ({
           <TouchableOpacity style={styles.toolbarButton} activeOpacity={0.82} onPress={() => setIsColumnMenuOpen(prev => !prev)}>
             <Icon name="columns" size={14} color="#64748B" />
           </TouchableOpacity>
+          {Array.isArray(toolbarActions) ? toolbarActions.map(renderToolbarAction) : null}
         </View>
 
         {isColumnMenuOpen ? (
