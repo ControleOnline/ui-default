@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
+import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultSearch from '../filters/DefaultSearch';
@@ -31,11 +32,113 @@ const DEFAULT_COMPACT_BREAKPOINT = 768;
 const IDENTITY_CELL_MIN_WIDTH = 76;
 const MONEY_CELL_MIN_WIDTH = 132;
 const ACTIONS_CELL_WIDTH = 60;
+const SUMMARY_OPERATIONS = ['sum', 'count', 'avg', 'min', 'max'];
 
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
   column?.visible !== false &&
   column?.table !== false;
+
+const isObject = value =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const humanizeSummaryLabel = value =>
+  normalizeText(value)
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[._-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const isMoneySummaryPath = path =>
+  /(amount|price|total|value|paid|open|receivable|payable|pending)/i.test(
+    Array.isArray(path) ? path.join('.') : normalizeText(path),
+  );
+
+const normalizeSummaryMoneyValue = value => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+
+  const rawValue = normalizeText(value).replace(/[^0-9,.-]/g, '');
+  if (!rawValue) return 0;
+
+  const normalizedValue = rawValue.includes(',')
+    ? rawValue.replace(/\./g, '').replace(',', '.')
+    : rawValue;
+  const parsedValue = Number(normalizedValue);
+
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+};
+
+const getSummaryOperations = column => {
+  if (typeof column?.summary === 'string') return [column.summary];
+  if (Array.isArray(column?.summary)) return column.summary;
+  if (isObject(column?.summary)) {
+    return Object.entries(column.summary)
+      .filter(([, value]) => value)
+      .map(([operation]) => operation);
+  }
+
+  return SUMMARY_OPERATIONS.filter(operation => column?.[operation] === true);
+};
+
+const getSummaryField = (column, operation) => {
+  if (isObject(column?.summary)) {
+    const summaryField = column.summary[operation];
+    if (typeof summaryField === 'string') return summaryField;
+  }
+
+  return getColumnKey(column);
+};
+
+const formatSummaryValue = ({ column, columns, path, storeName, value }) => {
+  const columnKey = column ? getColumnKey(column) : '';
+  const shouldFormatMoney = isMoneySummaryPath(path) || isMoneySummaryPath(columnKey);
+
+  if (shouldFormatMoney) {
+    return Formatter.formatMoney(normalizeSummaryMoneyValue(value));
+  }
+
+  if (column) {
+    return resolveCellText({
+      column,
+      columns,
+      row: { [columnKey]: value },
+      storeName,
+      value,
+    });
+  }
+
+  return normalizeText(value);
+};
+
+const flattenSummaryEntries = ({
+  path = [],
+  summaryLabels = {},
+  usedPaths,
+  value,
+}) => {
+  if (!isObject(value)) {
+    const pathKey = path.join('.');
+    if (!pathKey || usedPaths.has(pathKey)) return [];
+
+    const fallbackLabel = humanizeSummaryLabel(path[path.length - 1] || pathKey);
+
+    return [{
+      key: pathKey,
+      label: summaryLabels[pathKey] || summaryLabels[path[path.length - 1]] || fallbackLabel,
+      path,
+      value,
+    }];
+  }
+
+  return Object.entries(value).flatMap(([key, childValue]) =>
+    flattenSummaryEntries({
+      path: [...path, key],
+      summaryLabels,
+      usedPaths,
+      value: childValue,
+    }),
+  );
+};
 
 const isSortableColumn = column => column?.sortable === true;
 
@@ -154,6 +257,8 @@ const DefaultTable = ({
   showRowActions = true,
   sort = null,
   storeName = '',
+  summary = null,
+  summaryLabels = null,
   totalItems = null,
   totalItemsLabel = null,
 }) => {
@@ -216,15 +321,69 @@ const DefaultTable = ({
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
     : 'Nenhum registro encontrado';
-  const totalItemsNumber = Number(totalItems);
+  const storeTotalItems = store?.getters?.totalItems;
+  const resolvedTotalItems = totalItems !== null && totalItems !== undefined
+    ? totalItems
+    : storeTotalItems;
+  const totalItemsNumber = Number(resolvedTotalItems);
   const shouldRenderTotalItems =
-    totalItems !== null &&
-    totalItems !== undefined &&
+    resolvedTotalItems !== null &&
+    resolvedTotalItems !== undefined &&
     Number.isFinite(totalItemsNumber);
   const totalItemsText = shouldRenderTotalItems
     ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
     : '';
-  const shouldRenderFooterBar = shouldRenderTotalItems;
+  const storeSummary = store?.getters?.summary;
+  const resolvedSummary = summary !== null && summary !== undefined ? summary : storeSummary;
+  const shouldReadSummary = resolvedSummary !== false && isObject(resolvedSummary);
+  const summaryEntries = useMemo(() => {
+    if (!shouldReadSummary) return [];
+
+    const labels = summaryLabels || {};
+    const usedPaths = new Set();
+    const columnEntries = tableColumns.flatMap(column => {
+      const operations = getSummaryOperations(column);
+      if (!operations.length) return [];
+
+      const columnLabel = formatStoreColumnLabel({
+        columns,
+        fieldName: getColumnKey(column),
+        fallbackLabel: column?.label || getColumnKey(column),
+        storeName,
+      });
+
+      return operations.map(operation => {
+        const fieldName = getSummaryField(column, operation);
+        const path = [operation, fieldName];
+        const pathKey = path.join('.');
+        const value = resolvedSummary?.[operation]?.[fieldName];
+        if (value === undefined) return null;
+
+        usedPaths.add(pathKey);
+
+        return {
+          key: pathKey,
+          label: labels[pathKey] || (operations.length > 1 ? `${columnLabel} ${operation}` : columnLabel),
+          path,
+          value,
+          column,
+        };
+      }).filter(Boolean);
+    });
+
+    const genericEntries = flattenSummaryEntries({
+      summaryLabels: labels,
+      usedPaths,
+      value: resolvedSummary,
+    });
+
+    return [...columnEntries, ...genericEntries].filter(entry =>
+      entry?.value !== undefined &&
+      entry?.value !== null &&
+      normalizeText(entry.value) !== '',
+    );
+  }, [columns, resolvedSummary, shouldReadSummary, storeName, summaryLabels, tableColumns]);
+  const shouldRenderFooterBar = shouldRenderTotalItems || summaryEntries.length > 0;
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(data) ? [...data] : [];
@@ -876,11 +1035,43 @@ const DefaultTable = ({
 
       {shouldRenderFooterBar ? (
         <View style={styles.footerBar}>
-          <View style={styles.footerCountPill}>
-            <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
-              {totalItemsText}
-            </Text>
-          </View>
+          {summaryEntries.length > 0 ? (
+            <View style={styles.footerSummaryList}>
+              {summaryEntries.map(entry => (
+                <View key={entry.key} style={styles.footerSummaryItem}>
+                  <Text style={styles.footerSummaryLabel} numberOfLines={1}>
+                    {entry.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.footerSummaryValue,
+                      entry.path?.[0] === 'sum' || isMoneySummaryPath(entry.path)
+                        ? { color: accentColor }
+                        : null,
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.78}
+                  >
+                    {formatSummaryValue({
+                      column: entry.column,
+                      columns,
+                      path: entry.path,
+                      storeName,
+                      value: entry.value,
+                    })}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {shouldRenderTotalItems ? (
+            <View style={styles.footerCountPill}>
+              <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
+                {totalItemsText}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 

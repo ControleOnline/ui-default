@@ -18,7 +18,8 @@
 - Toda edicao do `DefaultTable` React deve usar `DefaultInput`/`DefaultSelect` deste modulo. Isso vale para celulas desktop, campos de card customizado via `renderField` e modal fallback.
 - A configuracao de cada coluna vem do store. Use `columns` para `list`, `label`, `format`, `formatList`, `formatFilter`, `saveFormat`, `inputType`, `visible`, `editable`, `filter`, `externalFilter`, `filterClass` e metadados equivalentes. Nao duplicar lista, label, formatacao ou regra de edicao na tela.
 - Acoes globais da listagem e atalhos de contexto pertencem ao toolbar default. Quando houver espaco, devem ficar na mesma linha da toolbar para economizar altura vertical.
-- Contagens de listagem (`totalItems`) pertencem ao rodape sticky interno do `DefaultTable`; telas consumidoras nao devem renderizar pilulas de total soltas acima da tabela.
+- Contagens de listagem (`totalItems`) pertencem sempre ao rodape sticky interno do `DefaultTable`; o componente deve ler o total do store da listagem quando a tela nao passar override explicito.
+- Resumos de colecao vindos do backend em `summary` pertencem ao rodape sticky interno do `DefaultTable`; telas consumidoras nao devem renderizar rodapes paralelos. O rodape de summary so deve ser omitido quando o store daquela listagem registrar `summary: false`.
 - O botao de adicionar pertence a toolbar superior do `DefaultTable` React, nunca solto/flutuante na tela nem no rodape. Ele deve ler `add` do store da listagem e receber da tela apenas o callback contextual quando a criacao exigir navegacao ou fluxo especifico.
 
 ## Filtros
