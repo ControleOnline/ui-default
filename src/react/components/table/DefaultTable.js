@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultSearch from '../filters/DefaultSearch';
@@ -130,6 +131,7 @@ const getColumnMinWidth = column => {
 const DefaultTable = ({
   accentColor = '#2563EB',
   actions = {},
+  add = null,
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
   columns = [],
   data = [],
@@ -140,6 +142,7 @@ const DefaultTable = ({
   isLoading = false,
   onEditRow = null,
   onEndReached = null,
+  onAdd = null,
   onFilterChange = null,
   onRowPress = null,
   onSaved = null,
@@ -151,8 +154,11 @@ const DefaultTable = ({
   showRowActions = true,
   sort = null,
   storeName = '',
+  totalItems = null,
+  totalItemsLabel = null,
 }) => {
   const { width } = useWindowDimensions();
+  const store = useStore(storeName);
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [formDraft, setFormDraft] = useState({});
@@ -189,6 +195,9 @@ const DefaultTable = ({
     [filters],
   );
   const hasRowActions = showRowActions !== false;
+  const storeAddConfig = store?.getters?.add;
+  const addConfig = add !== null && add !== undefined ? add : storeAddConfig;
+  const shouldRenderAddButton = typeof onAdd === 'function' && addConfig !== false;
   const tableMinimumWidth = useMemo(
     () =>
       tableColumns.reduce(
@@ -207,6 +216,14 @@ const DefaultTable = ({
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
     : 'Nenhum registro encontrado';
+  const totalItemsNumber = Number(totalItems);
+  const shouldRenderTotalItems =
+    totalItems !== null &&
+    totalItems !== undefined &&
+    Number.isFinite(totalItemsNumber);
+  const totalItemsText = shouldRenderTotalItems
+    ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
+    : '';
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(data) ? [...data] : [];
@@ -846,6 +863,30 @@ const DefaultTable = ({
           </View>
         </ScrollView>
       )}
+
+      {shouldRenderTotalItems ? (
+        <View style={styles.footerBar}>
+          <View style={styles.footerCountPill}>
+            <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
+              {totalItemsText}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {shouldRenderAddButton ? (
+        <TouchableOpacity
+          style={[
+            styles.addFab,
+            shouldRenderTotalItems ? styles.addFabWithFooter : null,
+            { backgroundColor: accentColor },
+          ]}
+          activeOpacity={0.85}
+          onPress={onAdd}
+        >
+          <Icon name="plus" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
+      ) : null}
 
       {renderEditModal()}
     </View>
