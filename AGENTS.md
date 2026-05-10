@@ -19,7 +19,7 @@
 - A configuracao de cada coluna vem do store. Use `columns` para `list`, `label`, `format`, `formatList`, `formatFilter`, `saveFormat`, `inputType`, `visible`, `editable`, `filter`, `externalFilter`, `filterClass` e metadados equivalentes. Nao duplicar lista, label, formatacao ou regra de edicao na tela.
 - Acoes globais da listagem e atalhos de contexto pertencem ao toolbar default. Quando houver espaco, devem ficar na mesma linha da toolbar para economizar altura vertical.
 - Contagens de listagem (`totalItems`) pertencem ao rodape sticky interno do `DefaultTable`; telas consumidoras nao devem renderizar pilulas de total soltas acima da tabela.
-- O botao flutuante de adicionar pertence ao `DefaultTable` React. Ele deve ler `add` do store da listagem e receber da tela apenas o callback contextual quando a criacao exigir navegacao ou fluxo especifico.
+- O botao de adicionar pertence a barra inferior do `DefaultTable` React, nunca solto/flutuante na tela. Ele deve ler `add` do store da listagem e receber da tela apenas o callback contextual quando a criacao exigir navegacao ou fluxo especifico.
 
 ## Filtros
 - `filters` e o estado aplicado da listagem. Ele vive no store acessado por `${configs.store}/filters` e deve ser alterado por `SET_FILTERS`/`applyFilters`, nao por estado local paralelo como fonte da verdade.

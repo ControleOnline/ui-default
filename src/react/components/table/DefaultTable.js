@@ -224,6 +224,7 @@ const DefaultTable = ({
   const totalItemsText = shouldRenderTotalItems
     ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
     : '';
+  const shouldRenderFooterBar = shouldRenderTotalItems || shouldRenderAddButton;
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(data) ? [...data] : [];
@@ -864,28 +865,25 @@ const DefaultTable = ({
         </ScrollView>
       )}
 
-      {shouldRenderTotalItems ? (
+      {shouldRenderFooterBar ? (
         <View style={styles.footerBar}>
-          <View style={styles.footerCountPill}>
-            <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
-              {totalItemsText}
-            </Text>
-          </View>
+          {shouldRenderTotalItems ? (
+            <View style={styles.footerCountPill}>
+              <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
+                {totalItemsText}
+              </Text>
+            </View>
+          ) : null}
+          {shouldRenderAddButton ? (
+            <TouchableOpacity
+              style={[styles.footerAddButton, { backgroundColor: accentColor }]}
+              activeOpacity={0.85}
+              onPress={onAdd}
+            >
+              <Icon name="plus" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : null}
         </View>
-      ) : null}
-
-      {shouldRenderAddButton ? (
-        <TouchableOpacity
-          style={[
-            styles.addFab,
-            shouldRenderTotalItems ? styles.addFabWithFooter : null,
-            { backgroundColor: accentColor },
-          ]}
-          activeOpacity={0.85}
-          onPress={onAdd}
-        >
-          <Icon name="plus" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
       ) : null}
 
       {renderEditModal()}
