@@ -224,7 +224,7 @@ const DefaultTable = ({
   const totalItemsText = shouldRenderTotalItems
     ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
     : '';
-  const shouldRenderFooterBar = shouldRenderTotalItems || shouldRenderAddButton;
+  const shouldRenderFooterBar = shouldRenderTotalItems;
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(data) ? [...data] : [];
@@ -720,6 +720,15 @@ const DefaultTable = ({
           <TouchableOpacity style={styles.toolbarButton} activeOpacity={0.82} onPress={() => setIsColumnMenuOpen(prev => !prev)}>
             <Icon name="columns" size={14} color="#64748B" />
           </TouchableOpacity>
+          {shouldRenderAddButton ? (
+            <TouchableOpacity
+              style={[styles.toolbarButton, styles.toolbarAddButton, { backgroundColor: accentColor, borderColor: accentColor }]}
+              activeOpacity={0.85}
+              onPress={onAdd}
+            >
+              <Icon name="plus" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : null}
           {Array.isArray(toolbarActions) ? toolbarActions.map(renderToolbarAction) : null}
         </View>
 
@@ -867,22 +876,11 @@ const DefaultTable = ({
 
       {shouldRenderFooterBar ? (
         <View style={styles.footerBar}>
-          {shouldRenderTotalItems ? (
-            <View style={styles.footerCountPill}>
-              <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
-                {totalItemsText}
-              </Text>
-            </View>
-          ) : null}
-          {shouldRenderAddButton ? (
-            <TouchableOpacity
-              style={[styles.footerAddButton, { backgroundColor: accentColor }]}
-              activeOpacity={0.85}
-              onPress={onAdd}
-            >
-              <Icon name="plus" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          ) : null}
+          <View style={styles.footerCountPill}>
+            <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
+              {totalItemsText}
+            </Text>
+          </View>
         </View>
       ) : null}
 
