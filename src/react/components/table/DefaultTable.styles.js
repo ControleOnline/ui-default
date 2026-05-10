@@ -64,6 +64,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderColor: '#CBD5E1',
   },
+  toolbarAddButton: {
+    minWidth: 30,
+    width: 30,
+    paddingHorizontal: 0,
+  },
   toolbarBadgeText: {
     fontSize: 10,
     fontWeight: '900',
@@ -342,13 +347,6 @@ const styles = StyleSheet.create({
   footerCountText: {
     fontSize: 11,
     fontWeight: '900',
-  },
-  footerAddButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   emptyText: {
     color: '#64748B',
