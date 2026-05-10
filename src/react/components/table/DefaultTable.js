@@ -14,6 +14,7 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultSearch from '../filters/DefaultSearch';
+import DefaultForm from '../form/DefaultForm';
 import DefaultInput from '../inputs/DefaultInput';
 import {
   formatSaveValue,
@@ -266,7 +267,7 @@ const DefaultTable = ({
   const store = useStore(storeName);
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
-  const [formDraft, setFormDraft] = useState({});
+  const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const [savingCell, setSavingCell] = useState(null);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
@@ -302,7 +303,10 @@ const DefaultTable = ({
   const hasRowActions = showRowActions !== false;
   const storeAddConfig = store?.getters?.add;
   const addConfig = add !== null && add !== undefined ? add : storeAddConfig;
-  const shouldRenderAddButton = typeof onAdd === 'function' && addConfig !== false;
+  const hasAddInstruction = addConfig === true || (isObject(addConfig) && addConfig.enabled !== false);
+  const shouldRenderAddButton =
+    hasAddInstruction &&
+    (typeof onAdd === 'function' || typeof actions.save === 'function');
   const tableMinimumWidth = useMemo(
     () =>
       tableColumns.reduce(
@@ -486,18 +490,25 @@ const DefaultTable = ({
       return;
     }
 
-    const draft = {};
-    editableColumns.forEach(column => {
-      draft[getColumnKey(column)] = resolveEditValue(column, row);
-    });
-
+    setFormMode('edit');
     setEditingRow(row);
-    setFormDraft(draft);
-  }, [editableColumns, onEditRow]);
+  }, [onEditRow]);
+
+  const openAddForm = useCallback(() => {
+    if (typeof onAdd === 'function') {
+      onAdd();
+      return;
+    }
+
+    if (typeof actions.save !== 'function') return;
+
+    setFormMode('create');
+    setEditingRow({});
+  }, [actions, onAdd]);
 
   const closeEditModal = useCallback(() => {
     setEditingRow(null);
-    setFormDraft({});
+    setFormMode('edit');
   }, []);
 
   const updateFilter = useCallback((fieldName, value) => {
@@ -513,44 +524,6 @@ const DefaultTable = ({
 
     onFilterChange?.(nextFilters);
   }, [filters, onFilterChange]);
-
-  const saveRowModal = useCallback(() => {
-    if (!editingRow || typeof actions.save !== 'function') {
-      closeEditModal();
-      return Promise.resolve(null);
-    }
-
-    const payload = { id: normalizeId(editingRow?.['@id'] || editingRow?.id) };
-
-    editableColumns.forEach(column => {
-      const fieldName = getColumnKey(column);
-      const currentValue = resolveEditValue(column, editingRow);
-      const nextValue = formDraft[fieldName];
-
-      if (normalizeText(currentValue) !== normalizeText(nextValue)) {
-        payload[fieldName] = formatSaveValue(column, nextValue, editingRow);
-      }
-    });
-
-    if (Object.keys(payload).length <= 1) {
-      closeEditModal();
-      return Promise.resolve(null);
-    }
-
-    setSavingCell(`row:${payload.id}`);
-
-    return actions.save(payload)
-      .then(savedItem => {
-        onSaved?.(savedItem || { ...editingRow, ...formDraft }, editingRow);
-        closeEditModal();
-        return savedItem;
-      })
-      .catch(error => {
-        console.error(error);
-        return null;
-      })
-      .finally(() => setSavingCell(null));
-  }, [actions, closeEditModal, editableColumns, editingRow, formDraft, onSaved]);
 
   const toggleColumn = useCallback(column => {
     const fieldName = getColumnKey(column);
@@ -779,68 +752,43 @@ const DefaultTable = ({
     );
   };
 
-  const renderEditModal = () => (
-    <Modal visible={Boolean(editingRow)} transparent animationType="fade" onRequestClose={closeEditModal}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{global.t?.t(storeName, 'button', 'edit') || 'Editar'}</Text>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={closeEditModal}>
-              <Icon name="x" size={18} color="#64748B" />
-            </TouchableOpacity>
-          </View>
+  const renderEditModal = () => {
+    const isCreate = formMode === 'create';
 
-          <ScrollView style={styles.modalBody}>
-            <View style={styles.formGrid}>
-              {editableColumns.map(column => {
-                const fieldName = getColumnKey(column);
-                const label = formatStoreColumnLabel({
-                  columns,
-                  fieldName,
-                  fallbackLabel: column?.label || fieldName,
-                  storeName,
-                });
-
-                return (
-                  <View key={fieldName} style={styles.formField}>
-                    <DefaultInput
-                      autoFocus={false}
-                      autoSave={false}
-                      column={column}
-                      columns={columns}
-                      editing
-                      getOptionsForColumn={getOptionsForColumn}
-                      label={label}
-                      onChangeValue={value => setFormDraft(prev => ({ ...prev, [fieldName]: value }))}
-                      readTextStyle={styles.defaultCardValue}
-                      row={editingRow}
-                      showLabel
-                      storeName={storeName}
-                      value={formDraft[fieldName]}
-                      variant="form"
-                    />
-                  </View>
-                );
-              })}
+    return (
+      <Modal visible={Boolean(editingRow)} transparent animationType="fade" onRequestClose={closeEditModal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {isCreate
+                  ? global.t?.t(storeName, 'button', 'add') || 'Adicionar'
+                  : global.t?.t(storeName, 'button', 'edit') || 'Editar'}
+              </Text>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={closeEditModal}>
+                <Icon name="x" size={18} color="#64748B" />
+              </TouchableOpacity>
             </View>
-          </ScrollView>
 
-          <View style={styles.modalActions}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={closeEditModal}>
-              <Text style={styles.secondaryButtonText}>
-                {global.t?.t(storeName, 'button', 'cancel') || 'Cancelar'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryButton} onPress={saveRowModal}>
-              <Text style={styles.primaryButtonText}>
-                {savingCell ? 'Salvando' : global.t?.t(storeName, 'button', 'save') || 'Salvar'}
-              </Text>
-            </TouchableOpacity>
+            <DefaultForm
+              accentColor={accentColor}
+              actions={actions}
+              columns={isCreate ? columns : editableColumns}
+              getOptionsForColumn={getOptionsForColumn}
+              mode={formMode}
+              onCancel={closeEditModal}
+              onSaved={(savedItem, originalRow) => {
+                onSaved?.(savedItem, originalRow);
+                closeEditModal();
+              }}
+              row={editingRow || {}}
+              storeName={storeName}
+            />
           </View>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   return (
     <View style={styles.wrap} onLayout={handleLayout}>
@@ -883,7 +831,7 @@ const DefaultTable = ({
             <TouchableOpacity
               style={[styles.toolbarButton, styles.toolbarAddButton, { backgroundColor: accentColor, borderColor: accentColor }]}
               activeOpacity={0.85}
-              onPress={onAdd}
+              onPress={openAddForm}
             >
               <Icon name="plus" size={16} color="#FFFFFF" />
             </TouchableOpacity>
