@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   ScrollView,
   Text,
@@ -30,6 +31,7 @@ import styles from './DefaultTable.styles';
 
 const DEFAULT_CELL_MIN_WIDTH = 118;
 const DEFAULT_COMPACT_BREAKPOINT = 768;
+const END_REACHED_THRESHOLD = 0.35;
 const IDENTITY_CELL_MIN_WIDTH = 76;
 const MONEY_CELL_MIN_WIDTH = 132;
 const ACTIONS_CELL_WIDTH = 60;
@@ -42,6 +44,22 @@ const shouldIncludeColumn = column =>
 
 const isObject = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const getRowKey = (row, index = 0) =>
+  String(row?.['@id'] || row?.id || index);
+
+const resolveHasMore = ({ hasMore, dataLength, totalItems }) => {
+  if (hasMore !== null && hasMore !== undefined) {
+    return hasMore;
+  }
+
+  const resolvedTotalItems = Number(totalItems);
+  if (!Number.isFinite(resolvedTotalItems)) {
+    return false;
+  }
+
+  return dataLength < resolvedTotalItems;
+};
 
 const humanizeSummaryLabel = value =>
   normalizeText(value)
@@ -241,7 +259,7 @@ const DefaultTable = ({
   data = [],
   filters = {},
   getOptionsForColumn = null,
-  hasMore = false,
+  hasMore = null,
   initialViewMode = 'table',
   isLoading = false,
   onEditRow = null,
@@ -273,6 +291,13 @@ const DefaultTable = ({
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const [viewMode, setViewMode] = useState(initialViewMode);
+  const endReachedLockRef = useRef(false);
+  const previousPaginationStateRef = useRef({
+    dataLength: Array.isArray(data) ? data.length : 0,
+    filtersKey: JSON.stringify(filters || {}),
+    sortDirection: sort?.direction,
+    sortField: sort?.field,
+  });
   const [visibleColumns, setVisibleColumns] = useState(() =>
     columns.reduce((acc, column) => {
       const key = getColumnKey(column);
@@ -420,6 +445,37 @@ const DefaultTable = ({
     });
   }, [data, sort?.direction, sort?.field, storeName, tableColumns]);
 
+  const resolvedHasMore = useMemo(
+    () =>
+      resolveHasMore({
+        hasMore,
+        dataLength: sortedData.length,
+        totalItems: resolvedTotalItems,
+      }),
+    [hasMore, resolvedTotalItems, sortedData.length],
+  );
+
+  useEffect(() => {
+    const nextPaginationState = {
+      dataLength: sortedData.length,
+      filtersKey: JSON.stringify(filters || {}),
+      sortDirection: sort?.direction,
+      sortField: sort?.field,
+    };
+
+    const previousPaginationState = previousPaginationStateRef.current;
+    const didPaginationStateChange =
+      previousPaginationState.dataLength !== nextPaginationState.dataLength ||
+      previousPaginationState.filtersKey !== nextPaginationState.filtersKey ||
+      previousPaginationState.sortDirection !== nextPaginationState.sortDirection ||
+      previousPaginationState.sortField !== nextPaginationState.sortField;
+
+    if (didPaginationStateChange) {
+      endReachedLockRef.current = false;
+      previousPaginationStateRef.current = nextPaginationState;
+    }
+  }, [filters, sort?.direction, sort?.field, sortedData]);
+
   const beginEdit = useCallback((row, column) => {
     if (!isEditableColumn(column)) return;
     setEditingCell(`${row?.id || row?.['@id']}:${getColumnKey(column)}`);
@@ -536,15 +592,19 @@ const DefaultTable = ({
     });
   }, [actions]);
 
-  const handleScroll = useCallback(event => {
-    if (!hasMore || isLoading || typeof onEndReached !== 'function') return;
+  const handleEndReached = useCallback(() => {
+    if (
+      !resolvedHasMore ||
+      isLoading ||
+      typeof onEndReached !== 'function' ||
+      endReachedLockRef.current === true
+    ) {
+      return;
+    }
 
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const distanceFromBottom =
-      contentSize.height - (contentOffset.y + layoutMeasurement.height);
-
-    if (distanceFromBottom < 120) onEndReached();
-  }, [hasMore, isLoading, onEndReached]);
+    endReachedLockRef.current = true;
+    onEndReached();
+  }, [endReachedLockRef, isLoading, onEndReached, resolvedHasMore]);
 
   const handleLayout = useCallback(event => {
     const nextWidth = Math.floor(event?.nativeEvent?.layout?.width || 0);
@@ -752,6 +812,64 @@ const DefaultTable = ({
     );
   };
 
+  const renderEmptyState = isTable => {
+    const emptyState = (
+      <View style={[styles.emptyBox, isTable ? tableLayoutStyle : null]}>
+        {isLoading ? (
+          <ActivityIndicator size="small" color={accentColor} />
+        ) : null}
+        <Text style={styles.emptyText}>{emptyStateLabel}</Text>
+      </View>
+    );
+
+    return emptyState;
+  };
+
+  const renderLoadingFooter = () => {
+    if (!isLoading || sortedData.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.loadingFooter}>
+        <ActivityIndicator size="small" color={accentColor} />
+        <Text style={styles.emptyText}>Carregando mais registros...</Text>
+      </View>
+    );
+  };
+
+  const renderTableItem = ({ item: row }) => {
+    const hasRowPress = typeof onRowPress === 'function';
+    const RowComponent = hasRowPress ? TouchableOpacity : View;
+    const rowPressProps = hasRowPress
+      ? {
+        activeOpacity: 0.84,
+        onPress: () => onRowPress(row),
+      }
+      : {};
+
+    return (
+      <RowComponent
+        key={getRowKey(row)}
+        style={[styles.row, tableLayoutStyle]}
+        {...rowPressProps}
+      >
+        {tableColumns.map(column => (
+          <React.Fragment key={getColumnKey(column)}>
+            {renderEditableCell(row, column)}
+          </React.Fragment>
+        ))}
+        {hasRowActions ? (
+          <View style={[styles.cell, styles.actionsCell]}>
+            <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
+              <Icon name="edit-2" size={14} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </RowComponent>
+    );
+  };
+
   const renderEditModal = () => {
     const isCreate = formMode === 'create';
 
@@ -863,26 +981,19 @@ const DefaultTable = ({
       </View>
 
       {effectiveViewMode === 'cards' ? (
-        <ScrollView style={styles.cardsScroll} onScroll={handleScroll} scrollEventThrottle={160}>
-          <View style={styles.cardsGrid}>
-            {sortedData.length === 0 ? (
-              <View style={styles.emptyBox}>
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={accentColor} />
-                ) : null}
-                <Text style={styles.emptyText}>{emptyStateLabel}</Text>
-              </View>
-            ) : (
-              sortedData.map(renderCardItem)
-            )}
-            {isLoading && sortedData.length > 0 ? (
-              <View style={styles.loadingFooter}>
-                <ActivityIndicator size="small" color={accentColor} />
-                <Text style={styles.emptyText}>Carregando mais registros...</Text>
-              </View>
-            ) : null}
-          </View>
-        </ScrollView>
+        <FlatList
+          data={sortedData}
+          keyExtractor={getRowKey}
+          renderItem={({ item }) => renderCardItem(item)}
+          style={styles.cardsScroll}
+          contentContainerStyle={styles.cardsGrid}
+          ListEmptyComponent={renderEmptyState(false)}
+          ListFooterComponent={renderLoadingFooter()}
+          nestedScrollEnabled
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={END_REACHED_THRESHOLD}
+          showsVerticalScrollIndicator={false}
+        />
       ) : (
         <ScrollView horizontal style={styles.scroll}>
           <View style={[styles.content, tableLayoutStyle]}>
@@ -935,48 +1046,19 @@ const DefaultTable = ({
               </View>
             ) : null}
 
-            <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={160}>
-              {sortedData.length === 0 ? (
-                <View style={[styles.emptyBox, tableLayoutStyle]}>
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color={accentColor} />
-                  ) : null}
-                  <Text style={styles.emptyText}>{emptyStateLabel}</Text>
-                </View>
-              ) : (
-                sortedData.map(row => {
-                  const hasRowPress = typeof onRowPress === 'function';
-                  const RowComponent = hasRowPress ? TouchableOpacity : View;
-                  const rowPressProps = hasRowPress
-                    ? {
-                      activeOpacity: 0.84,
-                      onPress: () => onRowPress(row),
-                    }
-                    : {};
-
-                  return (
-                    <RowComponent
-                      key={row?.['@id'] || row?.id}
-                      style={[styles.row, tableLayoutStyle]}
-                      {...rowPressProps}
-                    >
-                      {tableColumns.map(column => (
-                        <React.Fragment key={getColumnKey(column)}>
-                          {renderEditableCell(row, column)}
-                        </React.Fragment>
-                      ))}
-                      {hasRowActions ? (
-                        <View style={[styles.cell, styles.actionsCell]}>
-                          <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
-                            <Icon name="edit-2" size={14} color="#64748B" />
-                          </TouchableOpacity>
-                        </View>
-                      ) : null}
-                    </RowComponent>
-                  );
-                })
-              )}
-            </ScrollView>
+            <FlatList
+              data={sortedData}
+              keyExtractor={getRowKey}
+              renderItem={renderTableItem}
+              style={styles.tableList}
+              contentContainerStyle={styles.tableListContent}
+              ListEmptyComponent={renderEmptyState(true)}
+              ListFooterComponent={renderLoadingFooter()}
+              nestedScrollEnabled
+              onEndReached={handleEndReached}
+              onEndReachedThreshold={END_REACHED_THRESHOLD}
+              showsVerticalScrollIndicator={false}
+            />
           </View>
         </ScrollView>
       )}
