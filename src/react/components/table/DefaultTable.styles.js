@@ -103,11 +103,13 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
     width: '100%',
+    minHeight: 0,
   },
   content: {
     flex: 1,
     width: '100%',
     minWidth: '100%',
+    minHeight: 0,
   },
   headerRow: {
     minHeight: 34,
@@ -253,10 +255,21 @@ const styles = StyleSheet.create({
   },
   cardsScroll: {
     flex: 1,
+    minHeight: 0,
   },
   cardsGrid: {
     padding: 10,
     gap: 10,
+    flexGrow: 1,
+  },
+  tableList: {
+    flex: 1,
+    width: '100%',
+    minHeight: 0,
+  },
+  tableListContent: {
+    flexGrow: 1,
+    width: '100%',
   },
   cardItem: {
     position: 'relative',

@@ -5,6 +5,63 @@ import * as types from '@controleonline/ui-default/src/store/default/mutation_ty
 
 let db = null;
 
+export const STORE_ACTION_META_KEY = '__storeMeta'
+
+const isPlainObject = value =>
+  Object.prototype.toString.call(value) === '[object Object]'
+
+export const splitStoreActionPayload = value => {
+  if (!isPlainObject(value)) {
+    return {
+      payload: value,
+      storeMeta: {},
+    }
+  }
+
+  const payload = {...value}
+  const rawStoreMeta = payload[STORE_ACTION_META_KEY]
+  delete payload[STORE_ACTION_META_KEY]
+
+  return {
+    payload,
+    storeMeta: isPlainObject(rawStoreMeta) ? rawStoreMeta : {},
+  }
+}
+
+export const buildStoreErrorCommitOptions = storeMeta => {
+  if (!isPlainObject(storeMeta)) {
+    return {}
+  }
+
+  const options = {}
+
+  if (storeMeta.skipSystemError === true) {
+    options.skipSystemError = true
+  }
+
+  if (typeof storeMeta.dedupeKey === 'string' && storeMeta.dedupeKey.trim()) {
+    options.dedupeKey = storeMeta.dedupeKey.trim()
+  }
+
+  if (typeof storeMeta.providerKey === 'string' && storeMeta.providerKey.trim()) {
+    options.providerKey = storeMeta.providerKey.trim()
+  }
+
+  if (typeof storeMeta.position === 'string' && storeMeta.position.trim()) {
+    options.position = storeMeta.position.trim()
+  }
+
+  return options
+}
+
+const commitStoreError = (commit, error, storeMeta) => {
+  commit(
+    types.SET_ERROR,
+    error?.message || error,
+    buildStoreErrorCommitOptions(storeMeta),
+  )
+}
+
 export const executeQueue = ({commit, getters}, func, callback) => {
   queue.executeQueue(func, callback);
 };
@@ -25,6 +82,7 @@ export const saveOffline = ({commit, getters}, data) => {
 };
 
 export const getOfflineItems = ({commit, getters}, params = {}) => {
+  const {storeMeta} = splitStoreActionPayload(params)
   commit(types.SET_ISLOADING, true);
   commit(types.SET_ERROR, null);
   commit(types.SET_SUMMARY, {});
@@ -42,7 +100,7 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
         });
     })
     .catch(e => {
-      commit(types.SET_ERROR, e.message);
+      commitStoreError(commit, e, storeMeta)
       throw e;
     })
     .finally(() => {
@@ -51,13 +109,14 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
 };
 
 export const getOnlineItems = ({commit, getters}, params = {}) => {
+  const {payload: requestParams, storeMeta} = splitStoreActionPayload(params)
   commit(types.SET_ISLOADING, true);
   commit(types.SET_ERROR, null);
   if (getters.items != null) commit(types.SET_ITEMS, []);
   commit(types.SET_TOTALITEMS, 0);
   commit(types.SET_SUMMARY, {});
   return api
-    .fetch(getters.resourceEndpoint, {params: params})
+    .fetch(getters.resourceEndpoint, {params: requestParams})
     .then(data => {
       commit(types.SET_ERROR, null);
       commit(types.SET_ITEMS, data['member']);
@@ -67,7 +126,7 @@ export const getOnlineItems = ({commit, getters}, params = {}) => {
       return data['member'];
     })
     .catch(e => {
-      commit(types.SET_ERROR, e.message);
+      commitStoreError(commit, e, storeMeta)
       throw e;
     })
     .finally(() => {
@@ -81,12 +140,14 @@ export const getItems = ({commit, getters}, params = {}) => {
 };
 
 export const get = ({commit, getters}, id) => {
+  const {payload: requestId, storeMeta} = splitStoreActionPayload(id)
+  const normalizedId = String(requestId?.id ?? requestId ?? '').replace(/\D/g, '')
   commit(types.SET_ISLOADING, true);
   commit(types.SET_ERROR, null);
   if (getters.item != null) commit(types.SET_ITEM, {});
   return api
     .fetch(
-      getters.resourceEndpoint + '/' + id.toString().replace(/\D/g, ''),
+      getters.resourceEndpoint + '/' + normalizedId,
 
       {},
     )
@@ -97,7 +158,7 @@ export const get = ({commit, getters}, id) => {
       return data;
     })
     .catch(e => {
-      commit(types.SET_ERROR, e.message);
+      commitStoreError(commit, e, storeMeta)
       throw e;
     })
     .finally(() => {
@@ -106,12 +167,13 @@ export const get = ({commit, getters}, id) => {
 };
 
 export const save = ({commit, getters}, params) => {
-  let id = params.id?.toString().replace(/\D/g, '');
-  delete params.id;
+  const {payload: requestParams, storeMeta} = splitStoreActionPayload(params)
+  let id = requestParams?.id?.toString().replace(/\D/g, '');
+  delete requestParams.id;
 
   let options = {
     method: id ? 'PUT' : 'POST',
-    body: params,
+    body: requestParams,
   };
   commit(types.SET_ISSAVING, true);
   commit(types.SET_ERROR, null);
@@ -133,7 +195,7 @@ export const save = ({commit, getters}, params) => {
       return data;
     })
     .catch(e => {
-      commit(types.SET_ERROR, e.message);
+      commitStoreError(commit, e, storeMeta)
       throw e;
     })
     .finally(() => {
@@ -142,7 +204,8 @@ export const save = ({commit, getters}, params) => {
 };
 
 export const remove = ({commit, getters}, id) => {
-  id = id.toString().replace(/\D/g, '');
+  const {payload: requestId, storeMeta} = splitStoreActionPayload(id)
+  id = String(requestId?.id ?? requestId ?? '').replace(/\D/g, '');
   let options = {
     method: 'DELETE',
   };
@@ -164,7 +227,7 @@ export const remove = ({commit, getters}, id) => {
       return;
     })
     .catch(e => {
-      commit(types.SET_ERROR, e.message);
+      commitStoreError(commit, e, storeMeta)
       throw e;
     })
     .finally(() => {
