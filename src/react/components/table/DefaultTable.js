@@ -273,6 +273,8 @@ const DefaultTable = ({
   searchProps = null,
   toolbarActions = [],
   showColumnFiltersButton = true,
+  showTotalItemsInFooter = true,
+  showTotalItemsInCompactToolbar = false,
   showRowActions = true,
   sort = null,
   storeName = '',
@@ -359,6 +361,13 @@ const DefaultTable = ({
     resolvedTotalItems !== null &&
     resolvedTotalItems !== undefined &&
     Number.isFinite(totalItemsNumber);
+  const shouldRenderFooterTotalItems =
+    shouldRenderTotalItems &&
+    showTotalItemsInFooter !== false;
+  const shouldRenderCompactToolbarTotalItems =
+    showTotalItemsInCompactToolbar === true &&
+    isCompactView &&
+    shouldRenderTotalItems;
   const totalItemsText = shouldRenderTotalItems
     ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
     : '';
@@ -412,7 +421,9 @@ const DefaultTable = ({
       normalizeText(entry.value) !== '',
     );
   }, [columns, resolvedSummary, shouldReadSummary, storeName, summaryLabels, tableColumns]);
-  const shouldRenderFooterBar = shouldRenderTotalItems || summaryEntries.length > 0;
+  const shouldRenderFooterBar =
+    (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
+    summaryEntries.length > 0;
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(data) ? [...data] : [];
@@ -911,8 +922,32 @@ const DefaultTable = ({
   return (
     <View style={styles.wrap} onLayout={handleLayout}>
       <View style={styles.toolbar}>
-        <View style={styles.toolbarLeft}>
-          {searchProps ? (
+        {shouldRenderCompactToolbarTotalItems ? (
+          <View style={styles.toolbarCompactLead}>
+            <View style={styles.toolbarCountPill}>
+              <Text
+                style={[styles.toolbarCountText, { color: accentColor }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.82}
+              >
+                {totalItemsText}
+              </Text>
+            </View>
+            {searchProps ? (
+              <DefaultSearch
+                accentColor={accentColor}
+                compact
+                storeName={storeName}
+                {...searchProps}
+                style={[styles.toolbarSearch, styles.toolbarCompactSearch, searchProps?.style]}
+              />
+            ) : null}
+          </View>
+        ) : null}
+
+        <View style={shouldRenderCompactToolbarTotalItems ? styles.toolbarCompactActions : styles.toolbarLeft}>
+          {!shouldRenderCompactToolbarTotalItems && searchProps ? (
             <DefaultSearch
               accentColor={accentColor}
               compact
@@ -1095,9 +1130,14 @@ const DefaultTable = ({
               ))}
             </View>
           ) : null}
-          {shouldRenderTotalItems ? (
+          {shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems ? (
             <View style={styles.footerCountPill}>
-              <Text style={[styles.footerCountText, { color: accentColor }]} numberOfLines={1}>
+              <Text
+                style={[styles.footerCountText, { color: accentColor }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.82}
+              >
                 {totalItemsText}
               </Text>
             </View>
