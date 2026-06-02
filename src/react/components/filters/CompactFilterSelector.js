@@ -16,9 +16,9 @@ import {
 import createStyles from './CompactFilterSelector.styles';
 
 const buildTheme = accentColor => ({
-  accentColor: accentColor || '#2563EB',
-  activeBackgroundColor: `${accentColor || '#2563EB'}14`,
-  activeIconBackgroundColor: `${accentColor || '#2563EB'}24`,
+  accentColor: accentColor,
+  activeBackgroundColor: `${accentColor}14`,
+  activeIconBackgroundColor: `${accentColor}24`,
   backgroundColor: '#F8FAFC',
   borderColor: '#E2E8F0',
   iconBackgroundColor: '#E2E8F0',
