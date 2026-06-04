@@ -83,7 +83,7 @@ const resolveOptionLabel = (column, option, storeName = '') => {
 const buildColumnOptions = (column, options = [], storeName = '') => [
   {
     key: '',
-    label: global.t?.t(storeName || 'invoice', 'label', 'select') || 'Todos',
+    label: global.t?.t(storeName || 'invoice', 'label', 'select'),
   },
   ...(Array.isArray(options) ? options : []).map(option => ({
     key: normalizeFilterValue(option),
@@ -275,7 +275,7 @@ const DefaultExternalFilters = ({
     );
   };
 
-  const filterTitle = global.t?.t(storeName, 'label', 'filters') || 'Filtros';
+  const filterTitle = global.t?.t(storeName, 'label', 'filters');
   const filterFields = compact => filterColumns.map(column => renderFilterField(column, compact));
 
   if (isCompactView) {
@@ -342,7 +342,7 @@ const DefaultExternalFilters = ({
                         onPress={clearFilters}
                       >
                         <Text style={styles.modalSecondaryButtonText}>
-                          {global.t?.t(storeName, 'button', 'clear') || 'Limpar'}
+                          {global.t?.t(storeName, 'button', 'clear')}
                         </Text>
                       </TouchableOpacity>
                     ) : null}
@@ -352,7 +352,7 @@ const DefaultExternalFilters = ({
                       onPress={() => setIsFiltersModalOpen(false)}
                     >
                       <Text style={styles.modalPrimaryButtonText}>
-                        {global.t?.t(storeName, 'button', 'apply') || 'Aplicar'}
+                        {global.t?.t(storeName, 'button', 'apply')}
                       </Text>
                     </TouchableOpacity>
                   </View>

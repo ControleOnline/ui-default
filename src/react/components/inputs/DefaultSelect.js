@@ -147,7 +147,7 @@ const DefaultSelect = ({
               <TextInput
                 style={[inputStyles.input, inputStyles.formInput]}
                 value={searchText}
-                placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search') || 'Buscar'}
+                placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search')}
                 onChangeText={setSearchText}
               />
             </View>
