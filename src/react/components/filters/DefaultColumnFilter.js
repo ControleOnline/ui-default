@@ -50,7 +50,7 @@ const DefaultColumnFilter = ({
   }
 
   if (column?.list) {
-    const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn);
+    const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn, storeName);
     const options = [
       { key: '', label: global.t?.t(storeName, 'label', 'select') || 'Todos' },
       ...rawOptions,

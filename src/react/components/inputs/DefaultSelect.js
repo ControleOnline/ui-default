@@ -49,8 +49,8 @@ const DefaultSelect = ({
   const fieldName = getColumnKey(column);
   const selectedKey = normalizeOptionKey(value ?? resolveEditValue(column, row));
   const options = useMemo(
-    () => buildOptionsFromColumn(column, getOptionsForColumn),
-    [column, getOptionsForColumn],
+    () => buildOptionsFromColumn(column, getOptionsForColumn, storeName),
+    [column, getOptionsForColumn, storeName],
   );
   const selected = options.find(option => option.key === selectedKey);
   const resolvedLabel =

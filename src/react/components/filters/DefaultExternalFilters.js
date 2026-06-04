@@ -45,18 +45,27 @@ const isFilledFilterValue = value => {
   return normalizeText(value) !== '';
 };
 
-const resolveOptionLabel = (column, option) => {
+const resolveOptionLabel = (column, option, storeName = '') => {
   if (!option) return '';
+
+  const translateOptionLabel = rawLabel => {
+    const normalizedLabel = normalizeText(rawLabel);
+    if (!normalizedLabel || !column?.translate || !normalizeText(storeName)) {
+      return normalizedLabel;
+    }
+
+    return global.t?.t(storeName, 'label', normalizedLabel) || normalizedLabel;
+  };
 
   if (typeof column?.formatList === 'function') {
     const formatted = column.formatList(option, null, column);
     if (formatted && typeof formatted === 'object') {
-      return normalizeText(formatted.label ?? formatted.value);
+      return translateOptionLabel(formatted.label ?? formatted.value);
     }
-    if (formatted) return normalizeText(formatted);
+    if (formatted) return translateOptionLabel(formatted);
   }
 
-  return normalizeText(
+  const rawLabel = normalizeText(
     option.label ??
       option[column?.searchParam] ??
       option[column?.name] ??
@@ -67,16 +76,18 @@ const resolveOptionLabel = (column, option) => {
       option.alias ??
       option.id,
   );
+
+  return translateOptionLabel(rawLabel);
 };
 
-const buildColumnOptions = (column, options = []) => [
+const buildColumnOptions = (column, options = [], storeName = '') => [
   {
     key: '',
-    label: global.t?.t('invoice', 'label', 'select') || 'Todos',
+    label: global.t?.t(storeName || 'invoice', 'label', 'select') || 'Todos',
   },
   ...(Array.isArray(options) ? options : []).map(option => ({
     key: normalizeFilterValue(option),
-    label: resolveOptionLabel(column, option) || '-',
+    label: resolveOptionLabel(column, option, storeName) || '-',
   })),
 ];
 
@@ -221,7 +232,7 @@ const DefaultExternalFilters = ({
     }
 
     if (column.list) {
-      const options = buildColumnOptions(column, getOptionsForColumn?.(column) || []);
+      const options = buildColumnOptions(column, getOptionsForColumn?.(column) || [], storeName);
       const selectedKey = normalizeFilterValue(filters[key]);
       const selectedLabel =
         options.find(option => option.key === selectedKey)?.label ||

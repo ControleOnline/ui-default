@@ -3,6 +3,11 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnValue } from '@controleonline/ui-common/src/react/utils/storeColumns';
 
 export const normalizeText = value => String(value ?? '').trim();
+const formatHumanLabel = value =>
+  normalizeText(value)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/^\w/, letter => letter.toUpperCase());
 
 export const getColumnKey = column => column?.key || column?.name || '';
 
@@ -35,18 +40,30 @@ export const normalizeOptionKey = option => {
   );
 };
 
-export const resolveOptionLabel = (column, option) => {
+export const resolveOptionLabel = (column, option, storeName = '') => {
   if (!option) return '';
+
+  const translateOptionLabel = rawLabel => {
+    const normalizedLabel = normalizeText(rawLabel);
+    if (!normalizedLabel || !column?.translate || !normalizeText(storeName)) {
+      return normalizedLabel;
+    }
+
+    const translated = global.t?.t(storeName, 'label', normalizedLabel) || normalizedLabel;
+    return normalizeText(translated) === formatHumanLabel(normalizedLabel)
+      ? normalizedLabel
+      : translated;
+  };
 
   if (typeof column?.formatList === 'function') {
     const formatted = column.formatList(option, null, column);
     if (formatted && typeof formatted === 'object') {
-      return normalizeText(formatted.label ?? formatted.value);
+      return translateOptionLabel(formatted.label ?? formatted.value);
     }
-    if (formatted) return normalizeText(formatted);
+    if (formatted) return translateOptionLabel(formatted);
   }
 
-  return normalizeText(
+  const rawLabel = normalizeText(
     option.label ??
       option[column?.searchParam] ??
       option[column?.name] ??
@@ -57,32 +74,34 @@ export const resolveOptionLabel = (column, option) => {
       option.alias ??
       option.id,
   );
+
+  return translateOptionLabel(rawLabel);
 };
 
 export const resolveStoreNameFromList = list => normalizeText(list).split('/')[0] || '';
 
-export const mapOptions = (column, items = []) =>
+export const mapOptions = (column, items = [], storeName = '') =>
   (Array.isArray(items) ? items : []).map(item => ({
     key: normalizeOptionKey(
       typeof column?.formatList === 'function'
         ? column.formatList(item, null, column)
         : item,
     ) || normalizeOptionKey(item),
-    label: resolveOptionLabel(column, item) || '-',
+    label: resolveOptionLabel(column, item, storeName) || '-',
     raw: item,
   }));
 
-export const buildOptionsFromColumn = (column, getOptionsForColumn = null) => {
+export const buildOptionsFromColumn = (column, getOptionsForColumn = null, storeName = '') => {
   const explicitOptions = getOptionsForColumn?.(column);
   if (Array.isArray(explicitOptions) && explicitOptions.length > 0) {
-    return mapOptions(column, explicitOptions);
+    return mapOptions(column, explicitOptions, storeName);
   }
 
   const listStoreName = resolveStoreNameFromList(column?.list);
   if (!listStoreName) return [];
 
   const listStore = getAllStores()?.[listStoreName];
-  return mapOptions(column, listStore?.getters?.items || []);
+  return mapOptions(column, listStore?.getters?.items || [], storeName);
 };
 
 export const resolveCellText = ({ column, columns = [], row, storeName, value }) => {
