@@ -82,10 +82,11 @@ const CompactFilterSelector = ({
     () => createStyles(buildTheme(accentColor), dense),
     [accentColor, dense],
   );
-  const storeFieldLabel = useMemo(
-    () => resolveStoreFieldLabel({ fallbackLabel: labelCaption || title, field, store }),
-    [field, labelCaption, store, title],
-  );
+  const storeFieldLabel = resolveStoreFieldLabel({
+    fallbackLabel: labelCaption || title,
+    field,
+    store,
+  });
   const resolvedLabelCaption = labelCaption || storeFieldLabel;
   const resolvedTitle = title || storeFieldLabel;
 

@@ -92,18 +92,12 @@ const DateShortcutFilter = ({
   const [isCustomEditorVisible, setIsCustomEditorVisible] = useState(
     value === 'custom',
   );
-  const options = useMemo(
-    () => buildDateFilterOptions(optionKeys),
-    [optionKeys],
-  );
-  const periodLabel = useMemo(
-    () => resolveStoreFieldLabel({
-      fallbackLabel: labelCaption || resolveDateFilterTitle(),
-      field,
-      store,
-    }),
-    [field, labelCaption, store],
-  );
+  const options = buildDateFilterOptions(optionKeys);
+  const periodLabel = resolveStoreFieldLabel({
+    fallbackLabel: labelCaption || resolveDateFilterTitle(),
+    field,
+    store,
+  });
   const activeRangeSummary = useMemo(
     () => resolveDateRangeSummary(value, customRange),
     [customRange, value],
