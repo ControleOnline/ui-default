@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     right: 8,
     top: 36,
     width: 230,
-    maxHeight: 360,
+    maxHeight: 520,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 10,
