@@ -258,6 +258,7 @@ const DefaultTable = ({
   columns = [],
   data = [],
   filters = {},
+  forceCardsOnCompact = true,
   getOptionsForColumn = null,
   hasMore = null,
   initialViewMode = 'table',
@@ -348,7 +349,8 @@ const DefaultTable = ({
     [tableWidth],
   );
   const isCompactView = width > 0 && width <= compactBreakpoint;
-  const effectiveViewMode = isCompactView ? 'cards' : viewMode;
+  const shouldForceCardsOnCompact = forceCardsOnCompact !== false;
+  const effectiveViewMode = isCompactView && shouldForceCardsOnCompact ? 'cards' : viewMode;
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
     : 'Nenhum registro encontrado';
@@ -968,7 +970,7 @@ const DefaultTable = ({
               ) : null}
             </TouchableOpacity>
           ) : null}
-          {!isCompactView ? (
+          {(!isCompactView || !shouldForceCardsOnCompact) ? (
             <TouchableOpacity
               style={styles.toolbarButton}
               activeOpacity={0.82}
