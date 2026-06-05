@@ -8,8 +8,44 @@ const formatHumanLabel = value =>
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .replace(/^\w/, letter => letter.toUpperCase());
+const DEFAULT_TRANSLATABLE_FIELDS = new Set([
+  'active',
+  'app',
+  'channel',
+  'displaytype',
+  'featured',
+  'frequency',
+  'invoicetype',
+  'installments',
+  'ordertype',
+  'peopletype',
+  'pricecalculation',
+  'productcondition',
+  'realstatus',
+  'status',
+]);
 
 export const getColumnKey = column => column?.key || column?.name || '';
+
+const normalizeColumnKey = value =>
+  normalizeText(value)
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+
+const shouldTranslateOptionLabel = (column, storeName, rawLabel) => {
+  if (column?.translate === false || !normalizeText(rawLabel) || !normalizeText(storeName)) {
+    return false;
+  }
+
+  if (column?.translate === true || Array.isArray(column?.list)) {
+    return true;
+  }
+
+  return [column?.key, column?.name, column?.label]
+    .map(normalizeColumnKey)
+    .filter(Boolean)
+    .some(candidate => DEFAULT_TRANSLATABLE_FIELDS.has(candidate));
+};
 
 export const normalizeId = value => {
   if (!value) return '';
@@ -45,7 +81,7 @@ export const resolveOptionLabel = (column, option, storeName = '') => {
 
   const translateOptionLabel = rawLabel => {
     const normalizedLabel = normalizeText(rawLabel);
-    if (!normalizedLabel || !column?.translate || !normalizeText(storeName)) {
+    if (!shouldTranslateOptionLabel(column, storeName, normalizedLabel)) {
       return normalizedLabel;
     }
 
