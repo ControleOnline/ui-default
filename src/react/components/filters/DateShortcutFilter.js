@@ -36,6 +36,7 @@ const COMPACT_DATE_LABELS = {
   yesterday: 'Ontem',
   '7d': '7 dias',
   '30d': '30 dias',
+  '90d': '90 dias',
   this_month: 'Este mes',
   last_month: 'Mes ant.',
   custom: 'Periodo',
