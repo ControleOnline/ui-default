@@ -10,6 +10,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
+import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
+import { colors } from '@controleonline/../../src/styles/colors';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import styles from './DefaultExternalFilters.styles';
@@ -167,7 +170,7 @@ const resolveIcon = column => {
 };
 
 const DefaultExternalFilters = ({
-  accentColor = '#2563EB',
+  accentColor = null,
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
   columns = [],
   dateOptionKeys = ['all', 'today', 'yesterday', '7d', '30d', 'custom'],
@@ -178,7 +181,26 @@ const DefaultExternalFilters = ({
   storeName = '',
 }) => {
   const { width } = useWindowDimensions();
+  const peopleStore = useStore('people');
+  const themeStore = useStore('theme');
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const { currentCompany } = peopleStore.getters || {};
+  const { colors: themeColors } = themeStore.getters || {};
+  const themeTokens = useMemo(
+    () => ({...themeColors, ...(currentCompany?.theme?.colors || {})}),
+    [currentCompany?.theme?.colors, themeColors],
+  );
+  const palette = useMemo(
+    () => resolveThemePalette(themeTokens, colors),
+    [themeTokens],
+  );
+  const resolvedAccentColor = accentColor || palette.primary;
+  const surfaceColor = themeTokens['bg-odd-light'] || palette.background;
+  const panelColor = themeTokens['bg-headers-light'] || palette.background;
+  const borderColor = palette.border;
+  const textColor = palette.text;
+  const textSecondaryColor = palette.textSecondary;
+  const onAccentColor = palette.secondary || palette.text;
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const filterColumns = useMemo(
     () => columns.filter(shouldIncludeColumn),
@@ -249,18 +271,18 @@ const DefaultExternalFilters = ({
             field={key}
             optionKeys={dateOptionKeys}
             colors={{
-              accent: accentColor,
+              accent: resolvedAccentColor,
               appBg: 'transparent',
-              border: '#CBD5E1',
-              borderSoft: '#E2E8F0',
-              cardBg: '#FFFFFF',
-              cardBgSoft: '#F8FAFC',
-              danger: '#DC2626',
+              border: borderColor,
+              borderSoft: withOpacity(borderColor, 0.72),
+              cardBg: palette.background,
+              cardBgSoft: surfaceColor,
+              danger: palette.error,
               isLight: true,
-              panelBg: '#EFF6FF',
-              pillTextDark: '#FFFFFF',
-              textPrimary: '#0F172A',
-              textSecondary: '#64748B',
+              panelBg: panelColor,
+              pillTextDark: onAccentColor,
+              textPrimary: textColor,
+              textSecondary: textSecondaryColor,
             }}
           />
         </View>
@@ -280,7 +302,7 @@ const DefaultExternalFilters = ({
           <CompactFilterSelector
             icon={resolveIcon(column)}
             label={selectedLabel}
-            accentColor={accentColor}
+            accentColor={resolvedAccentColor}
             active={Boolean(selectedKey)}
             dense
             store={storeName}
@@ -297,12 +319,12 @@ const DefaultExternalFilters = ({
     }
 
     return (
-      <View key={key} style={[fieldStyle, styles.inputWrap]}>
-        <Text style={styles.inputLabel}>
+      <View key={key} style={[fieldStyle, styles.inputWrap, { borderColor, backgroundColor: surfaceColor }]}>
+        <Text style={[styles.inputLabel, { color: textSecondaryColor }]}>
           {global.t?.t(storeName, 'input', column.label || key)}
         </Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: textColor }]}
           value={normalizeText(filters[key])}
           onChangeText={value => updateFilter(key, value)}
           onSubmitEditing={() => onChangeFilters?.(filters)}
@@ -320,22 +342,24 @@ const DefaultExternalFilters = ({
         <TouchableOpacity
           style={[
             styles.mobileButton,
-            activeCount > 0 ? { borderColor: accentColor, backgroundColor: `${accentColor}14` } : null,
+            { borderColor: borderColor, backgroundColor: surfaceColor },
+            activeCount > 0 ? { borderColor: resolvedAccentColor, backgroundColor: withOpacity(resolvedAccentColor, 0.14) } : null,
           ]}
           activeOpacity={0.84}
           onPress={() => setIsFiltersModalOpen(true)}
         >
-          <Icon name="filter" size={15} color={activeCount > 0 ? accentColor : '#64748B'} />
+          <Icon name="filter" size={15} color={activeCount > 0 ? resolvedAccentColor : textSecondaryColor} />
           <Text
             style={[
               styles.mobileButtonText,
-              activeCount > 0 ? { color: accentColor } : null,
+              { color: textColor },
+              activeCount > 0 ? { color: resolvedAccentColor } : null,
             ]}
           >
             {filterTitle}
           </Text>
           {activeCount > 0 ? (
-            <View style={[styles.mobileCountBadge, { backgroundColor: accentColor }]}>
+            <View style={[styles.mobileCountBadge, { backgroundColor: resolvedAccentColor }]}>
               <Text style={styles.mobileCountBadgeText}>{activeCount}</Text>
             </View>
           ) : null}
@@ -348,17 +372,17 @@ const DefaultExternalFilters = ({
           onRequestClose={() => setIsFiltersModalOpen(false)}
         >
           <TouchableWithoutFeedback onPress={() => setIsFiltersModalOpen(false)}>
-            <View style={styles.modalOverlay}>
+            <View style={[styles.modalOverlay, { backgroundColor: withOpacity(textColor, 0.42) }]}>
               <TouchableWithoutFeedback onPress={noop}>
-                <View style={styles.modalCard}>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>{filterTitle}</Text>
+                <View style={[styles.modalCard, { borderColor, backgroundColor: surfaceColor }]}>
+                  <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
+                    <Text style={[styles.modalTitle, { color: textColor }]}>{filterTitle}</Text>
                     <TouchableOpacity
-                      style={styles.modalCloseButton}
+                      style={[styles.modalCloseButton, { borderColor: borderColor, backgroundColor: surfaceColor }]}
                       activeOpacity={0.82}
                       onPress={() => setIsFiltersModalOpen(false)}
                     >
-                      <Icon name="x" size={18} color="#64748B" />
+                      <Icon name="x" size={18} color={textSecondaryColor} />
                     </TouchableOpacity>
                   </View>
 
@@ -370,24 +394,24 @@ const DefaultExternalFilters = ({
                     {filterFields(true)}
                   </ScrollView>
 
-                  <View style={styles.modalActions}>
+                  <View style={[styles.modalActions, { borderTopColor: borderColor }]}>
                     {activeCount > 0 ? (
                       <TouchableOpacity
-                        style={styles.modalSecondaryButton}
+                        style={[styles.modalSecondaryButton, { borderColor: borderColor, backgroundColor: surfaceColor }]}
                         activeOpacity={0.84}
                         onPress={clearFilters}
                       >
-                        <Text style={styles.modalSecondaryButtonText}>
+                        <Text style={[styles.modalSecondaryButtonText, { color: textColor }]}>
                           {global.t?.t(storeName, 'button', 'clear')}
                         </Text>
                       </TouchableOpacity>
                     ) : null}
                     <TouchableOpacity
-                      style={[styles.modalPrimaryButton, { backgroundColor: accentColor }]}
+                      style={[styles.modalPrimaryButton, { backgroundColor: resolvedAccentColor }]}
                       activeOpacity={0.84}
                       onPress={() => setIsFiltersModalOpen(false)}
                     >
-                      <Text style={styles.modalPrimaryButtonText}>
+                      <Text style={[styles.modalPrimaryButtonText, { color: onAccentColor }]}>
                         {global.t?.t(storeName, 'button', 'apply')}
                       </Text>
                     </TouchableOpacity>
@@ -401,17 +425,17 @@ const DefaultExternalFilters = ({
     );
   }
 
-  return (
+    return (
     <View style={styles.wrap}>
       {filterFields(false)}
 
       {activeCount > 0 ? (
         <TouchableOpacity
-          style={styles.clearButton}
+          style={[styles.clearButton, { borderColor: borderColor, backgroundColor: surfaceColor }]}
           activeOpacity={0.82}
           onPress={clearFilters}
         >
-          <Icon name="x" size={14} color="#64748B" />
+          <Icon name="x" size={14} color={textSecondaryColor} />
         </TouchableOpacity>
       ) : null}
     </View>

@@ -13,6 +13,8 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
+import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
+import { colors } from '@controleonline/../../src/styles/colors';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultSearch from '../filters/DefaultSearch';
 import DefaultForm from '../form/DefaultForm';
@@ -251,7 +253,7 @@ const getColumnMinWidth = column => {
 };
 
 const DefaultTable = ({
-  accentColor = '#2563EB',
+  accentColor = null,
   actions = {},
   add = null,
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
@@ -286,6 +288,8 @@ const DefaultTable = ({
 }) => {
   const { width } = useWindowDimensions();
   const store = useStore(storeName);
+  const peopleStore = useStore('people');
+  const themeStore = useStore('theme');
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
@@ -308,6 +312,25 @@ const DefaultTable = ({
       return acc;
     }, {}),
   );
+  const { currentCompany } = peopleStore.getters || {};
+  const { colors: themeColors } = themeStore.getters || {};
+  const themeTokens = useMemo(
+    () => ({...themeColors, ...(currentCompany?.theme?.colors || {})}),
+    [currentCompany?.theme?.colors, themeColors],
+  );
+  const palette = useMemo(
+    () => resolveThemePalette(themeTokens, colors),
+    [themeTokens],
+  );
+  const resolvedAccentColor = accentColor || palette.primary;
+  const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
+  const tableEvenColor = themeTokens['bg-even-light'] || palette.background;
+  const tableOddColor = themeTokens['bg-odd-light'] || palette.background;
+  const tableBorderColor = palette.border;
+  const tableSurfaceColor = palette.background;
+  const tableTextColor = palette.text;
+  const tableMutedColor = palette.textSecondary;
+  const tableOnAccentColor = palette.secondary || palette.text;
 
   const availableColumns = useMemo(
     () => columns.filter(column => Boolean(getColumnKey(column)) && column?.table !== false),
@@ -639,7 +662,7 @@ const DefaultTable = ({
         pointerEvents={shouldDelegatePress ? 'none' : 'auto'}
       >
         <DefaultInput
-          accentColor={accentColor}
+          accentColor={resolvedAccentColor}
           column={column}
           columns={columns}
           editing={isEditing}
@@ -659,7 +682,7 @@ const DefaultTable = ({
   const renderColumnFilter = column => {
     return (
       <DefaultColumnFilter
-        accentColor={accentColor}
+        accentColor={resolvedAccentColor}
         column={column}
         filters={filters}
         getOptionsForColumn={getOptionsForColumn}
@@ -680,7 +703,9 @@ const DefaultTable = ({
         key={action.key || action.icon || action.label}
         style={[
           styles.toolbarButton,
-          isActive ? styles.toolbarButtonActive : null,
+          isActive
+            ? { backgroundColor: withOpacity(resolvedAccentColor, 0.12), borderColor: resolvedAccentColor }
+            : null,
           action.style,
         ]}
         activeOpacity={0.82}
@@ -691,11 +716,11 @@ const DefaultTable = ({
           <Icon
             name={action.icon}
             size={action.iconSize || 14}
-            color={action.color || (isActive ? accentColor : '#64748B')}
+            color={action.color || (isActive ? resolvedAccentColor : tableMutedColor)}
           />
         ) : null}
         {action.badge !== undefined && action.badge !== null ? (
-          <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || accentColor }]}>
+          <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || resolvedAccentColor }]}>
             {action.badge}
           </Text>
         ) : null}
@@ -727,7 +752,7 @@ const DefaultTable = ({
 
         return (
           <DefaultInput
-            accentColor={options.accentColor || accentColor}
+            accentColor={options.accentColor || resolvedAccentColor}
             column={column}
             columns={columns}
             containerStyle={options.containerStyle}
@@ -758,7 +783,7 @@ const DefaultTable = ({
       };
     },
     [
-      accentColor,
+      resolvedAccentColor,
       beginEdit,
       clearEdit,
       columns,
@@ -789,8 +814,11 @@ const DefaultTable = ({
           })}
           {hasRowActions ? (
             <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={helpers.openEdit}>
-                <Icon name="edit-2" size={14} color="#64748B" />
+              <TouchableOpacity
+                style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                activeOpacity={0.82}
+                onPress={helpers.openEdit}>
+                <Icon name="edit-2" size={14} color={tableMutedColor} />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -799,10 +827,10 @@ const DefaultTable = ({
     }
 
     return (
-      <View key={row?.['@id'] || row?.id} style={styles.defaultCard}>
+      <View key={row?.['@id'] || row?.id} style={[styles.defaultCard, { backgroundColor: tableSurfaceColor, borderColor: tableBorderColor }]}>
         {tableColumns.map(column => (
           <View key={getColumnKey(column)} style={styles.defaultCardLine}>
-            <Text style={styles.defaultCardLabel}>
+            <Text style={[styles.defaultCardLabel, { color: tableMutedColor }]}>
               {formatStoreColumnLabel({
                 columns,
                 fieldName: getColumnKey(column),
@@ -811,14 +839,17 @@ const DefaultTable = ({
               })}
             </Text>
             {helpers.renderField(getColumnKey(column), {
-              readTextStyle: styles.defaultCardValue,
+              readTextStyle: [styles.defaultCardValue, { color: tableTextColor }],
               numberOfLines: 1,
             })}
           </View>
         ))}
         {hasRowActions ? (
-          <TouchableOpacity style={styles.cardEditButton} activeOpacity={0.82} onPress={helpers.openEdit}>
-            <Icon name="edit-2" size={14} color="#64748B" />
+          <TouchableOpacity
+            style={[styles.cardEditButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+            activeOpacity={0.82}
+            onPress={helpers.openEdit}>
+            <Icon name="edit-2" size={14} color={tableMutedColor} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -829,9 +860,9 @@ const DefaultTable = ({
     const emptyState = (
       <View style={[styles.emptyBox, isTable ? tableLayoutStyle : null]}>
         {isLoading ? (
-          <ActivityIndicator size="small" color={accentColor} />
+          <ActivityIndicator size="small" color={resolvedAccentColor} />
         ) : null}
-        <Text style={styles.emptyText}>{emptyStateLabel}</Text>
+        <Text style={[styles.emptyText, { color: tableMutedColor }]}>{emptyStateLabel}</Text>
       </View>
     );
 
@@ -845,13 +876,13 @@ const DefaultTable = ({
 
     return (
       <View style={styles.loadingFooter}>
-        <ActivityIndicator size="small" color={accentColor} />
-        <Text style={styles.emptyText}>Carregando mais registros...</Text>
+        <ActivityIndicator size="small" color={resolvedAccentColor} />
+        <Text style={[styles.emptyText, { color: tableMutedColor }]}>Carregando mais registros...</Text>
       </View>
     );
   };
 
-  const renderTableItem = ({ item: row }) => {
+  const renderTableItem = ({ item: row, index }) => {
     const hasRowPress = typeof onRowPress === 'function';
     const RowComponent = hasRowPress ? TouchableOpacity : View;
     const rowPressProps = hasRowPress
@@ -860,11 +891,12 @@ const DefaultTable = ({
         onPress: () => onRowPress(row),
       }
       : {};
+    const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;
 
     return (
       <RowComponent
         key={getRowKey(row)}
-        style={[styles.row, tableLayoutStyle]}
+        style={[styles.row, tableLayoutStyle, { backgroundColor: rowBackgroundColor, borderBottomColor: tableBorderColor }]}
         {...rowPressProps}
       >
         {tableColumns.map(column => (
@@ -874,8 +906,11 @@ const DefaultTable = ({
         ))}
         {hasRowActions ? (
           <View style={[styles.cell, styles.actionsCell]}>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.82} onPress={() => openEditModal(row)}>
-              <Icon name="edit-2" size={14} color="#64748B" />
+            <TouchableOpacity
+              style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+              activeOpacity={0.82}
+              onPress={() => openEditModal(row)}>
+              <Icon name="edit-2" size={14} color={tableMutedColor} />
             </TouchableOpacity>
           </View>
         ) : null}
@@ -888,21 +923,23 @@ const DefaultTable = ({
 
     return (
       <Modal visible={Boolean(editingRow)} transparent animationType="fade" onRequestClose={closeEditModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={[styles.modalOverlay, { backgroundColor: withOpacity(tableTextColor, 0.42) }]}>
+          <View style={[styles.modalCard, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: tableBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: tableTextColor }]}>
                 {isCreate
                   ? global.t?.t(storeName, 'button', 'add') || 'Adicionar'
                   : global.t?.t(storeName, 'button', 'edit') || 'Editar'}
               </Text>
-              <TouchableOpacity style={styles.modalCloseButton} onPress={closeEditModal}>
-                <Icon name="x" size={18} color="#64748B" />
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                onPress={closeEditModal}>
+                <Icon name="x" size={18} color={tableMutedColor} />
               </TouchableOpacity>
             </View>
 
             <DefaultForm
-              accentColor={accentColor}
+              accentColor={resolvedAccentColor}
               actions={actions}
               columns={isCreate ? columns : editableColumns}
               getOptionsForColumn={getOptionsForColumn}
@@ -922,13 +959,13 @@ const DefaultTable = ({
   };
 
   return (
-    <View style={styles.wrap} onLayout={handleLayout}>
-      <View style={styles.toolbar}>
+    <View style={[styles.wrap, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]} onLayout={handleLayout}>
+      <View style={[styles.toolbar, { borderBottomColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
         {shouldRenderCompactToolbarTotalItems ? (
           <View style={styles.toolbarCompactLead}>
-            <View style={styles.toolbarCountPill}>
+            <View style={[styles.toolbarCountPill, { backgroundColor: withOpacity(resolvedAccentColor, 0.12) }]}>
               <Text
-                style={[styles.toolbarCountText, { color: accentColor }]}
+                style={[styles.toolbarCountText, { color: resolvedAccentColor }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.82}
@@ -938,7 +975,7 @@ const DefaultTable = ({
             </View>
             {searchProps ? (
               <DefaultSearch
-                accentColor={accentColor}
+                accentColor={resolvedAccentColor}
                 compact
                 storeName={storeName}
                 {...searchProps}
@@ -951,7 +988,7 @@ const DefaultTable = ({
         <View style={shouldRenderCompactToolbarTotalItems ? styles.toolbarCompactActions : styles.toolbarLeft}>
           {!shouldRenderCompactToolbarTotalItems && searchProps ? (
             <DefaultSearch
-              accentColor={accentColor}
+              accentColor={resolvedAccentColor}
               compact
               storeName={storeName}
               {...searchProps}
@@ -960,42 +997,53 @@ const DefaultTable = ({
           ) : null}
           {showColumnFiltersButton ? (
             <TouchableOpacity
-              style={[styles.toolbarButton, showColumnFilters ? styles.toolbarButtonActive : null]}
+              style={[
+                styles.toolbarButton,
+                { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor },
+                showColumnFilters ? { backgroundColor: withOpacity(resolvedAccentColor, 0.12), borderColor: resolvedAccentColor } : null,
+              ]}
               activeOpacity={0.82}
               onPress={() => setShowColumnFilters(prev => !prev)}
             >
-              <Icon name="filter" size={14} color={showColumnFilters ? accentColor : '#64748B'} />
+              <Icon name="filter" size={14} color={showColumnFilters ? resolvedAccentColor : tableMutedColor} />
               {activeFilterCount > 0 ? (
-                <Text style={[styles.toolbarBadgeText, { color: accentColor }]}>{activeFilterCount}</Text>
+                <Text style={[styles.toolbarBadgeText, { color: resolvedAccentColor }]}>{activeFilterCount}</Text>
               ) : null}
             </TouchableOpacity>
           ) : null}
           {(!isCompactView || !shouldForceCardsOnCompact) ? (
             <TouchableOpacity
-              style={styles.toolbarButton}
+              style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
               activeOpacity={0.82}
               onPress={() => setViewMode(prev => (prev === 'table' ? 'cards' : 'table'))}
             >
-              <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color="#64748B" />
+              <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
             </TouchableOpacity>
           ) : null}
-          <TouchableOpacity style={styles.toolbarButton} activeOpacity={0.82} onPress={() => setIsColumnMenuOpen(prev => !prev)}>
-            <Icon name="columns" size={14} color="#64748B" />
+          <TouchableOpacity
+            style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+            activeOpacity={0.82}
+            onPress={() => setIsColumnMenuOpen(prev => !prev)}>
+            <Icon name="columns" size={14} color={tableMutedColor} />
           </TouchableOpacity>
           {shouldRenderAddButton ? (
             <TouchableOpacity
-              style={[styles.toolbarButton, styles.toolbarAddButton, { backgroundColor: accentColor, borderColor: accentColor }]}
+              style={[
+                styles.toolbarButton,
+                styles.toolbarAddButton,
+                { backgroundColor: resolvedAccentColor, borderColor: resolvedAccentColor },
+              ]}
               activeOpacity={0.85}
               onPress={openAddForm}
             >
-              <Icon name="plus" size={16} color="#FFFFFF" />
+              <Icon name="plus" size={16} color={tableOnAccentColor} />
             </TouchableOpacity>
           ) : null}
           {Array.isArray(toolbarActions) ? toolbarActions.map(renderToolbarAction) : null}
         </View>
 
         {isColumnMenuOpen ? (
-          <View style={styles.columnMenu}>
+          <View style={[styles.columnMenu, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
             {availableColumns.map(column => {
               const fieldName = getColumnKey(column);
               const label = formatStoreColumnLabel({
@@ -1008,8 +1056,8 @@ const DefaultTable = ({
 
               return (
                 <TouchableOpacity key={fieldName} style={styles.columnMenuItem} activeOpacity={0.82} onPress={() => toggleColumn(column)}>
-                  <Icon name={checked ? 'check-square' : 'square'} size={14} color="#64748B" />
-                  <Text style={styles.columnMenuText} numberOfLines={1}>{label}</Text>
+                  <Icon name={checked ? 'check-square' : 'square'} size={14} color={tableMutedColor} />
+                  <Text style={[styles.columnMenuText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -1034,7 +1082,7 @@ const DefaultTable = ({
       ) : (
         <ScrollView horizontal style={styles.scroll}>
           <View style={[styles.content, tableLayoutStyle]}>
-            <View style={[styles.headerRow, tableLayoutStyle]}>
+            <View style={[styles.headerRow, tableLayoutStyle, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
               {tableColumns.map(column => {
                 const fieldName = getColumnKey(column);
                 const label = formatStoreColumnLabel({
@@ -1054,26 +1102,26 @@ const DefaultTable = ({
                     onPress={() => requestSort(column)}
                   >
                     <View style={styles.sortableHeader}>
-                      <Text style={styles.headerText} numberOfLines={1}>{label}</Text>
+                      <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
                       {isSortableColumn(column) && sort?.field === sortFieldName ? (
-                        <Icon name={sort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color="#64748B" />
+                        <Icon name={sort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
                       ) : isSortableColumn(column) ? (
-                        <Icon name="chevrons-up" size={12} color="#CBD5E1" />
+                        <Icon name="chevrons-up" size={12} color={tableBorderColor} />
                       ) : null}
-                      {filters?.[fieldName] ? <Icon name="filter" size={11} color={accentColor} /> : null}
+                      {filters?.[fieldName] ? <Icon name="filter" size={11} color={tableTextColor} /> : null}
                     </View>
                   </TouchableOpacity>
                 );
               })}
               {hasRowActions ? (
                 <View style={[styles.cell, styles.actionsCell]}>
-                  <Text style={styles.headerText}>Acoes</Text>
+                  <Text style={[styles.headerText, { color: tableTextColor }]}>Acoes</Text>
                 </View>
               ) : null}
             </View>
 
             {showColumnFiltersButton && showColumnFilters ? (
-              <View style={[styles.filterRow, tableLayoutStyle]}>
+              <View style={[styles.filterRow, tableLayoutStyle, { backgroundColor: tableSurfaceColor, borderBottomColor: tableBorderColor }]}>
                 {tableColumns.map(column => (
                   <React.Fragment key={getColumnKey(column)}>
                     {renderColumnFilter(column)}
@@ -1101,20 +1149,20 @@ const DefaultTable = ({
       )}
 
       {shouldRenderFooterBar ? (
-        <View style={styles.footerBar}>
+        <View style={[styles.footerBar, { backgroundColor: tableSurfaceColor, borderTopColor: tableBorderColor }]}>
           {summaryEntries.length > 0 ? (
             <View style={styles.footerSummaryList}>
               {summaryEntries.map(entry => (
                 <View key={entry.key} style={styles.footerSummaryItem}>
-                  <Text style={styles.footerSummaryLabel} numberOfLines={1}>
+                  <Text style={[styles.footerSummaryLabel, { color: tableMutedColor }]} numberOfLines={1}>
                     {entry.label}
                   </Text>
                   <Text
                     style={[
                       styles.footerSummaryValue,
                       entry.path?.[0] === 'sum' || isMoneySummaryPath(entry.path)
-                        ? { color: accentColor }
-                        : null,
+                        ? { color: resolvedAccentColor }
+                        : { color: tableTextColor },
                     ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
@@ -1133,9 +1181,9 @@ const DefaultTable = ({
             </View>
           ) : null}
           {shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems ? (
-            <View style={styles.footerCountPill}>
+            <View style={[styles.footerCountPill, { backgroundColor: withOpacity(resolvedAccentColor, 0.12) }]}>
               <Text
-                style={[styles.footerCountText, { color: accentColor }]}
+                style={[styles.footerCountText, { color: resolvedAccentColor }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.82}
