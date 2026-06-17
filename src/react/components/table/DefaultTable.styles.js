@@ -42,6 +42,13 @@ const styles = StyleSheet.create({
     gap: 6,
     minWidth: 0,
   },
+  toolbarActionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+    marginLeft: 6,
+  },
   toolbarCompactLead: {
     flex: 1,
     minWidth: 0,
@@ -107,6 +114,12 @@ const styles = StyleSheet.create({
   toolbarBadgeText: {
     fontSize: 10,
     fontWeight: '900',
+  },
+  toolbarActionLabel: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   columnMenu: {
     position: 'absolute',

@@ -697,6 +697,8 @@ const DefaultTable = ({
     if (!action || action.hidden) return null;
 
     const isActive = action.active === true;
+    const hasLabel = normalizeText(action.label) !== '';
+    const actionColor = action.color || (isActive ? resolvedAccentColor : tableMutedColor);
 
     return (
       <TouchableOpacity
@@ -716,8 +718,13 @@ const DefaultTable = ({
           <Icon
             name={action.icon}
             size={action.iconSize || 14}
-            color={action.color || (isActive ? resolvedAccentColor : tableMutedColor)}
+            color={actionColor}
           />
+        ) : null}
+        {hasLabel ? (
+          <Text style={[styles.toolbarActionLabel, { color: actionColor }, action.labelStyle]} numberOfLines={1}>
+            {action.label}
+          </Text>
         ) : null}
         {action.badge !== undefined && action.badge !== null ? (
           <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || resolvedAccentColor }]}>
@@ -727,6 +734,11 @@ const DefaultTable = ({
       </TouchableOpacity>
     );
   };
+
+  const renderToolbarActions = () =>
+    Array.isArray(toolbarActions) && toolbarActions.length > 0 ? (
+      <View style={styles.toolbarActionGroup}>{toolbarActions.map(renderToolbarAction)}</View>
+    ) : null;
 
   const getColumnByField = useCallback(
     fieldName => columns.find(column => getColumnKey(column) === fieldName),
@@ -982,6 +994,7 @@ const DefaultTable = ({
                 style={[styles.toolbarSearch, styles.toolbarCompactSearch, searchProps?.style]}
               />
             ) : null}
+            {renderToolbarActions()}
           </View>
         ) : null}
 
@@ -995,6 +1008,7 @@ const DefaultTable = ({
               style={[styles.toolbarSearch, searchProps?.style]}
             />
           ) : null}
+          {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}
           {showColumnFiltersButton ? (
             <TouchableOpacity
               style={[
@@ -1039,7 +1053,6 @@ const DefaultTable = ({
               <Icon name="plus" size={16} color={tableOnAccentColor} />
             </TouchableOpacity>
           ) : null}
-          {Array.isArray(toolbarActions) ? toolbarActions.map(renderToolbarAction) : null}
         </View>
 
         {isColumnMenuOpen ? (
