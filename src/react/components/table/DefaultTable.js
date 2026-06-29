@@ -29,6 +29,13 @@ import {
   resolveCellText,
   resolveEditValue,
 } from '../inputs/defaultInputUtils';
+import {
+  persistTableViewModePreference,
+  persistVisibleColumnsPreference,
+  resolveStoredTableViewModePreference,
+  resolveStoredVisibleColumnsPreference,
+  sanitizeVisibleColumnsPreference,
+} from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultTable.styles';
 
 const DEFAULT_CELL_MIN_WIDTH = 118;
@@ -285,6 +292,8 @@ const DefaultTable = ({
   summaryLabels = null,
   totalItems = null,
   totalItemsLabel = null,
+  totalItemsText = null,
+  visibleColumnsPreferenceKey = '',
 }) => {
   const { width } = useWindowDimensions();
   const store = useStore(storeName);
@@ -297,7 +306,6 @@ const DefaultTable = ({
   const [savingCell, setSavingCell] = useState(null);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
-  const [viewMode, setViewMode] = useState(initialViewMode);
   const endReachedLockRef = useRef(false);
   const previousPaginationStateRef = useRef({
     dataLength: Array.isArray(data) ? data.length : 0,
@@ -305,13 +313,26 @@ const DefaultTable = ({
     sortDirection: sort?.direction,
     sortField: sort?.field,
   });
-  const [visibleColumns, setVisibleColumns] = useState(() =>
-    columns.reduce((acc, column) => {
-      const key = getColumnKey(column);
-      if (key) acc[key] = column?.visible !== false;
-      return acc;
-    }, {}),
+  const visibleColumnsSeed = useMemo(
+    () =>
+      sanitizeVisibleColumnsPreference({
+        columns,
+        visibleColumns: resolveStoredVisibleColumnsPreference(
+          visibleColumnsPreferenceKey,
+        ),
+      }),
+    [columns, visibleColumnsPreferenceKey],
   );
+  const viewModeSeed = useMemo(
+    () =>
+      resolveStoredTableViewModePreference(
+        visibleColumnsPreferenceKey,
+        initialViewMode,
+      ),
+    [initialViewMode, visibleColumnsPreferenceKey],
+  );
+  const [visibleColumns, setVisibleColumns] = useState(() => visibleColumnsSeed);
+  const [viewMode, setViewMode] = useState(() => viewModeSeed);
   const { currentCompany } = peopleStore.getters || {};
   const { colors: themeColors } = themeStore.getters || {};
   const themeTokens = useMemo(
@@ -336,6 +357,14 @@ const DefaultTable = ({
     () => columns.filter(column => Boolean(getColumnKey(column)) && column?.table !== false),
     [columns],
   );
+
+  useEffect(() => {
+    setVisibleColumns(visibleColumnsSeed);
+  }, [visibleColumnsSeed]);
+
+  useEffect(() => {
+    setViewMode(viewModeSeed);
+  }, [viewModeSeed]);
 
   const tableColumns = useMemo(
     () => columns.filter(column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false),
@@ -393,9 +422,12 @@ const DefaultTable = ({
     showTotalItemsInCompactToolbar === true &&
     isCompactView &&
     shouldRenderTotalItems;
-  const totalItemsText = shouldRenderTotalItems
-    ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
-    : '';
+  const resolvedTotalItemsText =
+    normalizeText(totalItemsText) !== ''
+      ? totalItemsText
+      : shouldRenderTotalItems
+        ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
+        : '';
   const storeSummary = store?.getters?.summary;
   const resolvedSummary = summary !== null && summary !== undefined ? summary : storeSummary;
   const shouldReadSummary = resolvedSummary !== false && isObject(resolvedSummary);
@@ -621,12 +653,53 @@ const DefaultTable = ({
     const fieldName = getColumnKey(column);
     if (!fieldName) return;
 
+    let nextVisibleColumns = null;
+
     setVisibleColumns(prev => {
-      const next = { ...prev, [fieldName]: prev[fieldName] === false };
+      const next = {
+        ...sanitizeVisibleColumnsPreference({
+          columns,
+          visibleColumns: prev,
+        }),
+        [fieldName]: prev[fieldName] === false,
+      };
+      nextVisibleColumns = next;
       actions?.setVisibleColumns?.(next);
       return next;
     });
-  }, [actions]);
+
+    if (!nextVisibleColumns || !visibleColumnsPreferenceKey) {
+      return;
+    }
+
+    persistVisibleColumnsPreference(
+      visibleColumnsPreferenceKey,
+      nextVisibleColumns,
+    );
+  }, [
+    actions,
+    columns,
+    visibleColumnsPreferenceKey,
+  ]);
+
+  const toggleViewMode = useCallback(() => {
+    setViewMode(prev => {
+      const nextViewMode = prev === 'table' ? 'cards' : 'table';
+
+      if (!visibleColumnsPreferenceKey) {
+        return nextViewMode;
+      }
+
+      persistTableViewModePreference(
+        visibleColumnsPreferenceKey,
+        nextViewMode,
+      );
+
+      return nextViewMode;
+    });
+  }, [
+    visibleColumnsPreferenceKey,
+  ]);
 
   const handleEndReached = useCallback(() => {
     if (
@@ -881,15 +954,24 @@ const DefaultTable = ({
     return emptyState;
   };
 
-  const renderLoadingFooter = () => {
+  const renderLoadingOverlay = () => {
     if (!isLoading || sortedData.length === 0) {
       return null;
     }
 
     return (
-      <View style={styles.loadingFooter}>
-        <ActivityIndicator size="small" color={resolvedAccentColor} />
-        <Text style={[styles.emptyText, { color: tableMutedColor }]}>Carregando mais registros...</Text>
+      <View pointerEvents="none" style={styles.loadingOverlay}>
+        <View
+          style={[
+            styles.loadingOverlayCard,
+            { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor },
+          ]}
+        >
+          <ActivityIndicator size="small" color={resolvedAccentColor} />
+          <Text style={[styles.emptyText, { color: tableMutedColor }]}>
+            Carregando mais registros...
+          </Text>
+        </View>
       </View>
     );
   };
@@ -982,7 +1064,7 @@ const DefaultTable = ({
                 adjustsFontSizeToFit
                 minimumFontScale={0.82}
               >
-                {totalItemsText}
+                {resolvedTotalItemsText}
               </Text>
             </View>
             {searchProps ? (
@@ -1029,7 +1111,7 @@ const DefaultTable = ({
             <TouchableOpacity
               style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
               activeOpacity={0.82}
-              onPress={() => setViewMode(prev => (prev === 'table' ? 'cards' : 'table'))}
+              onPress={toggleViewMode}
             >
               <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
             </TouchableOpacity>
@@ -1086,7 +1168,7 @@ const DefaultTable = ({
           style={styles.cardsScroll}
           contentContainerStyle={styles.cardsGrid}
           ListEmptyComponent={renderEmptyState(false)}
-          ListFooterComponent={renderLoadingFooter()}
+          ListFooterComponent={null}
           nestedScrollEnabled
           onEndReached={handleEndReached}
           onEndReachedThreshold={END_REACHED_THRESHOLD}
@@ -1151,7 +1233,7 @@ const DefaultTable = ({
               style={styles.tableList}
               contentContainerStyle={styles.tableListContent}
               ListEmptyComponent={renderEmptyState(true)}
-              ListFooterComponent={renderLoadingFooter()}
+              ListFooterComponent={null}
               nestedScrollEnabled
               onEndReached={handleEndReached}
               onEndReachedThreshold={END_REACHED_THRESHOLD}
@@ -1160,6 +1242,8 @@ const DefaultTable = ({
           </View>
         </ScrollView>
       )}
+
+      {renderLoadingOverlay()}
 
       {shouldRenderFooterBar ? (
         <View style={[styles.footerBar, { backgroundColor: tableSurfaceColor, borderTopColor: tableBorderColor }]}>
@@ -1201,7 +1285,7 @@ const DefaultTable = ({
                 adjustsFontSizeToFit
                 minimumFontScale={0.82}
               >
-                {totalItemsText}
+                {resolvedTotalItemsText}
               </Text>
             </View>
           ) : null}

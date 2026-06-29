@@ -247,7 +247,6 @@ const DateShortcutFilter = ({
                   return;
                 }
 
-                onChange?.('custom');
                 close();
               }}
             >

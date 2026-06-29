@@ -15,6 +15,7 @@ import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styl
 import { colors } from '@controleonline/../../src/styles/colors';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
+import { resolveNextDateFilterValue } from './dateFilterSelection';
 import styles from './DefaultExternalFilters.styles';
 
 const DEFAULT_COMPACT_BREAKPOINT = 768;
@@ -247,16 +248,10 @@ const DefaultExternalFilters = ({
           <DateShortcutFilter
             value={dateState.value}
             onChange={optionKey => {
-              if (optionKey === 'all') {
-                updateFilter(key, null);
-                return;
-              }
-
-              updateFilter(key, {
-                ...(filters[key] || {}),
-                shortcut: optionKey,
-                customRange: dateState.customRange,
-              });
+              updateFilter(
+                key,
+                resolveNextDateFilterValue(filters[key], optionKey),
+              );
             }}
             customRange={dateState.customRange}
             onCustomRangeChange={range => {

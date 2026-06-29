@@ -8,6 +8,7 @@ import {
 } from '../inputs/defaultInputUtils';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
+import { resolveNextDateFilterValue } from './dateFilterSelection';
 import styles from './DefaultColumnFilter.styles';
 
 const DefaultColumnFilter = ({
@@ -35,10 +36,12 @@ const DefaultColumnFilter = ({
           field={fieldName}
           value={filterValue.shortcut || 'all'}
           customRange={filterValue.customRange || { from: '', to: '' }}
-          onChange={optionKey => onChange?.(fieldName, optionKey === 'all' ? null : {
-            ...(filterValue || {}),
-            shortcut: optionKey,
-          })}
+          onChange={optionKey =>
+            onChange?.(
+              fieldName,
+              resolveNextDateFilterValue(filterValue, optionKey),
+            )
+          }
           onCustomRangeChange={range => onChange?.(fieldName, {
             ...(filterValue || {}),
             shortcut: 'custom',
