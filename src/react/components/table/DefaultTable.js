@@ -9,9 +9,12 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
+import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
+import { getDateRange } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
@@ -56,6 +59,71 @@ const isObject = value =>
 
 const getRowKey = (row, index = 0) =>
   String(row?.['@id'] || row?.id || index);
+
+const stableSerialize = value => {
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(item => stableSerialize(item)).join(',')}]`;
+  }
+
+  if (value instanceof Date) {
+    return JSON.stringify(value.toISOString());
+  }
+
+  if (isObject(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map(key => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
+      .join(',')}}`;
+  }
+
+  return JSON.stringify(value);
+};
+
+const resolveDateRangeQuery = value => {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+
+  const shortcut = value.shortcut || value.value || 'all';
+  const customRange = value.customRange || { from: '', to: '' };
+  const dateRange = getDateRange(shortcut, customRange, {
+    relativeMode: 'rolling',
+    useCurrentMoment: true,
+  });
+
+  return {
+    after: dateRange?.after || '',
+    before: dateRange?.before || '',
+  };
+};
+
+const resolveFilterQueryValue = value => {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => resolveFilterQueryValue(item))
+      .filter(item => item !== '' && item !== null && item !== undefined);
+  }
+
+  if (value && typeof value === 'object') {
+    return resolveFilterQueryValue(
+      value.value ?? value.id ?? value['@id'] ?? value.key ?? '',
+    );
+  }
+
+  return normalizeText(value);
+};
+
+const normalizeCollectionItems = response => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.member)) return response.member;
+  if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
+
+  return [];
+};
 
 const resolveHasMore = ({ hasMore, dataLength, totalItems }) => {
   if (hasMore !== null && hasMore !== undefined) {
@@ -265,12 +333,13 @@ const DefaultTable = ({
   add = null,
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
   columns = [],
-  data = [],
+  data = undefined,
   filters = {},
   forceCardsOnCompact = true,
   getOptionsForColumn = null,
   hasMore = null,
   initialViewMode = 'table',
+  pageSize = null,
   isLoading = false,
   onEditRow = null,
   onEndReached = null,
@@ -281,6 +350,7 @@ const DefaultTable = ({
   onRowPress = null,
   onSaved = null,
   onSortChange = null,
+  requestParams = {},
   renderCard = null,
   searchProps = null,
   toolbarActions = [],
@@ -318,12 +388,14 @@ const DefaultTable = ({
   const visibleColumnsSeed = useMemo(
     () =>
       sanitizeVisibleColumnsPreference({
-        columns,
+        columns: Array.isArray(store?.getters?.columns) && store.getters.columns.length > 0
+          ? store.getters.columns
+          : columns,
         visibleColumns: resolveStoredVisibleColumnsPreference(
           visibleColumnsPreferenceKey,
         ),
       }),
-    [columns, visibleColumnsPreferenceKey],
+    [columns, store?.getters?.columns, visibleColumnsPreferenceKey],
   );
   const viewModeSeed = useMemo(
     () =>
@@ -354,10 +426,160 @@ const DefaultTable = ({
   const tableTextColor = palette.text;
   const tableMutedColor = palette.textSecondary;
   const tableOnAccentColor = palette.secondary || palette.text;
+  const isFocused = useIsFocused();
+  const {showError} = useMessage() || {};
+  const autoMode = data === undefined && normalizeText(storeName) !== '';
+  const searchKey = searchProps?.searchKey || 'search';
+  const storeActions = store?.actions || {};
+  const storeColumns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
+  const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
+  const requestParamsSeed = isObject(requestParams) ? requestParams : {};
+  const initialFiltersSeed = autoMode
+    ? (Object.keys(filters || {}).length > 0 ? filters : storeFilters)
+    : (isObject(filters) ? filters : {});
+  const [autoFilters, setAutoFilters] = useState(() => initialFiltersSeed);
+  const [autoSort, setAutoSort] = useState(() => sort || null);
+  const [autoHasLoaded, setAutoHasLoaded] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoLoadingMore, setAutoLoadingMore] = useState(false);
+  const [autoLastPageCount, setAutoLastPageCount] = useState(0);
+  const autoRequestIdRef = useRef(0);
+  const autoLoadedQueryKeyRef = useRef('');
+  const autoErroredQueryKeyRef = useRef('');
+  const autoPageRef = useRef(0);
+  const pageSizeNumber = Number(requestParamsSeed.itemsPerPage || pageSize || 50) || 50;
+  const resolvedSort = autoMode ? autoSort : sort;
+  const resolvedFilters = autoMode ? autoFilters : (filters || {});
+  const resolvedSearchValue = normalizeText(resolvedFilters?.[searchKey]);
+  const buildRequestQuery = useCallback(
+    (page, append = false) => {
+      const query = {
+        ...requestParamsSeed,
+        itemsPerPage: pageSizeNumber,
+        page,
+      };
+
+      if (autoSort?.field && autoSort?.direction) {
+        query[`order[${autoSort.field}]`] = autoSort.direction;
+      }
+
+      Object.entries(autoFilters || {}).forEach(([fieldName, value]) => {
+        if (!fieldName) return;
+
+        if (fieldName === searchKey) {
+          const normalizedSearch = normalizeText(value).replace(/^#/, '');
+          if (normalizedSearch) {
+            query.search = normalizedSearch;
+            if (searchKey !== 'search') {
+              query[searchKey] = normalizedSearch;
+            }
+          }
+          return;
+        }
+
+        const column = columnsForTable.find(item => getColumnKey(item) === fieldName);
+
+        if (column?.inputType === 'date-range' || column?.type === 'range-date') {
+          const dateRange = resolveDateRangeQuery(value);
+          if (dateRange.after) {
+            query[`${fieldName}[after]`] = dateRange.after;
+          }
+          if (dateRange.before) {
+            query[`${fieldName}[before]`] = dateRange.before;
+          }
+          return;
+        }
+
+        const normalizedValue = resolveFilterQueryValue(value);
+        if (Array.isArray(normalizedValue)) {
+          if (normalizedValue.length > 0) {
+            query[fieldName] = normalizedValue;
+          }
+          return;
+        }
+
+        if (normalizedValue !== '') {
+          query[fieldName] = normalizedValue;
+        }
+      });
+
+      if (append) {
+        query.append = true;
+      }
+
+      return query;
+    },
+    [autoFilters, autoSort?.direction, autoSort?.field, columnsForTable, pageSizeNumber, requestParamsSeed, searchKey],
+  );
+  const autoQuerySignature = useMemo(
+    () =>
+      stableSerialize({
+        filters: autoFilters,
+        pageSize: pageSizeNumber,
+        requestParams: requestParamsSeed,
+        searchKey,
+        sort: autoSort,
+      }),
+    [autoFilters, autoSort, pageSizeNumber, requestParamsSeed, searchKey],
+  );
+
+  const loadAutoPage = useCallback(
+    (page, { append = false } = {}) => {
+      if (!autoMode || typeof storeActions.getItems !== 'function') {
+        return Promise.resolve([]);
+      }
+
+      const requestId = autoRequestIdRef.current + 1;
+      autoRequestIdRef.current = requestId;
+
+      if (append) {
+        setAutoLoadingMore(true);
+      } else {
+        setAutoLoading(true);
+        setAutoHasLoaded(false);
+        setAutoLastPageCount(0);
+        autoPageRef.current = 0;
+      }
+
+      const query = buildRequestQuery(page, append);
+
+      return Promise.resolve(storeActions.getItems(query))
+        .then(response => {
+          if (autoRequestIdRef.current !== requestId) {
+            return response;
+          }
+
+          const pageItems = normalizeCollectionItems(response);
+          autoPageRef.current = page;
+          autoLoadedQueryKeyRef.current = autoQuerySignature;
+          autoErroredQueryKeyRef.current = '';
+          setAutoHasLoaded(true);
+          setAutoLastPageCount(pageItems.length);
+          return pageItems;
+        })
+        .catch(error => {
+          if (autoRequestIdRef.current === requestId) {
+            autoErroredQueryKeyRef.current = autoQuerySignature;
+            showError?.(error?.message || 'Nao foi possivel carregar os registros.');
+          }
+
+          return [];
+        })
+        .finally(() => {
+          if (autoRequestIdRef.current === requestId) {
+            setAutoLoading(false);
+            setAutoLoadingMore(false);
+            endReachedLockRef.current = false;
+          }
+        });
+    },
+    [autoMode, autoQuerySignature, buildRequestQuery, showError, storeActions],
+  );
 
   const availableColumns = useMemo(
-    () => columns.filter(column => Boolean(getColumnKey(column)) && column?.table !== false),
-    [columns],
+    () => columnsForTable.filter(column => Boolean(getColumnKey(column)) && column?.table !== false),
+    [columnsForTable],
   );
 
   useEffect(() => {
@@ -368,9 +590,45 @@ const DefaultTable = ({
     setViewMode(viewModeSeed);
   }, [viewModeSeed]);
 
+  useEffect(() => {
+    if (!autoMode) return;
+
+    setAutoFilters(prev => {
+      if (stableSerialize(prev) === stableSerialize(storeFilters)) {
+        return prev;
+      }
+
+      return storeFilters;
+    });
+  }, [autoMode, storeFilters]);
+
+  useEffect(() => {
+    if (!autoMode || !isFocused) return;
+    if (typeof storeActions.getItems !== 'function') return;
+    if (
+      autoLoading ||
+      autoLoadingMore ||
+      autoLoadedQueryKeyRef.current === autoQuerySignature ||
+      autoErroredQueryKeyRef.current === autoQuerySignature
+    ) {
+      return;
+    }
+
+    endReachedLockRef.current = false;
+    loadAutoPage(1, { append: false });
+  }, [
+    autoLoading,
+    autoLoadingMore,
+    autoMode,
+    autoQuerySignature,
+    isFocused,
+    loadAutoPage,
+    storeActions,
+  ]);
+
   const tableColumns = useMemo(
-    () => columns.filter(column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false),
-    [columns, visibleColumns],
+    () => columnsForTable.filter(column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false),
+    [columnsForTable, visibleColumns],
   );
 
   const editableColumns = useMemo(
@@ -379,16 +637,22 @@ const DefaultTable = ({
   );
 
   const activeFilterCount = useMemo(
-    () => Object.values(filters || {}).filter(value => normalizeText(value) !== '').length,
-    [filters],
+    () => Object.values(resolvedFilters || {}).filter(value => normalizeText(value) !== '').length,
+    [resolvedFilters],
   );
-  const hasRowActions = showRowActions !== false;
+  const hasRowActions =
+    showRowActions !== false &&
+    (editableColumns.length > 0 || typeof onEditRow === 'function');
   const storeAddConfig = store?.getters?.add;
   const addConfig = add !== null && add !== undefined ? add : storeAddConfig;
   const hasAddInstruction = addConfig === true || (isObject(addConfig) && addConfig.enabled !== false);
   const shouldRenderAddButton =
     hasAddInstruction &&
     (typeof onAdd === 'function' || typeof actions.save === 'function');
+  const resolvedIsLoading = autoMode ? (autoLoading || autoLoadingMore) : Boolean(isLoading);
+  const resolvedData = autoMode
+    ? (autoHasLoaded && Array.isArray(store?.getters?.items) ? store.getters.items : [])
+    : (Array.isArray(data) ? data : []);
   const tableMinimumWidth = useMemo(
     () =>
       tableColumns.reduce(
@@ -405,7 +669,7 @@ const DefaultTable = ({
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const shouldForceCardsOnCompact = forceCardsOnCompact !== false;
   const effectiveViewMode = isCompactView && shouldForceCardsOnCompact ? 'cards' : viewMode;
-  const emptyStateLabel = isLoading
+  const emptyStateLabel = resolvedIsLoading
     ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
     : 'Nenhum registro encontrado';
   const storeTotalItems = store?.getters?.totalItems;
@@ -443,7 +707,7 @@ const DefaultTable = ({
       if (!operations.length) return [];
 
       const columnLabel = formatStoreColumnLabel({
-        columns,
+        columns: columnsForTable,
         fieldName: getColumnKey(column),
         fallbackLabel: column?.label || getColumnKey(column),
         storeName,
@@ -479,15 +743,15 @@ const DefaultTable = ({
       entry?.value !== null &&
       normalizeText(entry.value) !== '',
     );
-  }, [columns, resolvedSummary, shouldReadSummary, storeName, summaryLabels, tableColumns]);
+  }, [columnsForTable, resolvedSummary, shouldReadSummary, storeName, summaryLabels, tableColumns]);
   const shouldRenderFooterBar =
     (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
     summaryEntries.length > 0;
 
   const sortedData = useMemo(() => {
-    const items = Array.isArray(data) ? [...data] : [];
-    const sortField = sort?.field;
-    const sortDirection = sort?.direction === 'desc' ? 'desc' : 'asc';
+    const items = Array.isArray(resolvedData) ? [...resolvedData] : [];
+    const sortField = resolvedSort?.field;
+    const sortDirection = resolvedSort?.direction === 'desc' ? 'desc' : 'asc';
     const sortColumn = tableColumns.find(column => getSortField(column) === sortField);
 
     if (!sortField || !sortColumn) return items;
@@ -513,24 +777,33 @@ const DefaultTable = ({
 
       return sortDirection === 'desc' ? comparison * -1 : comparison;
     });
-  }, [data, sort?.direction, sort?.field, storeName, tableColumns]);
+  }, [resolvedData, resolvedSort?.direction, resolvedSort?.field, storeName, tableColumns]);
 
   const resolvedHasMore = useMemo(
-    () =>
-      resolveHasMore({
+    () => {
+      if (autoMode) {
+        if (Number.isFinite(Number(resolvedTotalItems)) && Number(resolvedTotalItems) > 0) {
+          return sortedData.length < Number(resolvedTotalItems);
+        }
+
+        return autoLastPageCount >= pageSizeNumber && sortedData.length > 0;
+      }
+
+      return resolveHasMore({
         hasMore,
         dataLength: sortedData.length,
         totalItems: resolvedTotalItems,
-      }),
-    [hasMore, resolvedTotalItems, sortedData.length],
+      });
+    },
+    [autoLastPageCount, autoMode, hasMore, pageSizeNumber, resolvedTotalItems, sortedData.length],
   );
 
   useEffect(() => {
     const nextPaginationState = {
       dataLength: sortedData.length,
-      filtersKey: JSON.stringify(filters || {}),
-      sortDirection: sort?.direction,
-      sortField: sort?.field,
+      filtersKey: stableSerialize(resolvedFilters || {}),
+      sortDirection: resolvedSort?.direction,
+      sortField: resolvedSort?.field,
     };
 
     const previousPaginationState = previousPaginationStateRef.current;
@@ -544,7 +817,7 @@ const DefaultTable = ({
       endReachedLockRef.current = false;
       previousPaginationStateRef.current = nextPaginationState;
     }
-  }, [filters, sort?.direction, sort?.field, sortedData]);
+  }, [resolvedFilters, resolvedSort?.direction, resolvedSort?.field, sortedData]);
 
   const beginEdit = useCallback((row, column) => {
     if (!isEditableColumn(column)) return;
@@ -600,15 +873,23 @@ const DefaultTable = ({
 
     const fieldName = getSortField(column);
     const nextDirection =
-      sort?.field === fieldName && sort?.direction === 'asc'
+      resolvedSort?.field === fieldName && resolvedSort?.direction === 'asc'
         ? 'desc'
         : 'asc';
+
+    if (autoMode) {
+      setAutoSort({
+        direction: nextDirection,
+        field: fieldName,
+      });
+      return;
+    }
 
     onSortChange?.({
       direction: nextDirection,
       field: fieldName,
     });
-  }, [onSortChange, sort?.direction, sort?.field]);
+  }, [autoMode, onSortChange, resolvedSort?.direction, resolvedSort?.field]);
 
   const openEditModal = useCallback(row => {
     if (typeof onEditRow === 'function') {
@@ -637,8 +918,20 @@ const DefaultTable = ({
     setFormMode('edit');
   }, []);
 
+  const commitFilters = useCallback(nextFilters => {
+    const resolvedNextFilters = isObject(nextFilters) ? nextFilters : {};
+
+    if (autoMode) {
+      setAutoFilters(resolvedNextFilters);
+      storeActions.setFilters?.(resolvedNextFilters);
+      return;
+    }
+
+    onFilterChange?.(resolvedNextFilters);
+  }, [autoMode, onFilterChange, storeActions]);
+
   const updateFilter = useCallback((fieldName, value) => {
-    const nextFilters = { ...(filters || {}) };
+    const nextFilters = { ...(resolvedFilters || {}) };
     const isEmpty =
       value === null ||
       value === undefined ||
@@ -648,8 +941,8 @@ const DefaultTable = ({
     if (isEmpty) delete nextFilters[fieldName];
     else nextFilters[fieldName] = value;
 
-    onFilterChange?.(nextFilters);
-  }, [filters, onFilterChange]);
+    commitFilters(nextFilters);
+  }, [commitFilters, resolvedFilters]);
 
   const toggleColumn = useCallback(column => {
     const fieldName = getColumnKey(column);
@@ -660,11 +953,12 @@ const DefaultTable = ({
     setVisibleColumns(prev => {
       const next = {
         ...sanitizeVisibleColumnsPreference({
-          columns,
+          columns: columnsForTable,
           visibleColumns: prev,
         }),
         [fieldName]: prev[fieldName] === false,
       };
+
       nextVisibleColumns = next;
       actions?.setVisibleColumns?.(next);
       return next;
@@ -680,7 +974,7 @@ const DefaultTable = ({
     );
   }, [
     actions,
-    columns,
+    columnsForTable,
     visibleColumnsPreferenceKey,
   ]);
 
@@ -706,16 +1000,24 @@ const DefaultTable = ({
   const handleEndReached = useCallback(() => {
     if (
       !resolvedHasMore ||
-      isLoading ||
-      typeof onEndReached !== 'function' ||
+      resolvedIsLoading ||
       endReachedLockRef.current === true
     ) {
       return;
     }
 
     endReachedLockRef.current = true;
-    onEndReached();
-  }, [endReachedLockRef, isLoading, onEndReached, resolvedHasMore]);
+
+    if (autoMode) {
+      const nextPage = autoPageRef.current + 1;
+      loadAutoPage(nextPage, { append: true });
+      return;
+    }
+
+    if (typeof onEndReached === 'function') {
+      onEndReached();
+    }
+  }, [autoMode, loadAutoPage, onEndReached, resolvedHasMore, resolvedIsLoading]);
 
   const handleLayout = useCallback(event => {
     const nextWidth = Math.floor(event?.nativeEvent?.layout?.width || 0);
@@ -739,7 +1041,7 @@ const DefaultTable = ({
         <DefaultInput
           accentColor={resolvedAccentColor}
           column={column}
-          columns={columns}
+          columns={columnsForTable}
           editing={isEditing}
           getOptionsForColumn={getOptionsForColumn}
           onCancelEditing={clearEdit}
@@ -759,7 +1061,7 @@ const DefaultTable = ({
       <DefaultColumnFilter
         accentColor={resolvedAccentColor}
         column={column}
-        filters={filters}
+        filters={resolvedFilters}
         getOptionsForColumn={getOptionsForColumn}
         onChange={updateFilter}
         storeName={storeName}
@@ -816,8 +1118,8 @@ const DefaultTable = ({
     ) : null;
 
   const getColumnByField = useCallback(
-    fieldName => columns.find(column => getColumnKey(column) === fieldName),
-    [columns],
+    fieldName => columnsForTable.find(column => getColumnKey(column) === fieldName),
+    [columnsForTable],
   );
 
   const buildRowHelpers = useCallback(
@@ -827,7 +1129,7 @@ const DefaultTable = ({
       const renderValue = (fieldName, fallback = '-') => {
         const column = getColumnByField(fieldName);
         if (!column) return fallback;
-        return resolveCellText({ column, columns, row, storeName });
+        return resolveCellText({ column, columns: columnsForTable, row, storeName });
       };
       const renderField = (fieldName, options = {}) => {
         const column = getColumnByField(fieldName);
@@ -841,7 +1143,7 @@ const DefaultTable = ({
           <DefaultInput
             accentColor={options.accentColor || resolvedAccentColor}
             column={column}
-            columns={columns}
+            columns={columnsForTable}
             containerStyle={options.containerStyle}
             displayValue={options.displayValue}
             editing={isEditing}
@@ -873,7 +1175,7 @@ const DefaultTable = ({
       resolvedAccentColor,
       beginEdit,
       clearEdit,
-      columns,
+      columnsForTable,
       editingCell,
       getColumnByField,
       getOptionsForColumn,
@@ -919,7 +1221,7 @@ const DefaultTable = ({
           <View key={getColumnKey(column)} style={styles.defaultCardLine}>
             <Text style={[styles.defaultCardLabel, { color: tableMutedColor }]}>
               {formatStoreColumnLabel({
-                columns,
+                columns: columnsForTable,
                 fieldName: getColumnKey(column),
                 fallbackLabel: column?.label || getColumnKey(column),
                 storeName,
@@ -946,7 +1248,7 @@ const DefaultTable = ({
   const renderEmptyState = isTable => {
     const emptyState = (
       <View style={[styles.emptyBox, isTable ? tableLayoutStyle : null]}>
-        {isLoading ? (
+        {resolvedIsLoading ? (
           <ActivityIndicator size="small" color={resolvedAccentColor} />
         ) : null}
         <Text style={[styles.emptyText, { color: tableMutedColor }]}>{emptyStateLabel}</Text>
@@ -957,7 +1259,7 @@ const DefaultTable = ({
   };
 
   const renderLoadingOverlay = () => {
-    if (!isLoading || sortedData.length === 0) {
+    if (!resolvedIsLoading || sortedData.length === 0) {
       return null;
     }
 
@@ -1037,7 +1339,7 @@ const DefaultTable = ({
             <DefaultForm
               accentColor={resolvedAccentColor}
               actions={actions}
-              columns={isCreate ? columns : editableColumns}
+              columns={isCreate ? columnsForTable : editableColumns}
               getOptionsForColumn={getOptionsForColumn}
               mode={formMode}
               onCancel={closeEditModal}
@@ -1075,6 +1377,9 @@ const DefaultTable = ({
                 compact
                 storeName={storeName}
                 {...searchProps}
+                filters={autoMode ? resolvedFilters : searchProps?.filters}
+                onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
+                value={autoMode ? resolvedSearchValue : searchProps?.value}
                 style={[styles.toolbarSearch, styles.toolbarCompactSearch, searchProps?.style]}
               />
             ) : null}
@@ -1089,6 +1394,9 @@ const DefaultTable = ({
               compact
               storeName={storeName}
               {...searchProps}
+              filters={autoMode ? resolvedFilters : searchProps?.filters}
+              onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
+              value={autoMode ? resolvedSearchValue : searchProps?.value}
               style={[styles.toolbarSearch, searchProps?.style]}
             />
           ) : null}
@@ -1144,7 +1452,7 @@ const DefaultTable = ({
             {availableColumns.map(column => {
               const fieldName = getColumnKey(column);
               const label = formatStoreColumnLabel({
-                columns,
+                columns: columnsForTable,
                 fieldName,
                 fallbackLabel: column?.label || fieldName,
                 storeName,
@@ -1185,7 +1493,7 @@ const DefaultTable = ({
               {tableColumns.map(column => {
                 const fieldName = getColumnKey(column);
                 const label = formatStoreColumnLabel({
-                  columns,
+                  columns: columnsForTable,
                   fieldName,
                   fallbackLabel: column?.label || fieldName,
                   storeName,
@@ -1202,12 +1510,12 @@ const DefaultTable = ({
                   >
                     <View style={styles.sortableHeader}>
                       <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
-                      {isSortableColumn(column) && sort?.field === sortFieldName ? (
-                        <Icon name={sort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
+                      {isSortableColumn(column) && resolvedSort?.field === sortFieldName ? (
+                        <Icon name={resolvedSort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
                       ) : isSortableColumn(column) ? (
                         <Icon name="chevrons-up" size={12} color={tableBorderColor} />
                       ) : null}
-                      {filters?.[fieldName] ? <Icon name="filter" size={11} color={tableTextColor} /> : null}
+                      {resolvedFilters?.[fieldName] ? <Icon name="filter" size={11} color={tableTextColor} /> : null}
                     </View>
                   </TouchableOpacity>
                 );
@@ -1273,7 +1581,7 @@ const DefaultTable = ({
                   >
                     {formatSummaryValue({
                       column: entry.column,
-                      columns,
+                      columns: columnsForTable,
                       path: entry.path,
                       storeName,
                       value: entry.value,

@@ -10,6 +10,71 @@ export const STORE_ACTION_META_KEY = '__storeMeta'
 const isPlainObject = value =>
   Object.prototype.toString.call(value) === '[object Object]'
 
+const normalizeText = value => String(value ?? '').trim()
+
+const stableSerialize = value => {
+  if (value === null || value === undefined) {
+    return 'null'
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(item => stableSerialize(item)).join(',')}]`
+  }
+
+  if (value instanceof Date) {
+    return JSON.stringify(value.toISOString())
+  }
+
+  if (isPlainObject(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map(key => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
+      .join(',')}}`
+  }
+
+  return JSON.stringify(value)
+}
+
+const normalizeCollectionItems = response => {
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.member)) return response.member
+  if (Array.isArray(response?.['hydra:member'])) return response['hydra:member']
+
+  return []
+}
+
+const resolveCollectionTotalItems = (response, items) =>
+  Number(
+    response?.totalItems ||
+      response?.['hydra:totalItems'] ||
+      items?.length ||
+      0,
+  )
+
+const normalizeCollectionItemId = item =>
+  normalizeText(item?.['@id'] || item?.id || '').replace(/\D+/g, '')
+
+const appendCollectionItems = (currentItems, nextItems) => {
+  const mergedItems = Array.isArray(currentItems) ? [...currentItems] : []
+  const incomingItems = Array.isArray(nextItems) ? nextItems : []
+
+  incomingItems.forEach(item => {
+    const itemId = normalizeCollectionItemId(item)
+    const existingIndex = mergedItems.findIndex(
+      currentItem => normalizeCollectionItemId(currentItem) === itemId,
+    )
+
+    if (existingIndex >= 0) {
+      mergedItems[existingIndex] = item
+      return
+    }
+
+    mergedItems.push(item)
+  })
+
+  return mergedItems
+}
+
 export const splitStoreActionPayload = value => {
   if (!isPlainObject(value)) {
     return {
@@ -76,9 +141,6 @@ export const initQueue = ({commit, getters}, func) => {
 
 export const saveOffline = ({commit, getters}, data) => {
   return;
-  db = new localDB(getters);
-  if (Array.isArray(data)) db.saveItems(data);
-  else if (typeof data === 'object' && data !== null) db.saveItem(data);
 };
 
 export const getOfflineItems = ({commit, getters}, params = {}) => {
@@ -110,27 +172,67 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
 
 export const getOnlineItems = ({commit, getters}, params = {}) => {
   const {payload: requestParams, storeMeta} = splitStoreActionPayload(params)
-  commit(types.SET_ISLOADING, true);
-  commit(types.SET_ERROR, null);
-  if (getters.items != null) commit(types.SET_ITEMS, []);
-  commit(types.SET_TOTALITEMS, 0);
-  commit(types.SET_SUMMARY, {});
-  return api
-    .fetch(getters.resourceEndpoint, {params: requestParams})
-    .then(data => {
-      commit(types.SET_ERROR, null);
-      commit(types.SET_ITEMS, data['member']);
-      commit(types.SET_TOTALITEMS, data['totalItems']);
-      commit(types.SET_SUMMARY, data['summary']);
+  const {append: shouldAppend = false, ...queryParams} = isPlainObject(requestParams)
+    ? requestParams
+    : {}
+  const requestKey = stableSerialize({
+    append: Boolean(shouldAppend),
+    endpoint: getters.resourceEndpoint,
+    params: queryParams,
+  })
 
-      return data['member'];
+  commit(types.SET_ACTIVE_REQUEST_KEY, requestKey)
+  commit(types.SET_ISLOADING, true);
+  commit(types.SET_ISLOADINGLIST, true)
+  commit(types.SET_ERROR, null);
+  if (!shouldAppend) {
+    if (getters.items != null) commit(types.SET_ITEMS, []);
+    commit(types.SET_TOTALITEMS, 0);
+    commit(types.SET_SUMMARY, {});
+  }
+  return api
+    .fetch(getters.resourceEndpoint, {params: queryParams})
+    .then(data => {
+      const pageItems = normalizeCollectionItems(data)
+
+      if (getters.activeRequestKey !== requestKey) {
+        return pageItems
+      }
+
+      const nextItems = shouldAppend
+        ? appendCollectionItems(getters.items, pageItems)
+        : pageItems
+
+      commit(types.SET_ERROR, null);
+      commit(types.SET_ITEMS, nextItems);
+      commit(types.SET_TOTALITEMS, resolveCollectionTotalItems(data, nextItems));
+      commit(types.SET_SUMMARY, data['summary'] || data?.['hydra:summary'] || {});
+      commit(types.SET_LAST_COMPLETED_REQUEST, {
+        completedAt: Date.now(),
+        requestKey,
+        status: 'success',
+      });
+
+      return pageItems;
     })
     .catch(e => {
-      commitStoreError(commit, e, storeMeta)
+      if (getters.activeRequestKey === requestKey) {
+        commitStoreError(commit, e, storeMeta)
+        commit(types.SET_LAST_COMPLETED_REQUEST, {
+          completedAt: Date.now(),
+          error: e?.message || String(e || ''),
+          requestKey,
+          status: 'error',
+        });
+      }
       throw e;
     })
     .finally(() => {
-      commit(types.SET_ISLOADING, false);
+      if (getters.activeRequestKey === requestKey) {
+        commit(types.SET_ACTIVE_REQUEST_KEY, '')
+        commit(types.SET_ISLOADING, false);
+        commit(types.SET_ISLOADINGLIST, false)
+      }
     });
 };
 
