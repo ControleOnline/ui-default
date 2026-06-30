@@ -274,6 +274,8 @@ const DefaultTable = ({
   isLoading = false,
   onEditRow = null,
   onEndReached = null,
+  onMomentumScrollBegin = null,
+  onScrollBeginDrag = null,
   onAdd = null,
   onFilterChange = null,
   onRowPress = null,
@@ -1170,6 +1172,8 @@ const DefaultTable = ({
           ListEmptyComponent={renderEmptyState(false)}
           ListFooterComponent={null}
           nestedScrollEnabled
+          onMomentumScrollBegin={onMomentumScrollBegin || undefined}
+          onScrollBeginDrag={onScrollBeginDrag || undefined}
           onEndReached={handleEndReached}
           onEndReachedThreshold={END_REACHED_THRESHOLD}
           showsVerticalScrollIndicator={false}
@@ -1235,6 +1239,8 @@ const DefaultTable = ({
               ListEmptyComponent={renderEmptyState(true)}
               ListFooterComponent={null}
               nestedScrollEnabled
+              onMomentumScrollBegin={onMomentumScrollBegin || undefined}
+              onScrollBeginDrag={onScrollBeginDrag || undefined}
               onEndReached={handleEndReached}
               onEndReachedThreshold={END_REACHED_THRESHOLD}
               showsVerticalScrollIndicator={false}
