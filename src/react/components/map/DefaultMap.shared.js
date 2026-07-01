@@ -219,24 +219,26 @@ const resolveExplicitPaths = ({config, addresses, paths}) => {
     return [];
   }
 
-  const [primarySource] = sources;
+  const originDestinationSource = sources.find(
+    source => source.origin && source.destination,
+  );
 
-  if (primarySource.origin && primarySource.destination) {
+  if (originDestinationSource) {
     return [
       {
-        from: primarySource.origin,
-        to: primarySource.destination,
+        from: originDestinationSource.origin,
+        to: originDestinationSource.destination,
       },
     ];
   }
 
-  if (
-    primarySource.origin &&
-    Array.isArray(primarySource.markers) &&
-    primarySource.markers.length > 0
-  ) {
-    return primarySource.markers.map(target => ({
-      from: primarySource.origin,
+  const originMarkersSource = sources.find(
+    source => source.origin && Array.isArray(source.markers) && source.markers.length > 0,
+  );
+
+  if (originMarkersSource) {
+    return originMarkersSource.markers.map(target => ({
+      from: originMarkersSource.origin,
       to: target,
     }));
   }

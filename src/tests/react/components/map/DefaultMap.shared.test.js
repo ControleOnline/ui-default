@@ -1,7 +1,7 @@
 const {
   buildOpenStreetMapEmbedUrl,
   resolveDefaultMapPayload,
-} = require('../../../react/components/map/DefaultMap.shared');
+} = require('../../../../react/components/map/DefaultMap.shared');
 
 const {describe, expect, it} = global;
 
