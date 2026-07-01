@@ -257,10 +257,9 @@ export const resolveDefaultMapPayload = ({
     ? normalizedConfig.addresses
     : null;
   const normalizedAddresses =
-    addresses && typeof addresses === 'object' && !Array.isArray(addresses)
+    (addresses && typeof addresses === 'object' && !Array.isArray(addresses)
       ? addresses
-      : nestedConfigAddresses
-      : null;
+      : nestedConfigAddresses) || null;
 
   const resolvedApiKey =
     resolveDefaultMapApiKey(normalizedConfig) ||
