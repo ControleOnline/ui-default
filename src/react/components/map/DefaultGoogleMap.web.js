@@ -94,27 +94,8 @@ const extractCoordinates = address => {
     return null;
   }
 
-  const latitude = normalizeCoordinate(
-    address.latitude ??
-      address.lat ??
-      address.location?.latitude ??
-      address.location?.lat ??
-      address.coords?.latitude ??
-      address.coords?.lat ??
-      address.coordinate?.latitude ??
-      address.coordinate?.lat,
-  );
-  const longitude = normalizeCoordinate(
-    address.longitude ??
-      address.lng ??
-      address.lon ??
-      address.location?.longitude ??
-      address.location?.lng ??
-      address.coords?.longitude ??
-      address.coords?.lng ??
-      address.coordinate?.longitude ??
-      address.coordinate?.lng,
-  );
+  const latitude = normalizeCoordinate(address.latitude);
+  const longitude = normalizeCoordinate(address.longitude);
 
   if (latitude === null || longitude === null) {
     return null;

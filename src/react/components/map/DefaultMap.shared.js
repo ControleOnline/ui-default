@@ -16,32 +16,8 @@ export const extractMapCoordinates = address => {
     return null;
   }
 
-  const latitude = [
-    address.latitude,
-    address.lat,
-    address.location?.latitude,
-    address.location?.lat,
-    address.coords?.latitude,
-    address.coords?.lat,
-    address.coordinate?.latitude,
-    address.coordinate?.lat,
-  ]
-    .map(normalizeCoordinate)
-    .find(value => value !== null);
-
-  const longitude = [
-    address.longitude,
-    address.lng,
-    address.lon,
-    address.location?.longitude,
-    address.location?.lng,
-    address.coords?.longitude,
-    address.coords?.lng,
-    address.coordinate?.longitude,
-    address.coordinate?.lng,
-  ]
-    .map(normalizeCoordinate)
-    .find(value => value !== null);
+  const latitude = normalizeCoordinate(address.latitude);
+  const longitude = normalizeCoordinate(address.longitude);
 
   if (latitude === null || longitude === null) {
     return null;
