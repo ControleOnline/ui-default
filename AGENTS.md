@@ -10,7 +10,7 @@
 - Quando `data` nao e informada e existe `storeName`, o `DefaultTable` trabalha em modo automatico e carrega os itens pelas actions do store.
 - O componente e responsavel por busca, ordenacao, filtros, paginação, infinite scroll, loading, erro, resumo, visibilidade de colunas, modo desktop e modo card no mobile.
 - O store nao e fallback: ele e a regra. Se `columns` define um comportamento, o `DefaultTable` deve obedecer sem recriar uma segunda regra na tela.
-- `columns` e a fonte de verdade para label, visibilidade, ordem, `editable`, `sortable`, `inputType`, `list`, `format`, `formatList`, `formatFilter`, `saveFormat`, `searchParam`, `externalFilter`, `summary` e `defaultSort`.
+- `columns` e a fonte de verdade para label, visibilidade, ordem, `editable`, `sortable`, `inputType`, `list`, `format`, `formatList`, `formatFilter`, `saveFormat`, `searchParam`, `externalFilter`, `summary` e `defaultSort`. `show:false` e um alias aceito para ocultar coluna, junto com `visible:false` e `table:false`.
 - Se uma coluna vier como `editable: false`, ela continua nao editavel mesmo que seja ordenavel. Se vier como `sortable: true`, a ordenacao precisa continuar funcionando.
 - `inputType: 'date-range'` exige filtro de intervalo. `externalFilter: true` habilita o filtro externo quando a listagem suporta esse contrato.
 - Nada de search local, sort local, paginacao manual, contador local, total calculado por `reduce` ou cards paralelos quando o `DefaultTable` ja puder resolver isso pelo store.

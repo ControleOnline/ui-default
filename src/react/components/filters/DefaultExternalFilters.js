@@ -63,6 +63,7 @@ const shouldTranslateOptionLabel = (column, storeName, rawLabel) => {
 
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
+  column?.show !== false &&
   column?.visible !== false &&
   column?.externalFilter === true &&
   column?.filter !== false &&
@@ -166,7 +167,7 @@ const resolveIcon = column => {
   const key = getColumnKey(column);
   if (key === 'status') return 'check-circle';
   if (key === 'category') return 'tag';
-  if (column?.inputType === 'date-range') return 'calendar';
+  if (column?.inputType === 'date-range' || column?.type === 'range-date') return 'calendar';
   return 'sliders';
 };
 
@@ -240,7 +241,7 @@ const DefaultExternalFilters = ({
     const key = getColumnKey(column);
     const fieldStyle = compact ? styles.modalField : styles.field;
 
-    if (column.inputType === 'date-range') {
+    if (column.inputType === 'date-range' || column.type === 'range-date') {
       const dateState = resolveDateState(filters[key]);
 
       return (

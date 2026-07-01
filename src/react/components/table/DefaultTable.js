@@ -51,6 +51,7 @@ const SUMMARY_OPERATIONS = ['sum', 'count', 'avg', 'min', 'max'];
 
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
+  column?.show !== false &&
   column?.visible !== false &&
   column?.table !== false;
 
@@ -239,6 +240,57 @@ const flattenSummaryEntries = ({
 const isSortableColumn = column => column?.sortable === true;
 
 const getSortField = column => column?.sortField || getColumnKey(column);
+
+const resolveDefaultSort = columns => {
+  if (!Array.isArray(columns)) {
+    return null;
+  }
+
+  for (const column of columns) {
+    if (!column || column?.defaultSort === undefined || column?.defaultSort === null || column?.defaultSort === false) {
+      continue;
+    }
+
+    const field = getSortField(column);
+    const defaultSort = column.defaultSort;
+
+    if (defaultSort && typeof defaultSort === 'object' && !Array.isArray(defaultSort)) {
+      const resolvedDirection = normalizeText(defaultSort.direction || defaultSort.order || 'desc').toLowerCase();
+      const resolvedField = normalizeText(
+        defaultSort.field || defaultSort.sortField || defaultSort.key || defaultSort.name || field,
+      );
+
+      return {
+        direction: resolvedDirection === 'asc' ? 'asc' : 'desc',
+        field: resolvedField || field,
+      };
+    }
+
+    if (typeof defaultSort === 'string') {
+      const normalizedSort = normalizeText(defaultSort).toLowerCase();
+      if (normalizedSort === 'asc' || normalizedSort === 'desc') {
+        return {
+          direction: normalizedSort,
+          field,
+        };
+      }
+
+      return {
+        direction: 'desc',
+        field: normalizeText(defaultSort) || field,
+      };
+    }
+
+    if (defaultSort === true) {
+      return {
+        direction: 'asc',
+        field,
+      };
+    }
+  }
+
+  return null;
+};
 
 const readValueByPath = (object, path) => {
   if (!object || !path) return object;
@@ -439,7 +491,11 @@ const DefaultTable = ({
     ? (Object.keys(filters || {}).length > 0 ? filters : storeFilters)
     : (isObject(filters) ? filters : {});
   const [autoFilters, setAutoFilters] = useState(() => initialFiltersSeed);
-  const [autoSort, setAutoSort] = useState(() => sort || null);
+  const defaultSortSeed = useMemo(
+    () => resolveDefaultSort(columnsForTable),
+    [columnsForTable],
+  );
+  const [autoSort, setAutoSort] = useState(() => sort || defaultSortSeed || null);
   const [autoHasLoaded, setAutoHasLoaded] = useState(false);
   const [autoLoading, setAutoLoading] = useState(false);
   const [autoLoadingMore, setAutoLoadingMore] = useState(false);
@@ -578,7 +634,7 @@ const DefaultTable = ({
   );
 
   const availableColumns = useMemo(
-    () => columnsForTable.filter(column => Boolean(getColumnKey(column)) && column?.table !== false),
+    () => columnsForTable.filter(column => shouldIncludeColumn(column)),
     [columnsForTable],
   );
 

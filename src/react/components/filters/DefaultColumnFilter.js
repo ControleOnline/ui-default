@@ -26,7 +26,7 @@ const DefaultColumnFilter = ({
     return <View style={style} />;
   }
 
-  if (column?.inputType === 'date-range') {
+  if (column?.inputType === 'date-range' || column?.type === 'range-date') {
     const filterValue = filters?.[fieldName] || {};
     return (
       <View style={[style, styles.filterCell]}>
