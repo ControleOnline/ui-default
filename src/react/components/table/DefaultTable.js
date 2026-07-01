@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   ScrollView,
@@ -14,6 +13,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
+import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import { getDateRange } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
@@ -1302,16 +1302,15 @@ const DefaultTable = ({
   };
 
   const renderEmptyState = isTable => {
-    const emptyState = (
+    return (
       <View style={[styles.emptyBox, isTable ? tableLayoutStyle : null]}>
         {resolvedIsLoading ? (
-          <ActivityIndicator size="small" color={resolvedAccentColor} />
-        ) : null}
-        <Text style={[styles.emptyText, { color: tableMutedColor }]}>{emptyStateLabel}</Text>
+          <StateStore compact loading={emptyStateLabel} />
+        ) : (
+          <Text style={[styles.emptyText, { color: tableMutedColor }]}>{emptyStateLabel}</Text>
+        )}
       </View>
     );
-
-    return emptyState;
   };
 
   const renderLoadingOverlay = () => {
@@ -1327,10 +1326,7 @@ const DefaultTable = ({
             { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor },
           ]}
         >
-          <ActivityIndicator size="small" color={resolvedAccentColor} />
-          <Text style={[styles.emptyText, { color: tableMutedColor }]}>
-            Carregando mais registros...
-          </Text>
+          <StateStore compact loading="Carregando mais registros..." />
         </View>
       </View>
     );
