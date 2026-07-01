@@ -258,6 +258,10 @@ export const get = ({commit, getters}, id) => {
     .then(data => {
       commit(types.SET_ERROR, null);
       commit(types.SET_ITEM, data);
+      if (normalizedId) {
+        commit(types.SET_LOADED_KEY, normalizedId);
+        commit(types.SET_LOADED_AT, Date.now());
+      }
       if (getters.offline) saveOffline({commit, getters}, data);
       return data;
     })
