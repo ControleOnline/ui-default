@@ -78,4 +78,39 @@ describe('DefaultMap.shared', () => {
     expect(url).toContain('layer=mapnik');
     expect(url).toContain('marker=');
   });
+
+  it('resolves nested config addresses and api key from a single JSON payload', () => {
+    const payload = resolveDefaultMapPayload({
+      config: {
+        googleMapsApiKey: 'config-key',
+        addresses: {
+          origin: {
+            id: 'origin-1',
+            latitude: -23.55,
+            longitude: -46.63,
+            nickname: 'Origem',
+          },
+          markers: [
+            {
+              id: 'marker-1',
+              latitude: -23.56,
+              longitude: -46.64,
+              nickname: 'Destino',
+            },
+          ],
+          user: {
+            latitude: -23.54,
+            longitude: -46.62,
+          },
+        },
+      },
+    });
+
+    expect(payload.apiKey).toBe('config-key');
+    expect(payload.markerPayloads).toHaveLength(2);
+    expect(payload.userCoordinates).toEqual({
+      latitude: -23.54,
+      longitude: -46.62,
+    });
+  });
 });
