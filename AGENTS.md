@@ -20,6 +20,7 @@
 - `add: true` abre o `DefaultForm` quando a tela nao prover `onAdd`.
 - O modo controlado continua existindo apenas para excecoes reais de integracao; o padrao do sistema e o modo store-driven.
 - Loadings e erros devem seguir o fluxo central do sistema, sem banners ou estados paralelos na tela.
+- O `get` do store default pode preservar o `item` atual durante refresh quando receber `__storeMeta.preserveItem = true`; use esse modo quando a tela precisa atualizar o registro sem desmontar o detalhe em exibição.
 
 ## Regra de uso
 - Telas antigas devem ser simplificadas para passar o store e apenas as excecoes declarativas que o store nao cobre.

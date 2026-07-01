@@ -246,7 +246,9 @@ export const get = ({commit, getters}, id) => {
   const normalizedId = String(requestId?.id ?? requestId ?? '').replace(/\D/g, '')
   commit(types.SET_ISLOADING, true);
   commit(types.SET_ERROR, null);
-  if (getters.item != null) commit(types.SET_ITEM, {});
+  // Refreshes that need the current record to stay mounted can opt out of the
+  // destructive intermediate clear by passing `__storeMeta.preserveItem = true`.
+  if (storeMeta.preserveItem !== true && getters.item != null) commit(types.SET_ITEM, {});
   return api
     .fetch(
       getters.resourceEndpoint + '/' + normalizedId,
