@@ -639,7 +639,11 @@ const DefaultTable = ({
   );
 
   useEffect(() => {
-    setVisibleColumns(visibleColumnsSeed);
+    setVisibleColumns(prev =>
+      stableSerialize(prev) === stableSerialize(visibleColumnsSeed)
+        ? prev
+        : visibleColumnsSeed
+    );
   }, [visibleColumnsSeed]);
 
   useEffect(() => {
@@ -1004,8 +1008,6 @@ const DefaultTable = ({
     const fieldName = getColumnKey(column);
     if (!fieldName) return;
 
-    let nextVisibleColumns = null;
-
     setVisibleColumns(prev => {
       const next = {
         ...sanitizeVisibleColumnsPreference({
@@ -1015,19 +1017,15 @@ const DefaultTable = ({
         [fieldName]: prev[fieldName] === false,
       };
 
-      nextVisibleColumns = next;
       actions?.setVisibleColumns?.(next);
+      if (visibleColumnsPreferenceKey) {
+        persistVisibleColumnsPreference(
+          visibleColumnsPreferenceKey,
+          next,
+        );
+      }
       return next;
     });
-
-    if (!nextVisibleColumns || !visibleColumnsPreferenceKey) {
-      return;
-    }
-
-    persistVisibleColumnsPreference(
-      visibleColumnsPreferenceKey,
-      nextVisibleColumns,
-    );
   }, [
     actions,
     columnsForTable,
@@ -1408,6 +1406,50 @@ const DefaultTable = ({
     );
   };
 
+  const renderColumnMenuModal = () => {
+    if (!isColumnMenuOpen) return null;
+
+    return (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setIsColumnMenuOpen(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: withOpacity(tableTextColor, 0.42) }]}>
+          <View style={[styles.modalCard, styles.columnMenuModalCard, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: tableBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: tableTextColor }]} numberOfLines={1}>
+                Colunas
+              </Text>
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                activeOpacity={0.82}
+                onPress={() => setIsColumnMenuOpen(false)}
+              >
+                <Icon name="x" size={16} color={tableMutedColor} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.columnMenuModalBody} contentContainerStyle={styles.columnMenuModalList}>
+              {availableColumns.map(column => {
+                const fieldName = getColumnKey(column);
+                const label = formatStoreColumnLabel({
+                  columns: columnsForTable,
+                  fieldName,
+                  fallbackLabel: column?.label || fieldName,
+                  storeName,
+                });
+                const checked = visibleColumns[fieldName] !== false;
+
+                return (
+                  <TouchableOpacity key={fieldName} style={styles.columnMenuItem} activeOpacity={0.82} onPress={() => toggleColumn(column)}>
+                    <Icon name={checked ? 'check-square' : 'square'} size={16} color={checked ? resolvedAccentColor : tableMutedColor} />
+                    <Text style={[styles.columnMenuText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <View style={[styles.wrap, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]} onLayout={handleLayout}>
       <View style={[styles.toolbar, { borderBottomColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
@@ -1499,27 +1541,6 @@ const DefaultTable = ({
           ) : null}
         </View>
 
-        {isColumnMenuOpen ? (
-          <View style={[styles.columnMenu, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
-            {availableColumns.map(column => {
-              const fieldName = getColumnKey(column);
-              const label = formatStoreColumnLabel({
-                columns: columnsForTable,
-                fieldName,
-                fallbackLabel: column?.label || fieldName,
-                storeName,
-              });
-              const checked = visibleColumns[fieldName] !== false;
-
-              return (
-                <TouchableOpacity key={fieldName} style={styles.columnMenuItem} activeOpacity={0.82} onPress={() => toggleColumn(column)}>
-                  <Icon name={checked ? 'check-square' : 'square'} size={14} color={tableMutedColor} />
-                  <Text style={[styles.columnMenuText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : null}
       </View>
 
       {effectiveViewMode === 'cards' ? (
@@ -1658,6 +1679,7 @@ const DefaultTable = ({
         </View>
       ) : null}
 
+      {renderColumnMenuModal()}
       {renderEditModal()}
     </View>
   );

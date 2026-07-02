@@ -159,6 +159,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  columnMenuModalCard: {
+    width: 250,
+    maxWidth: 250,
+    maxHeight: '78%',
+  },
+  columnMenuModalBody: {
+    maxHeight: 520,
+  },
+  columnMenuModalList: {
+    paddingVertical: 6,
+  },
   scroll: {
     flex: 1,
     width: '100%',
