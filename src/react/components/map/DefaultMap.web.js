@@ -5,7 +5,7 @@ import DefaultGoogleMap from './DefaultGoogleMap.web';
 
 import styles from './DefaultMap.styles';
 import {
-  buildOpenStreetMapEmbedUrl,
+  buildOpenStreetMapHtml,
   resolveDefaultMapPayload,
 } from './DefaultMap.shared';
 
@@ -53,10 +53,11 @@ export default function DefaultMap({
     <View style={styles.mapContainer}>
       <iframe
         title="Mapa"
-        src={buildOpenStreetMapEmbedUrl({
+        srcDoc={buildOpenStreetMapHtml({
           markerPayloads: resolvedPayload.markerPayloads,
           paths: resolvedPayload.paths,
           userCoordinates: resolvedPayload.userCoordinates,
+          routeColor: '#0EA5E9',
         })}
         style={{width: '100%', height: '100%', border: 0}}
       />

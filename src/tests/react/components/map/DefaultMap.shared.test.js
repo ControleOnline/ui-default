@@ -1,5 +1,6 @@
 const {
   buildOpenStreetMapEmbedUrl,
+  buildOpenStreetMapHtml,
   resolveDefaultMapPayload,
 } = require('../../../../react/components/map/DefaultMap.shared');
 
@@ -77,6 +78,42 @@ describe('DefaultMap.shared', () => {
     expect(url).toContain('openstreetmap.org/export/embed.html?bbox=');
     expect(url).toContain('layer=mapnik');
     expect(url).toContain('marker=');
+  });
+
+  it('builds an OpenStreetMap html fallback with markers and paths', () => {
+    const html = buildOpenStreetMapHtml({
+      markerPayloads: [
+        {
+          id: 'marker-1',
+          latitude: -23.55052,
+          longitude: -46.633308,
+          title: 'Origem',
+        },
+      ],
+      paths: [
+        {
+          id: 'path-1',
+          from: {
+            latitude: -23.551,
+            longitude: -46.634,
+          },
+          to: {
+            latitude: -23.563987,
+            longitude: -46.654321,
+          },
+        },
+      ],
+      userCoordinates: {
+        latitude: -23.549,
+        longitude: -46.632,
+      },
+    });
+
+    expect(html).toContain('leaflet');
+    expect(html).toContain('window.__SHOP_MAP_MARKERS__');
+    expect(html).toContain('Origem');
+    expect(html).toContain('window.__SHOP_MAP_PATHS__');
+    expect(html).toContain('router.project-osrm.org');
   });
 
   it('resolves nested config addresses and api key from a single JSON payload', () => {

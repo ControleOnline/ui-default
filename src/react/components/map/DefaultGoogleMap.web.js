@@ -11,6 +11,7 @@ const GOOGLE_MAPS_SCRIPT_ID = 'shop-google-maps-api-script';
 const GOOGLE_MAPS_CALLBACK_NAME = '__shopGoogleMapsApiReady__';
 const GOOGLE_MAPS_LOAD_TIMEOUT_MS = 15000;
 const GOOGLE_MAPS_POLL_INTERVAL_MS = 100;
+const ROUTE_COLOR = '#0EA5E9';
 
 const escapeHtml = value =>
   String(value || '')
@@ -393,16 +394,15 @@ export default function DefaultGoogleMap({
         const hasUserCoordinates =
           Number.isFinite(userCoordinates?.latitude) &&
           Number.isFinite(userCoordinates?.longitude);
-        const directionsService = hasUserCoordinates
-          ? new google.maps.DirectionsService()
-          : null;
+        const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = directionsService
+          && hasUserCoordinates
           ? new google.maps.DirectionsRenderer({
               map,
               suppressMarkers: true,
               preserveViewport: false,
               polylineOptions: {
-                strokeColor: '#0ea5e9',
+                strokeColor: ROUTE_COLOR,
                 strokeOpacity: 0.92,
                 strokeWeight: 5,
               },
@@ -550,21 +550,77 @@ export default function DefaultGoogleMap({
           });
         });
 
-        (Array.isArray(paths) ? paths : []).forEach(path => {
+        const resolveRouteCoordinates = path => {
           const from = extractCoordinates(path?.from || path?.origin || path?.start);
           const to = extractCoordinates(path?.to || path?.destination || path?.end);
 
           if (!from || !to) {
+            return Promise.resolve(null);
+          }
+
+          return new Promise(resolve => {
+            directionsService.route(
+              {
+                origin: from,
+                destination: to,
+                travelMode: google.maps.TravelMode.DRIVING,
+              },
+              (response, status) => {
+                if (cancelled) {
+                  resolve(null);
+                  return;
+                }
+
+                const overviewPath = response?.routes?.[0]?.overview_path;
+                const coordinates =
+                  Array.isArray(overviewPath) && overviewPath.length > 1
+                    ? overviewPath
+                        .map(point => ({
+                          lat: Number(typeof point.lat === 'function' ? point.lat() : point.lat),
+                          lng: Number(typeof point.lng === 'function' ? point.lng() : point.lng),
+                        }))
+                        .filter(
+                          item => Number.isFinite(item.lat) && Number.isFinite(item.lng),
+                        )
+                    : [from, to];
+
+                if (status !== 'OK' && coordinates.length < 2) {
+                  resolve(null);
+                  return;
+                }
+
+                resolve({
+                  path,
+                  coordinates,
+                });
+              },
+            );
+          });
+        };
+
+        const resolvedRoutes = await Promise.all(
+          (Array.isArray(paths) ? paths : []).map(resolveRouteCoordinates),
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        resolvedRoutes.filter(Boolean).forEach(entry => {
+          const coordinates = Array.isArray(entry?.coordinates) ? entry.coordinates : [];
+
+          if (coordinates.length < 2) {
             return;
           }
 
-          bounds.extend(from);
-          bounds.extend(to);
+          coordinates.forEach(point => {
+            bounds.extend(point);
+          });
 
           new google.maps.Polyline({
-            path: [from, to],
+            path: coordinates,
             geodesic: true,
-            strokeColor: normalizeText(path?.color || '') || routeColor,
+            strokeColor: normalizeText(entry?.path?.color || '') || ROUTE_COLOR,
             strokeOpacity: 0.72,
             strokeWeight: 4,
             map,

@@ -6,7 +6,7 @@ import DefaultNativeMap from './DefaultNativeMap.native';
 
 import styles from './DefaultMap.styles';
 import {
-  buildOpenStreetMapEmbedUrl,
+  buildOpenStreetMapHtml,
   resolveDefaultMapPayload,
 } from './DefaultMap.shared';
 
@@ -54,14 +54,17 @@ export default function DefaultMap({
     <View style={styles.mapContainer}>
       <WebView
         source={{
-          uri: buildOpenStreetMapEmbedUrl({
+          html: buildOpenStreetMapHtml({
             markerPayloads: resolvedPayload.markerPayloads,
             paths: resolvedPayload.paths,
             userCoordinates: resolvedPayload.userCoordinates,
+            routeColor: '#0EA5E9',
           }),
         }}
         style={styles.mapViewport}
         originWhitelist={['*']}
+        javaScriptEnabled
+        domStorageEnabled
       />
     </View>
   );
