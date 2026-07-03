@@ -402,6 +402,7 @@ const DefaultTable = ({
   onRowPress = null,
   onSaved = null,
   onSortChange = null,
+  onDataLoaded = null,
   requestParams = {},
   renderCard = null,
   searchProps = null,
@@ -878,6 +879,14 @@ const DefaultTable = ({
       previousPaginationStateRef.current = nextPaginationState;
     }
   }, [resolvedFilters, resolvedSort?.direction, resolvedSort?.field, sortedData]);
+
+  useEffect(() => {
+    if (typeof onDataLoaded !== 'function') {
+      return;
+    }
+
+    onDataLoaded(sortedData);
+  }, [onDataLoaded, sortedData]);
 
   const beginEdit = useCallback((row, column) => {
     if (!isEditableColumn(column)) return;
