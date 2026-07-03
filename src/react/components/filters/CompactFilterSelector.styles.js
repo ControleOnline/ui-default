@@ -39,11 +39,11 @@ const createStyles = (theme, dense = false) => StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.45,
     textTransform: 'uppercase',
-    color: '#94A3B8',
+    color: theme.captionColor,
     marginBottom: dense ? 1 : 2,
   },
   triggerCaptionActive: {
-    color: theme.accentColor,
+    color: theme.activeTextColor,
   },
   triggerText: {
     fontSize: dense ? 12 : 13,
@@ -52,16 +52,16 @@ const createStyles = (theme, dense = false) => StyleSheet.create({
     color: theme.textColor,
   },
   triggerTextActive: {
-    color: theme.accentColor,
+    color: theme.activeTextColor,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    backgroundColor: theme.modalOverlayColor,
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.modalBackgroundColor,
     borderRadius: 24,
     maxHeight: '82%',
     paddingHorizontal: 16,
@@ -77,7 +77,7 @@ const createStyles = (theme, dense = false) => StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
+    color: theme.modalTitleColor,
   },
   modalScroll: {
     flexGrow: 0,
@@ -107,10 +107,10 @@ const createStyles = (theme, dense = false) => StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.textColor,
   },
   modalOptionTextActive: {
-    color: theme.accentColor,
+    color: theme.optionSelectedTextColor,
   },
 });
 
