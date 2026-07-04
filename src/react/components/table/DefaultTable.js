@@ -472,8 +472,8 @@ const DefaultTable = ({
   );
   const resolvedAccentColor = accentColor || palette.primary;
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
-  const tableEvenColor = themeTokens['bg-even-light'] || palette.background;
-  const tableOddColor = themeTokens['bg-odd-light'] || palette.background;
+  const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
+  const tableOddColor = themeTokens.listItemOddRow || themeTokens['bg-odd-light'] || palette.background;
   const tableBorderColor = palette.border;
   const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
