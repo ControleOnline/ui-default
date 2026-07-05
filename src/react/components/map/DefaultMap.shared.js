@@ -517,7 +517,7 @@ export const buildOpenStreetMapHtml = ({
           }
 
           if (item && item.__mapRole === 'destination') {
-            return '#ef4444';
+            return '#c10015';
           }
 
           if (item && item.__mapRole === 'user') {
