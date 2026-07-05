@@ -1,8 +1,13 @@
 const React = require('react');
-const ReactDOMServer = require('react-dom/server');
+const renderer = require('react-test-renderer');
 const {jest} = require('@jest/globals');
 
-const {beforeEach, describe, expect, it} = global;
+const {afterEach, beforeEach, describe, expect, it} = global;
+
+global.IS_REACT_ACT_ENVIRONMENT = true;
+
+let mockStores = {};
+let consoleErrorSpy = null;
 
 jest.mock('@store', () => ({
   useStore: jest.fn(name => {
@@ -10,49 +15,148 @@ jest.mock('@store', () => ({
       return {
         getters: {
           colors: {
+            inputErrorBackground: '#FEF2F2',
+            inputErrorBorder: '#DC2626',
+            inputErrorText: '#B91C1C',
+            modalBackground: '#FFFFFF',
+            modalBorder: '#DC2626',
+            modalCloseIcon: '#B91C1C',
+            modalOverlay: 'rgba(15, 23, 42, 0.55)',
+            modalText: '#334155',
             primary: '#0EA5E9',
+            textDanger: '#DC2626',
           },
         },
       };
     }
 
-    return {getters: {}};
+    return mockStores[name] || {actions: {}, getters: {}};
   }),
+  useStores: jest.fn(selector =>
+    (typeof selector === 'function' ? selector(mockStores) : mockStores),
+  ),
 }));
 
-jest.mock('react-native', () => ({
-  StyleSheet: {
-    create: styles => styles,
-  },
-  Text: props => React.createElement('text', null, props.children),
-  TouchableOpacity: props => React.createElement('touchable-opacity', props, props.children),
-  View: props => React.createElement('view', null, props.children),
-}));
+jest.mock('react-native', () => {
+  const React = require('react');
+  const createComponent = name => props =>
+    React.createElement(name, props, props.children);
+
+  return {
+    Modal: props => React.createElement('modal', props, props.children),
+    Pressable: props => React.createElement('pressable', props, props.children),
+    StyleSheet: {
+      create: styles => styles,
+    },
+    Text: createComponent('text'),
+    TouchableOpacity: createComponent('touchable-opacity'),
+    View: createComponent('view'),
+  };
+});
 
 const DefaultErrors =
   require('../../../../react/components/errors/DefaultErrors').default;
 
+const getTextNodes = tree =>
+  tree.root
+    .findAllByType('text')
+    .map(node => (Array.isArray(node.children) ? node.children.join('') : ''))
+    .filter(Boolean);
+
 describe('DefaultErrors', () => {
   beforeEach(() => {
-    global.t = {
-      t: jest.fn(),
+    jest.useFakeTimers();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockStores = {
+      orders: {
+        actions: {
+          setError: jest.fn(),
+        },
+        getters: {
+          error: 'Falha ao salvar.',
+        },
+      },
     };
   });
 
-  it('renders the title, resolved error and retry action', () => {
-    const markup = ReactDOMServer.renderToStaticMarkup(
-      React.createElement(DefaultErrors, {
-        error: {
-          message: 'Falha ao salvar.',
-        },
-        title: 'Nao foi possivel concluir',
-        onRetry: jest.fn(),
-        retryLabel: 'Tentar novamente',
-      }),
+  afterEach(() => {
+    if (consoleErrorSpy) {
+      consoleErrorSpy.mockRestore();
+      consoleErrorSpy = null;
+    }
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('renders the store error in a popup and clears the store when closed', () => {
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultErrors, {
+          store: 'orders',
+          title: 'Nao foi possivel concluir',
+        }),
+      );
+    });
+
+    expect(tree.root.findByType('modal').props.visible).toBe(true);
+    expect(getTextNodes(tree)).toEqual(
+      expect.arrayContaining([
+        'Nao foi possivel concluir',
+        'Falha ao salvar.',
+        '×',
+      ]),
     );
 
-    expect(markup).toContain('Nao foi possivel concluir');
-    expect(markup).toContain('Falha ao salvar.');
-    expect(markup).toContain('Tentar novamente');
+    const closeButton = tree.root.findByProps({testID: 'default-errors-close'});
+
+    renderer.act(() => {
+      closeButton.props.onPress();
+    });
+
+    expect(mockStores.orders.actions.setError).toHaveBeenCalledWith('');
+    expect(tree.toJSON()).toBeNull();
+  });
+
+  it('renders an explicit popup even without a store binding', () => {
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultErrors, {
+          title: 'Pedido nao informado.',
+        }),
+      );
+    });
+
+    expect(tree.root.findByType('modal').props.visible).toBe(true);
+    expect(getTextNodes(tree)).toEqual(
+      expect.arrayContaining([
+        'Pedido nao informado.',
+        '×',
+      ]),
+    );
+  });
+
+  it('auto closes after five seconds and clears the store error', () => {
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultErrors, {
+          store: 'orders',
+          title: 'Nao foi possivel concluir',
+        }),
+      );
+    });
+
+    renderer.act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    expect(mockStores.orders.actions.setError).toHaveBeenCalledWith('');
+    expect(tree.toJSON()).toBeNull();
   });
 });
