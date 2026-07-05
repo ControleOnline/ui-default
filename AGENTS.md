@@ -25,7 +25,9 @@
 
 ## Componentes de feedback
 - `StateStore` e o shell compartilhado para loading e saving de tela/seção.
+- O `mode` do `StateStore` e um preset generico do shell e pode variar conforme a tela; exemplos validos incluem `compact`, `display` e outros modos reais do fluxo.
 - `DefaultErrors` e o shell compartilhado para erro local/inline de tela ou tab.
+- `showError` continua sendo feedback transitório global; nao deve substituir `DefaultErrors` quando o erro for inline ou local.
 - Telas e componentes visuais nao devem usar `ActivityIndicator` direto quando o estado puder ser representado por `StateStore`.
 - O contrato de explicacao permanente continua sendo `DefaultTooltip`, sempre acionado por `?` e fora do corpo principal da tela.
 
