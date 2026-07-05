@@ -9,6 +9,7 @@ import {
   buildAndroidWebMapHtml,
   resolveWebViewBaseUrlForDomain,
 } from './DefaultNativeMap.shared';
+import {extractMapCoordinates} from './DefaultMap.shared';
 
 const getNativeMapComponents = () => {
   if (Platform.OS === 'android') {
@@ -241,8 +242,8 @@ export default function DefaultNativeMap({
   const pathCoordinates = useMemo(
     () =>
       (Array.isArray(paths) ? paths : []).flatMap(path => {
-        const from = getPositionFromAddressPayload(path?.from || path?.origin || path?.start);
-        const to = getPositionFromAddressPayload(path?.to || path?.destination || path?.end);
+        const from = extractMapCoordinates(path?.from || path?.origin || path?.start);
+        const to = extractMapCoordinates(path?.to || path?.destination || path?.end);
 
         return [from, to].filter(Boolean);
       }),
@@ -541,8 +542,8 @@ export default function DefaultNativeMap({
       ) : null}
       {Polyline && Array.isArray(paths)
         ? paths.map(path => {
-            const from = getPositionFromAddressPayload(path?.from || path?.origin || path?.start);
-            const to = getPositionFromAddressPayload(path?.to || path?.destination || path?.end);
+            const from = extractMapCoordinates(path?.from || path?.origin || path?.start);
+            const to = extractMapCoordinates(path?.to || path?.destination || path?.end);
 
             if (!from || !to) {
               return null;
