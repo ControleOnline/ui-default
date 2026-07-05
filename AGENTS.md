@@ -23,6 +23,12 @@
 - O `get` do store default pode preservar o `item` atual durante refresh quando receber `__storeMeta.preserveItem = true`; use esse modo quando a tela precisa atualizar o registro sem desmontar o detalhe em exibição.
 - Explicacoes permanentes de tela devem sair do corpo principal e ir para o `DefaultTooltip`, acionado por `?`, quando houver contexto necessario para o usuario.
 
+## Componentes de feedback
+- `StateStore` e o shell compartilhado para loading e saving de tela/seção.
+- `DefaultErrors` e o shell compartilhado para erro local/inline de tela ou tab.
+- Telas e componentes visuais nao devem usar `ActivityIndicator` direto quando o estado puder ser representado por `StateStore`.
+- O contrato de explicacao permanente continua sendo `DefaultTooltip`, sempre acionado por `?` e fora do corpo principal da tela.
+
 ## Regra de uso
 - Telas antigas devem ser simplificadas para passar o store e apenas as excecoes declarativas que o store nao cobre.
 - Se a listagem precisa de outra regra de exibicao, a primeira opcao e mover essa regra para `columns` ou para o store correspondente.
