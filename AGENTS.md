@@ -21,6 +21,7 @@
 - O modo controlado continua existindo apenas para excecoes reais de integracao; o padrao do sistema e o modo store-driven.
 - Loadings e erros devem seguir o fluxo central do sistema, sem banners ou estados paralelos na tela.
 - O `get` do store default pode preservar o `item` atual durante refresh quando receber `__storeMeta.preserveItem = true`; use esse modo quando a tela precisa atualizar o registro sem desmontar o detalhe em exibição.
+- Explicacoes permanentes de tela devem sair do corpo principal e ir para o `DefaultTooltip`, acionado por `?`, quando houver contexto necessario para o usuario.
 
 ## Regra de uso
 - Telas antigas devem ser simplificadas para passar o store e apenas as excecoes declarativas que o store nao cobre.
