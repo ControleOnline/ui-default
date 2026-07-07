@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
-import { useStore } from '@store';
+import { useStore, useStores } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
@@ -124,6 +124,58 @@ const normalizeCollectionItems = response => {
   if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
 
   return [];
+};
+
+const resolveListStoreName = list =>
+  normalizeText(list).split('/')[0] || '';
+
+const resolveRuntimeOptionKey = value => {
+  const normalizedOption = normalizeOptionKey(value);
+  if (normalizedOption) return normalizedOption;
+
+  return normalizeId(value?.id || value?.['@id'] || value?.value || '');
+};
+
+const mergeOptionItems = (...groups) => {
+  const merged = [];
+  const seen = new Set();
+
+  groups.forEach(group => {
+    (Array.isArray(group) ? group : []).forEach(item => {
+      const optionKey = resolveRuntimeOptionKey(item);
+      if (!optionKey || seen.has(optionKey)) return;
+
+      seen.add(optionKey);
+      merged.push(item);
+    });
+  });
+
+  return merged;
+};
+
+const buildListStoreRequestParams = (storeName, currentCompany) => {
+  const companyId = currentCompany?.id;
+  const baseParams = {
+    itemsPerPage: 50,
+  };
+
+  if (!companyId) return baseParams;
+
+  if (storeName === 'people') {
+    return {
+      ...baseParams,
+      'link.company': `/people/${companyId}`,
+    };
+  }
+
+  if (['categories', 'wallet', 'paymentType', 'walletPaymentType'].includes(storeName)) {
+    return {
+      ...baseParams,
+      people: companyId,
+    };
+  }
+
+  return baseParams;
 };
 
 const resolveHasMore = ({ hasMore, dataLength, totalItems }) => {
@@ -424,6 +476,7 @@ const DefaultTable = ({
   const store = useStore(storeName);
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
+  const allStores = typeof useStores === 'function' ? useStores(state => state) : null;
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
@@ -432,6 +485,7 @@ const DefaultTable = ({
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const endReachedLockRef = useRef(false);
+  const loadedListStoresRef = useRef(new Set());
   const previousPaginationStateRef = useRef({
     dataLength: Array.isArray(data) ? data.length : 0,
     filtersKey: JSON.stringify(filters || {}),
@@ -714,6 +768,78 @@ const DefaultTable = ({
   const resolvedData = autoMode
     ? (autoHasLoaded && Array.isArray(store?.getters?.items) ? store.getters.items : [])
     : (Array.isArray(data) ? data : []);
+  const listStoreNames = useMemo(
+    () => Array.from(new Set(
+      columnsForTable
+        .map(column => resolveListStoreName(column?.list))
+        .filter(Boolean),
+    )),
+    [columnsForTable],
+  );
+  const runtimeOptionRows = useMemo(
+    () => {
+      const rows = Array.isArray(resolvedData) ? resolvedData : [];
+
+      return columnsForTable.reduce((acc, column) => {
+        const fieldName = getColumnKey(column);
+        if (!fieldName || !column?.list) return acc;
+
+        acc[fieldName] = rows
+          .map(row => row?.[fieldName])
+          .filter(Boolean);
+
+        return acc;
+      }, {});
+    },
+    [columnsForTable, resolvedData],
+  );
+  const getRuntimeOptionsForColumn = useCallback(
+    column => {
+      const providedOptions = getOptionsForColumn?.(column) || [];
+      const listStoreName = resolveListStoreName(column?.list);
+      const storeOptions = listStoreName
+        ? allStores?.[listStoreName]?.getters?.items || []
+        : [];
+      const rowOptions = runtimeOptionRows[getColumnKey(column)] || [];
+
+      return mergeOptionItems(providedOptions, storeOptions, rowOptions);
+    },
+    [allStores, getOptionsForColumn, runtimeOptionRows],
+  );
+
+  useEffect(() => {
+    if (!autoMode || !isFocused || !currentCompany?.id) return;
+
+    listStoreNames.forEach(listStoreName => {
+      const loadKey = `${currentCompany.id}:${listStoreName}`;
+      if (loadedListStoresRef.current.has(loadKey)) {
+        return;
+      }
+
+      const listStore = allStores?.[listStoreName];
+      const listActions = listStore?.actions || {};
+      const listGetters = listStore?.getters || {};
+      const hasItems = Array.isArray(listGetters.items) && listGetters.items.length > 0;
+
+      if (hasItems || listGetters.isLoading === true || typeof listActions.getItems !== 'function') {
+        return;
+      }
+
+      loadedListStoresRef.current.add(loadKey);
+
+      const request = listActions.getItems(
+        buildListStoreRequestParams(listStoreName, currentCompany),
+      );
+
+      if (!request || typeof request.catch !== 'function') {
+        return;
+      }
+
+      request.catch(() => {
+        loadedListStoresRef.current.delete(loadKey);
+      });
+    });
+  }, [allStores, autoMode, currentCompany, isFocused, listStoreNames]);
   const tableMinimumWidth = useMemo(
     () =>
       tableColumns.reduce(
@@ -1106,7 +1232,7 @@ const DefaultTable = ({
           column={column}
           columns={columnsForTable}
           editing={isEditing}
-          getOptionsForColumn={getOptionsForColumn}
+          getOptionsForColumn={getRuntimeOptionsForColumn}
           onCancelEditing={clearEdit}
           onSave={value => saveCell(row, column, value)}
           onStartEditing={() => beginEdit(row, column)}
@@ -1125,7 +1251,7 @@ const DefaultTable = ({
         accentColor={resolvedAccentColor}
         column={column}
         filters={resolvedFilters}
-        getOptionsForColumn={getOptionsForColumn}
+        getOptionsForColumn={getRuntimeOptionsForColumn}
         onChange={updateFilter}
         storeName={storeName}
         style={getColumnStyle(column)}
@@ -1210,7 +1336,7 @@ const DefaultTable = ({
             containerStyle={options.containerStyle}
             displayValue={options.displayValue}
             editing={isEditing}
-            getOptionsForColumn={getOptionsForColumn}
+            getOptionsForColumn={getRuntimeOptionsForColumn}
             inputStyle={options.inputStyle}
             label={options.label}
             numberOfLines={options.numberOfLines}
@@ -1241,7 +1367,7 @@ const DefaultTable = ({
       columnsForTable,
       editingCell,
       getColumnByField,
-      getOptionsForColumn,
+      getRuntimeOptionsForColumn,
       openEditModal,
       onRowPress,
       saveCell,
@@ -1399,7 +1525,7 @@ const DefaultTable = ({
               accentColor={resolvedAccentColor}
               actions={actions}
               columns={isCreate ? columnsForTable : editableColumns}
-              getOptionsForColumn={getOptionsForColumn}
+              getOptionsForColumn={getRuntimeOptionsForColumn}
               mode={formMode}
               onCancel={closeEditModal}
               onSaved={(savedItem, originalRow) => {
