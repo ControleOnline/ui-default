@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -97,13 +98,14 @@ const CompactFilterSelector = ({
   title = '',
 }) => {
   const [visible, setVisible] = useState(false);
+  const { width: windowWidth } = useWindowDimensions();
   const resolvedTheme = useMemo(
     () => buildTheme({ accentColor, themeColors }),
     [accentColor, themeColors],
   );
   const styles = useMemo(
-    () => createStyles(resolvedTheme, dense),
-    [dense, resolvedTheme],
+    () => createStyles(resolvedTheme, dense, windowWidth),
+    [dense, resolvedTheme, windowWidth],
   );
   const storeFieldLabel = resolveStoreFieldLabel({
     fallbackLabel: labelCaption || title,

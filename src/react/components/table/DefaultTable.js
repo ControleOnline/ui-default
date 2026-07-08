@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
-import { useStore } from '@store';
+import { getAllStores, useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
@@ -29,6 +29,7 @@ import {
   normalizeId,
   normalizeOptionKey,
   normalizeText,
+  resolveStoreNameFromList,
   resolveCellText,
   resolveEditValue,
 } from '../inputs/defaultInputUtils';
@@ -48,12 +49,16 @@ const IDENTITY_CELL_MIN_WIDTH = 76;
 const MONEY_CELL_MIN_WIDTH = 132;
 const ACTIONS_CELL_WIDTH = 60;
 const SUMMARY_OPERATIONS = ['sum', 'count', 'avg', 'min', 'max'];
+const LIST_OPTIONS_PAGE_SIZE = 100;
 
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
   column?.show !== false &&
   column?.visible !== false &&
   column?.table !== false;
+
+const resolveListActionName = list =>
+  normalizeText(list).split('/')[1] || 'getItems';
 
 const isObject = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -428,10 +433,12 @@ const DefaultTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [, setListOptionsVersion] = useState(0);
   const [savingCell, setSavingCell] = useState(null);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const endReachedLockRef = useRef(false);
+  const loadedListStoresRef = useRef(new Set());
   const previousPaginationStateRef = useRef({
     dataLength: Array.isArray(data) ? data.length : 0,
     filtersKey: JSON.stringify(filters || {}),
@@ -486,6 +493,14 @@ const DefaultTable = ({
   const storeActions = store?.actions || {};
   const storeColumns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
+  const listColumnsSignature = useMemo(
+    () =>
+      columnsForTable
+        .filter(column => normalizeText(column?.list))
+        .map(column => `${getColumnKey(column)}:${normalizeText(column.list)}`)
+        .join('|'),
+    [columnsForTable],
+  );
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
   const initialFiltersSeed = autoMode
@@ -509,6 +524,60 @@ const DefaultTable = ({
   const resolvedSort = autoMode ? autoSort : sort;
   const resolvedFilters = autoMode ? autoFilters : (filters || {});
   const resolvedSearchValue = normalizeText(resolvedFilters?.[searchKey]);
+
+  useEffect(() => {
+    if (!listColumnsSignature) return;
+
+    const stores = getAllStores?.() || {};
+    const loadPromises = [];
+
+    columnsForTable.forEach(column => {
+      if (!column?.list) return;
+
+      const explicitOptions = getOptionsForColumn?.(column);
+      if (Array.isArray(explicitOptions) && explicitOptions.length > 0) return;
+
+      const listStoreName = resolveStoreNameFromList(column.list);
+      const actionName = resolveListActionName(column.list);
+      const listStore = stores?.[listStoreName];
+      const listAction = listStore?.actions?.[actionName];
+
+      if (!listStoreName || typeof listAction !== 'function') return;
+      if (Array.isArray(listStore?.getters?.items) && listStore.getters.items.length > 0) return;
+
+      const loadKey = `${listStoreName}:${actionName}:${currentCompany?.id || ''}`;
+      if (loadedListStoresRef.current.has(loadKey)) return;
+
+      loadedListStoresRef.current.add(loadKey);
+      loadPromises.push(
+        Promise.resolve(
+          listAction({
+            itemsPerPage: LIST_OPTIONS_PAGE_SIZE,
+            __storeMeta: {
+              dedupeKey: `default-table-list-options:${loadKey}`,
+              skipSystemError: true,
+            },
+          }),
+        ).catch(() => {
+          loadedListStoresRef.current.delete(loadKey);
+        }),
+      );
+    });
+
+    if (loadPromises.length === 0) return;
+
+    let cancelled = false;
+    Promise.allSettled(loadPromises).then(() => {
+      if (!cancelled) {
+        setListOptionsVersion(version => version + 1);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [columnsForTable, currentCompany?.id, getOptionsForColumn, listColumnsSignature]);
+
   const buildRequestQuery = useCallback(
     (page, append = false) => {
       const query = {
