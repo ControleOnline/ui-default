@@ -60,6 +60,20 @@ const shouldIncludeColumn = column =>
 const resolveListActionName = list =>
   normalizeText(list).split('/')[1] || 'getItems';
 
+const COMPANY_SCOPED_LIST_STORES = new Set([
+  'categories',
+  'paymentType',
+  'wallet',
+]);
+
+const resolveListLoadParams = ({currentCompanyId, listStoreName}) => {
+  if (!currentCompanyId || !COMPANY_SCOPED_LIST_STORES.has(listStoreName)) {
+    return {};
+  }
+
+  return {people: currentCompanyId};
+};
+
 const isObject = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -542,16 +556,29 @@ const DefaultTable = ({
       const listStore = stores?.[listStoreName];
       const listAction = listStore?.actions?.[actionName];
 
-      if (!listStoreName || typeof listAction !== 'function') return;
-      if (Array.isArray(listStore?.getters?.items) && listStore.getters.items.length > 0) return;
+      const listLoadParams = resolveListLoadParams({
+        currentCompanyId: currentCompany?.id,
+        listStoreName,
+      });
+      const isCompanyScopedList = Object.keys(listLoadParams).length > 0;
 
-      const loadKey = `${listStoreName}:${actionName}:${currentCompany?.id || ''}`;
+      if (!listStoreName || typeof listAction !== 'function') return;
+      if (
+        !isCompanyScopedList &&
+        Array.isArray(listStore?.getters?.items) &&
+        listStore.getters.items.length > 0
+      ) {
+        return;
+      }
+
+      const loadKey = `${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
       if (loadedListStoresRef.current.has(loadKey)) return;
 
       loadedListStoresRef.current.add(loadKey);
       loadPromises.push(
         Promise.resolve(
           listAction({
+            ...listLoadParams,
             itemsPerPage: LIST_OPTIONS_PAGE_SIZE,
             __storeMeta: {
               dedupeKey: `default-table-list-options:${loadKey}`,

@@ -116,16 +116,30 @@ export const resolveOptionLabel = (column, option, storeName = '') => {
 
 export const resolveStoreNameFromList = list => normalizeText(list).split('/')[0] || '';
 
-export const mapOptions = (column, items = [], storeName = '') =>
-  (Array.isArray(items) ? items : []).map(item => ({
-    key: normalizeOptionKey(
+export const mapOptions = (column, items = [], storeName = '') => {
+  const seenKeys = new Set();
+  const options = [];
+
+  (Array.isArray(items) ? items : []).forEach(item => {
+    const formatted =
       typeof column?.formatList === 'function'
         ? column.formatList(item, null, column)
-        : item,
-    ) || normalizeOptionKey(item),
-    label: resolveOptionLabel(column, item, storeName) || '-',
-    raw: item,
-  }));
+        : item;
+    const key = normalizeOptionKey(formatted) || normalizeOptionKey(item);
+    const dedupeKey = key || normalizeText(resolveOptionLabel(column, item, storeName)).toLowerCase();
+
+    if (dedupeKey && seenKeys.has(dedupeKey)) return;
+    if (dedupeKey) seenKeys.add(dedupeKey);
+
+    options.push({
+      key,
+      label: resolveOptionLabel(column, item, storeName) || '-',
+      raw: item,
+    });
+  });
+
+  return options;
+};
 
 export const buildOptionsFromColumn = (column, getOptionsForColumn = null, storeName = '') => {
   const explicitOptions = getOptionsForColumn?.(column);
