@@ -34,8 +34,10 @@ import {
   resolveEditValue,
 } from '../inputs/defaultInputUtils';
 import {
+  persistTableSortPreference,
   persistTableViewModePreference,
   persistVisibleColumnsPreference,
+  resolveStoredTableSortPreference,
   resolveStoredTableViewModePreference,
   resolveStoredVisibleColumnsPreference,
   sanitizeVisibleColumnsPreference,
@@ -330,6 +332,50 @@ const resolveDefaultSort = columns => {
   return null;
 };
 
+const sanitizeStoredSortPreference = ({
+  columns = [],
+  fallbackSort = null,
+  sort = null,
+}) => {
+  const normalizedFallback =
+    fallbackSort &&
+    typeof fallbackSort === 'object' &&
+    typeof fallbackSort.field === 'string' &&
+    fallbackSort.field.trim()
+      ? {
+          direction: fallbackSort.direction === 'asc' ? 'asc' : 'desc',
+          field: fallbackSort.field.trim(),
+        }
+      : null;
+
+  if (
+    !sort ||
+    typeof sort !== 'object' ||
+    typeof sort.field !== 'string' ||
+    !sort.field.trim()
+  ) {
+    return normalizedFallback;
+  }
+
+  const normalizedDirection = sort.direction === 'asc' ? 'asc' : 'desc';
+  const normalizedField = sort.field.trim();
+  const sortableFields = new Set(
+    (Array.isArray(columns) ? columns : [])
+      .filter(isSortableColumn)
+      .map(column => getSortField(column))
+      .filter(Boolean),
+  );
+
+  if (!sortableFields.has(normalizedField)) {
+    return normalizedFallback;
+  }
+
+  return {
+    direction: normalizedDirection,
+    field: normalizedField,
+  };
+};
+
 const readValueByPath = (object, path) => {
   if (!object || !path) return object;
 
@@ -544,7 +590,16 @@ const DefaultTable = ({
     () => resolveDefaultSort(columnsForTable),
     [columnsForTable],
   );
-  const [autoSort, setAutoSort] = useState(() => sort || defaultSortSeed || null);
+  const storedSortSeed = useMemo(
+    () =>
+      sanitizeStoredSortPreference({
+        columns: columnsForTable,
+        fallbackSort: sort || defaultSortSeed || null,
+        sort: resolveStoredTableSortPreference(visibleColumnsPreferenceKey),
+      }),
+    [columnsForTable, defaultSortSeed, sort, visibleColumnsPreferenceKey],
+  );
+  const [autoSort, setAutoSort] = useState(() => storedSortSeed);
   const [autoHasLoaded, setAutoHasLoaded] = useState(false);
   const [autoLoading, setAutoLoading] = useState(false);
   const [autoLoadingMore, setAutoLoadingMore] = useState(false);
@@ -765,6 +820,16 @@ const DefaultTable = ({
   useEffect(() => {
     setViewMode(viewModeSeed);
   }, [viewModeSeed]);
+
+  useEffect(() => {
+    if (!autoMode) return;
+
+    setAutoSort(prev =>
+      stableSerialize(prev) === stableSerialize(storedSortSeed)
+        ? prev
+        : storedSortSeed,
+    );
+  }, [autoMode, storedSortSeed]);
 
   useEffect(() => {
     if (!autoMode) return;
@@ -1060,20 +1125,31 @@ const DefaultTable = ({
       resolvedSort?.field === fieldName && resolvedSort?.direction === 'asc'
         ? 'desc'
         : 'asc';
+    const nextSort = {
+      direction: nextDirection,
+      field: fieldName,
+    };
+
+    if (visibleColumnsPreferenceKey) {
+      persistTableSortPreference(
+        visibleColumnsPreferenceKey,
+        nextSort,
+      );
+    }
 
     if (autoMode) {
-      setAutoSort({
-        direction: nextDirection,
-        field: fieldName,
-      });
+      setAutoSort(nextSort);
       return;
     }
 
-    onSortChange?.({
-      direction: nextDirection,
-      field: fieldName,
-    });
-  }, [autoMode, onSortChange, resolvedSort?.direction, resolvedSort?.field]);
+    onSortChange?.(nextSort);
+  }, [
+    autoMode,
+    onSortChange,
+    resolvedSort?.direction,
+    resolvedSort?.field,
+    visibleColumnsPreferenceKey,
+  ]);
 
   const openEditModal = useCallback(row => {
     if (typeof onEditRow === 'function') {
