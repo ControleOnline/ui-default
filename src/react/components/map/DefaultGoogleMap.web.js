@@ -12,6 +12,7 @@ const GOOGLE_MAPS_CALLBACK_NAME = '__shopGoogleMapsApiReady__';
 const GOOGLE_MAPS_LOAD_TIMEOUT_MS = 15000;
 const GOOGLE_MAPS_POLL_INTERVAL_MS = 100;
 const ROUTE_COLOR = '#0EA5E9';
+const markerIconUrlValidationCache = new Map();
 
 const escapeHtml = value =>
   String(value || '')
@@ -310,6 +311,41 @@ const loadGoogleMapsApi = apiKey => {
   return window.__shopGoogleMapsPromise;
 };
 
+const resolveMarkerIconUrl = url => {
+  const normalizedUrl = String(url || '').trim();
+
+  if (
+    !normalizedUrl ||
+    typeof window === 'undefined' ||
+    typeof window.Image !== 'function'
+  ) {
+    return Promise.resolve('');
+  }
+
+  if (markerIconUrlValidationCache.has(normalizedUrl)) {
+    return markerIconUrlValidationCache.get(normalizedUrl);
+  }
+
+  const validationPromise = new Promise(resolve => {
+    const image = new window.Image();
+    const finalize = value => {
+      const resolvedValue = String(value || '').trim();
+      markerIconUrlValidationCache.set(
+        normalizedUrl,
+        Promise.resolve(resolvedValue),
+      );
+      resolve(resolvedValue);
+    };
+
+    image.onload = () => finalize(normalizedUrl);
+    image.onerror = () => finalize('');
+    image.src = normalizedUrl;
+  });
+
+  markerIconUrlValidationCache.set(normalizedUrl, validationPromise);
+  return validationPromise;
+};
+
 const fitMapToBounds = ({google, map, markerCount, userCoordinates}) => {
   const bounds = new google.maps.LatLngBounds();
 
@@ -409,28 +445,40 @@ export default function DefaultGoogleMap({
             })
           : null;
         let activeRouteRequestId = 0;
-        const resolveMarkerPayload = item => {
+        const resolveMarkerPayload = async item => {
           const latitude = Number(item?.latitude);
           const longitude = Number(item?.longitude);
+          const markerIconUrl = await resolveMarkerIconUrl(item?.markerIconUrl);
+          const resolvedItem = markerIconUrl
+            ? {
+                ...item,
+                markerIconUrl,
+              }
+            : item?.markerIconUrl
+              ? {
+                  ...item,
+                  markerIconUrl: '',
+                }
+              : item;
 
           if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-            return Promise.resolve({
-              item,
+            return {
+              item: resolvedItem,
               position: {
                 lat: latitude,
                 lng: longitude,
               },
-            });
+            };
           }
 
-          if (!item?.geocodeQuery) {
-            return Promise.resolve(null);
+          if (!resolvedItem?.geocodeQuery) {
+            return null;
           }
 
           const geocoder = new google.maps.Geocoder();
 
           return new Promise(resolve => {
-            geocoder.geocode({address: item.geocodeQuery}, (results, status) => {
+            geocoder.geocode({address: resolvedItem.geocodeQuery}, (results, status) => {
               const location = results?.[0]?.geometry?.location;
 
               if (status !== 'OK' || !location) {
@@ -450,7 +498,7 @@ export default function DefaultGoogleMap({
               }
 
               resolve({
-                item,
+                item: resolvedItem,
                 position: {
                   lat: resolvedLatitude,
                   lng: resolvedLongitude,

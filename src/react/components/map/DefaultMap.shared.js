@@ -545,10 +545,68 @@ export const buildOpenStreetMapHtml = ({
           }).addTo(map);
         }
 
+        function resolveMarkerIcon(item) {
+          var iconUrl = item && item.markerIconUrl ? String(item.markerIconUrl).trim() : '';
+
+          if (!iconUrl) {
+            return Promise.resolve(null);
+          }
+
+          return new Promise(function (resolve) {
+            var image = new Image();
+
+            image.onload = function () {
+              resolve(
+                L.icon({
+                  iconUrl: iconUrl,
+                  iconSize: [42, 42],
+                  iconAnchor: [21, 42],
+                  popupAnchor: [0, -36],
+                }),
+              );
+            };
+
+            image.onerror = function () {
+              resolve(null);
+            };
+
+            image.src = iconUrl;
+          });
+        }
+
+        function createMapMarker(map, point, item, color) {
+          if (
+            item &&
+            (item.__mapRole === 'user' ||
+              item.__mapRole === 'origin' ||
+              item.__mapRole === 'destination')
+          ) {
+            return Promise.resolve(createCircleMarker(map, point, item, color));
+          }
+
+          return resolveMarkerIcon(item).then(function (icon) {
+            if (icon) {
+              return L.marker([point.lat, point.lng], {
+                icon: icon,
+              }).addTo(map);
+            }
+
+            return L.marker([point.lat, point.lng]).addTo(map);
+          });
+        }
+
         try {
           if (!window.L) {
             showError('Nao foi possivel carregar o mapa.');
             throw new Error('map-library-missing');
+          }
+
+          if (L.Icon && L.Icon.Default && typeof L.Icon.Default.mergeOptions === 'function') {
+            L.Icon.Default.mergeOptions({
+              iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+              iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+              shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            });
           }
 
           var map = L.map('map', {
@@ -580,115 +638,120 @@ export const buildOpenStreetMapHtml = ({
             addPointToBounds(bounds, userPoint);
           }
 
-          markers.forEach(function (item) {
-            var point = toPoint(item);
+          Promise.all(
+            markers.map(function (item) {
+              var point = toPoint(item);
 
-            if (!point) {
-              return;
-            }
+              if (!point) {
+                return Promise.resolve(null);
+              }
 
-            var color = resolveCircleColor(item, '#64748b');
-            var marker = createCircleMarker(map, point, item, color);
-            marker.bindPopup(buildPopupContent(item));
-            addPointToBounds(bounds, point);
-          });
+              var color = resolveCircleColor(item, '#64748b');
 
-          function resolveRouteCoordinates(path) {
-            var from = toPoint(path && (path.from || path.origin || path.start));
-            var to = toPoint(path && (path.to || path.destination || path.end));
-
-            if (!from || !to) {
-              return Promise.resolve(null);
-            }
-
-            var routeUrl =
-              'https://router.project-osrm.org/route/v1/driving/' +
-              from.lng +
-              ',' +
-              from.lat +
-              ';' +
-              to.lng +
-              ',' +
-              to.lat +
-              '?overview=full&geometries=geojson&steps=false';
-
-            return fetch(routeUrl)
-              .then(function (response) {
-                if (!response || !response.ok) {
-                  throw new Error('route-unavailable');
-                }
-
-                return response.json();
-              })
-              .then(function (payload) {
-                var geometry = payload && payload.routes && payload.routes[0] && payload.routes[0].geometry;
-                var coordinates = geometry && Array.isArray(geometry.coordinates)
-                  ? geometry.coordinates
-                      .map(function (pair) {
-                        return {
-                          lat: Number(pair && pair[1]),
-                          lng: Number(pair && pair[0]),
-                        };
-                      })
-                      .filter(function (point) {
-                        return Number.isFinite(point.lat) && Number.isFinite(point.lng);
-                      })
-                  : [];
-
-                return {
-                  path: path,
-                  coordinates: coordinates.length > 1 ? coordinates : [from, to],
-                };
-              })
-              .catch(function () {
-                return {
-                  path: path,
-                  coordinates: [from, to],
-                };
+              return createMapMarker(map, point, item, color).then(function (marker) {
+                marker.bindPopup(buildPopupContent(item));
+                addPointToBounds(bounds, point);
+                return marker;
               });
-          }
+            }),
+          ).then(function () {
+            function resolveRouteCoordinates(path) {
+              var from = toPoint(path && (path.from || path.origin || path.start));
+              var to = toPoint(path && (path.to || path.destination || path.end));
 
-          Promise.all(routes.map(resolveRouteCoordinates)).then(function (resolvedRoutes) {
-            (resolvedRoutes || [])
-              .filter(Boolean)
-              .forEach(function (entry) {
-                var coordinates = Array.isArray(entry.coordinates) ? entry.coordinates : [];
+              if (!from || !to) {
+                return Promise.resolve(null);
+              }
 
-                if (coordinates.length < 2) {
-                  return;
-                }
+              var routeUrl =
+                'https://router.project-osrm.org/route/v1/driving/' +
+                from.lng +
+                ',' +
+                from.lat +
+                ';' +
+                to.lng +
+                ',' +
+                to.lat +
+                '?overview=full&geometries=geojson&steps=false';
 
-                L.polyline(
-                  coordinates.map(function (point) {
-                    return [point.lat, point.lng];
-                  }),
-                  {
-                    color:
-                      entry.path && entry.path.color
-                        ? entry.path.color
-                        : window.__SHOP_MAP_ROUTE_COLOR__ || '#0ea5e9',
-                    weight: 4,
-                    opacity: 0.78,
-                  },
-                ).addTo(map);
+              return fetch(routeUrl)
+                .then(function (response) {
+                  if (!response || !response.ok) {
+                    throw new Error('route-unavailable');
+                  }
 
-                coordinates.forEach(function (point) {
-                  addPointToBounds(bounds, point);
+                  return response.json();
+                })
+                .then(function (payload) {
+                  var geometry = payload && payload.routes && payload.routes[0] && payload.routes[0].geometry;
+                  var coordinates = geometry && Array.isArray(geometry.coordinates)
+                    ? geometry.coordinates
+                        .map(function (pair) {
+                          return {
+                            lat: Number(pair && pair[1]),
+                            lng: Number(pair && pair[0]),
+                          };
+                        })
+                        .filter(function (point) {
+                          return Number.isFinite(point.lat) && Number.isFinite(point.lng);
+                        })
+                    : [];
+
+                  return {
+                    path: path,
+                    coordinates: coordinates.length > 1 ? coordinates : [from, to],
+                  };
+                })
+                .catch(function () {
+                  return {
+                    path: path,
+                    coordinates: [from, to],
+                  };
                 });
-              });
-
-            if (!bounds.isValid()) {
-              map.setView([-14.235004, -51.92528], 4);
-            } else {
-              map.fitBounds(bounds.pad(0.2), {
-                padding: [32, 32],
-                animate: false,
-              });
             }
 
-            setTimeout(function () {
-              map.invalidateSize();
-            }, 0);
+            Promise.all(routes.map(resolveRouteCoordinates)).then(function (resolvedRoutes) {
+              (resolvedRoutes || [])
+                .filter(Boolean)
+                .forEach(function (entry) {
+                  var coordinates = Array.isArray(entry.coordinates) ? entry.coordinates : [];
+
+                  if (coordinates.length < 2) {
+                    return;
+                  }
+
+                  L.polyline(
+                    coordinates.map(function (point) {
+                      return [point.lat, point.lng];
+                    }),
+                    {
+                      color:
+                        entry.path && entry.path.color
+                          ? entry.path.color
+                          : window.__SHOP_MAP_ROUTE_COLOR__ || '#0ea5e9',
+                      weight: 4,
+                      opacity: 0.78,
+                    },
+                  ).addTo(map);
+
+                  coordinates.forEach(function (point) {
+                    addPointToBounds(bounds, point);
+                  });
+                });
+
+              if (!bounds.isValid()) {
+                map.setView([-14.235004, -51.92528], 4);
+              } else {
+                map.fitBounds(bounds.pad(0.2), {
+                  padding: [32, 32],
+                  animate: false,
+                });
+              }
+
+              setTimeout(function () {
+                map.invalidateSize();
+              }, 0);
+            });
           });
         } catch (error) {
           showError('Nao foi possivel carregar o mapa.');

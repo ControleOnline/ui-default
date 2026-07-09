@@ -1,10 +1,13 @@
 const {
   DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+  TABLE_SORT_PREFERENCES_KEY,
   TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY,
   TABLE_VIEW_MODE_PREFERENCES_KEY,
   buildDefaultVisibleColumns,
+  persistTableSortPreference,
   persistTableViewModePreference,
   persistVisibleColumnsPreference,
+  resolveStoredTableSortPreference,
   resolveStoredTableViewModePreference,
   resolveStoredVisibleColumnsPreference,
   sanitizeVisibleColumnsPreference,
@@ -140,6 +143,53 @@ describe('tableVisibleColumnsPreferences', () => {
       [TABLE_VIEW_MODE_PREFERENCES_KEY]: {
         'financialEntries:payables': 'cards',
         'financialEntries:receivables': 'table',
+      },
+    });
+  });
+
+  it('reads and writes the preferred sort by page', () => {
+    global.localStorage.setItem(
+      DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
+        [TABLE_SORT_PREFERENCES_KEY]: {
+          'financialEntries:payables': {
+            direction: 'asc',
+            field: 'price',
+          },
+        },
+      }),
+    );
+
+    expect(
+      resolveStoredTableSortPreference('financialEntries:payables'),
+    ).toEqual({
+      direction: 'asc',
+      field: 'price',
+    });
+
+    expect(
+      resolveStoredTableSortPreference('financialEntries:receivables'),
+    ).toBeNull();
+
+    persistTableSortPreference('financialEntries:receivables', {
+      direction: 'desc',
+      field: 'dueDate',
+    });
+
+    expect(
+      JSON.parse(
+        global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
+      ),
+    ).toEqual({
+      [TABLE_SORT_PREFERENCES_KEY]: {
+        'financialEntries:payables': {
+          direction: 'asc',
+          field: 'price',
+        },
+        'financialEntries:receivables': {
+          direction: 'desc',
+          field: 'dueDate',
+        },
       },
     });
   });

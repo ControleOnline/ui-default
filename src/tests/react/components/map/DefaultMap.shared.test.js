@@ -88,6 +88,8 @@ describe('DefaultMap.shared', () => {
           latitude: -23.55052,
           longitude: -46.633308,
           title: 'Origem',
+          markerIconUrl:
+            'https://app.lave-go.com/assets/src/assets/go_google_maps_pin.png',
         },
       ],
       paths: [
@@ -112,6 +114,13 @@ describe('DefaultMap.shared', () => {
     expect(html).toContain('leaflet');
     expect(html).toContain('window.__SHOP_MAP_MARKERS__');
     expect(html).toContain('Origem');
+    expect(html).toContain('markerIconUrl');
+    expect(html).toContain('resolveMarkerIcon');
+    expect(html).toContain('L.Icon.Default.mergeOptions');
+    expect(html).toContain('marker-icon.png');
+    expect(html).toContain("item.__mapRole === 'origin'");
+    expect(html).toContain("item.__mapRole === 'destination'");
+    expect(html).toContain('return L.marker([point.lat, point.lng]).addTo(map);');
     expect(html).toContain('window.__SHOP_MAP_PATHS__');
     expect(html).toContain('router.project-osrm.org');
   });

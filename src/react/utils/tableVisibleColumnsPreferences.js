@@ -1,5 +1,6 @@
 export const TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY = 'tableVisibleColumns';
 export const TABLE_VIEW_MODE_PREFERENCES_KEY = 'tableViewModes';
+export const TABLE_SORT_PREFERENCES_KEY = 'tableSorts';
 export const DEFAULT_TABLE_PREFERENCES_STORAGE_KEY = 'DefaultTablePreferences';
 
 const isPlainObject = value =>
@@ -144,6 +145,76 @@ export const persistTableViewModePreference = (
     [TABLE_VIEW_MODE_PREFERENCES_KEY]: {
       ...tableViewModes,
       [preferenceKey]: viewMode,
+    },
+  });
+};
+
+export const resolveStoredTableSortPreference = (preferenceKey = '') => {
+  if (!preferenceKey) {
+    return null;
+  }
+
+  const storedPreferences = readStoredPreferences();
+  const tableSorts = storedPreferences[TABLE_SORT_PREFERENCES_KEY];
+
+  if (!isPlainObject(tableSorts)) {
+    return null;
+  }
+
+  const resolvedSort = tableSorts[preferenceKey];
+
+  if (!isPlainObject(resolvedSort)) {
+    return null;
+  }
+
+  const direction =
+    resolvedSort.direction === 'asc' || resolvedSort.direction === 'desc'
+      ? resolvedSort.direction
+      : null;
+  const field =
+    typeof resolvedSort.field === 'string' && resolvedSort.field.trim()
+      ? resolvedSort.field.trim()
+      : '';
+
+  if (!direction || !field) {
+    return null;
+  }
+
+  return {
+    direction,
+    field,
+  };
+};
+
+export const persistTableSortPreference = (
+  preferenceKey = '',
+  sort = null,
+) => {
+  if (
+    !preferenceKey ||
+    !isPlainObject(sort) ||
+    (sort.direction !== 'asc' && sort.direction !== 'desc') ||
+    typeof sort.field !== 'string' ||
+    !sort.field.trim()
+  ) {
+    return;
+  }
+
+  const storedPreferences = readStoredPreferences();
+  const tableSorts = isPlainObject(
+    storedPreferences[TABLE_SORT_PREFERENCES_KEY],
+  )
+    ? storedPreferences[TABLE_SORT_PREFERENCES_KEY]
+    : {};
+
+  writeStoredPreferences({
+    ...storedPreferences,
+    [TABLE_SORT_PREFERENCES_KEY]: {
+      ...tableSorts,
+      [preferenceKey]: {
+        direction: sort.direction,
+        field: sort.field.trim(),
+      },
     },
   });
 };
