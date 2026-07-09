@@ -1,10 +1,12 @@
 # ui-default
 
 ## Escopo
+
 - Biblioteca base de componentes reutilizaveis do front.
 - `DefaultTable` e o shell canonico de listagens React deste sistema.
 
 ## Contrato do DefaultTable
+
 - A tela deve passar preferencialmente apenas `storeName` e contexto minimo, como `requestParams`, `onRowPress`, `renderCard`, `onAdd`, `onEdit` ou componentes extras realmente especificos.
 - O componente pode receber componentes de composicao para variacoes visuais, como `renderCard`, add personalizado, toolbar customizada, acoes auxiliares e modais de apoio; isso nao muda o contrato de que a listagem continua sendo responsabilidade do `DefaultTable`.
 - Quando `data` nao e informada e existe `storeName`, o `DefaultTable` trabalha em modo automatico e carrega os itens pelas actions do store.
@@ -24,6 +26,7 @@
 - Explicacoes permanentes de tela devem sair do corpo principal e ir para o `DefaultTooltip`, acionado por `?`, quando houver contexto necessario para o usuario.
 
 ## Componentes de feedback
+
 - `StateStore` e o shell compartilhado para loading e saving de tela/seção.
 - O `mode` do `StateStore` e um preset generico do shell e pode variar conforme a tela; exemplos validos incluem `compact`, `display` e outros modos reais do fluxo.
 - `DefaultErrors` e o shell compartilhado para erro local/inline de tela ou tab; ele lê o `error` dos stores informados, aparece como popup, auto-fecha em 5 segundos e limpa o erro do store ao ser fechado.
@@ -31,7 +34,14 @@
 - Telas e componentes visuais nao devem usar `ActivityIndicator` direto quando o estado puder ser representado por `StateStore`.
 - O contrato de explicacao permanente continua sendo `DefaultTooltip`, sempre acionado por `?` e fora do corpo principal da tela.
 
+## Arquivos e imagens
+
+- `DefaultFile` e o componente compartilhado para arquivos/imagens vindos do backend.
+- Quando a fonte for um arquivo de download do backend, o componente deve resolver a URL com `app-domain=<dominio configurado>` e enviar o mesmo valor em `headers` quando a plataforma permitir.
+- Telas que exibem logo, fundo, avatar, banner ou qualquer arquivo de empresa devem preferir `DefaultFile` em vez de `Image` direto quando o contrato vier do backend.
+
 ## Regra de uso
+
 - Telas antigas devem ser simplificadas para passar o store e apenas as excecoes declarativas que o store nao cobre.
 - Se a listagem precisa de outra regra de exibicao, a primeira opcao e mover essa regra para `columns` ou para o store correspondente.
 - Se duas telas repetem a mesma logica de listagem, a resposta e um componente default ou um ajuste no `DefaultTable`, nunca uma copia local do comportamento.
