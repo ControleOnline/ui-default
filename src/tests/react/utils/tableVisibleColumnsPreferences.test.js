@@ -1,5 +1,7 @@
 const {
   DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+  TABLE_SORT_DIRECTION_PREFERENCES_KEY,
+  TABLE_SORT_FIELD_PREFERENCES_KEY,
   TABLE_SORT_PREFERENCES_KEY,
   TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY,
   TABLE_VIEW_MODE_PREFERENCES_KEY,
@@ -151,11 +153,11 @@ describe('tableVisibleColumnsPreferences', () => {
     global.localStorage.setItem(
       DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
       JSON.stringify({
-        [TABLE_SORT_PREFERENCES_KEY]: {
-          'financialEntries:payables': {
-            direction: 'asc',
-            field: 'price',
-          },
+        [TABLE_SORT_FIELD_PREFERENCES_KEY]: {
+          'financialEntries:payables': 'price',
+        },
+        [TABLE_SORT_DIRECTION_PREFERENCES_KEY]: {
+          'financialEntries:payables': 'asc',
         },
       }),
     );
@@ -181,16 +183,41 @@ describe('tableVisibleColumnsPreferences', () => {
         global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
       ),
     ).toEqual({
+      [TABLE_SORT_FIELD_PREFERENCES_KEY]: {
+        'financialEntries:payables': 'price',
+        'financialEntries:receivables': 'dueDate',
+      },
+      [TABLE_SORT_DIRECTION_PREFERENCES_KEY]: {
+        'financialEntries:payables': 'asc',
+        'financialEntries:receivables': 'desc',
+      },
       [TABLE_SORT_PREFERENCES_KEY]: {
-        'financialEntries:payables': {
-          direction: 'asc',
-          field: 'price',
-        },
         'financialEntries:receivables': {
           direction: 'desc',
           field: 'dueDate',
         },
       },
+    });
+  });
+
+  it('keeps reading the legacy combined sort format when needed', () => {
+    global.localStorage.setItem(
+      DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
+        [TABLE_SORT_PREFERENCES_KEY]: {
+          'financialEntries:ownTransfers': {
+            direction: 'asc',
+            field: 'createdAt',
+          },
+        },
+      }),
+    );
+
+    expect(
+      resolveStoredTableSortPreference('financialEntries:ownTransfers'),
+    ).toEqual({
+      direction: 'asc',
+      field: 'createdAt',
     });
   });
 });

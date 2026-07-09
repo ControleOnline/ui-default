@@ -74,6 +74,25 @@ const resolveListLoadParams = ({currentCompanyId, listStoreName}) => {
   return {people: currentCompanyId};
 };
 
+const resolveColumnListLoadParams = ({column, currentCompanyId}) => {
+  const listStoreName = resolveStoreNameFromList(column?.list);
+  const companyScopedParams = resolveListLoadParams({
+    currentCompanyId,
+    listStoreName,
+  });
+  const customParams =
+    column?.listRequestParams &&
+    typeof column.listRequestParams === 'object' &&
+    !Array.isArray(column.listRequestParams)
+      ? column.listRequestParams
+      : {};
+
+  return {
+    ...companyScopedParams,
+    ...customParams,
+  };
+};
+
 const isObject = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -556,9 +575,9 @@ const DefaultTable = ({
       const listStore = stores?.[listStoreName];
       const listAction = listStore?.actions?.[actionName];
 
-      const listLoadParams = resolveListLoadParams({
+      const listLoadParams = resolveColumnListLoadParams({
+        column,
         currentCompanyId: currentCompany?.id,
-        listStoreName,
       });
       const isCompanyScopedList = Object.keys(listLoadParams).length > 0;
 

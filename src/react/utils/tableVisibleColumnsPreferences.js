@@ -1,6 +1,8 @@
 export const TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY = 'tableVisibleColumns';
 export const TABLE_VIEW_MODE_PREFERENCES_KEY = 'tableViewModes';
 export const TABLE_SORT_PREFERENCES_KEY = 'tableSorts';
+export const TABLE_SORT_FIELD_PREFERENCES_KEY = 'tableSortFields';
+export const TABLE_SORT_DIRECTION_PREFERENCES_KEY = 'tableSortDirections';
 export const DEFAULT_TABLE_PREFERENCES_STORAGE_KEY = 'DefaultTablePreferences';
 
 const isPlainObject = value =>
@@ -155,6 +157,29 @@ export const resolveStoredTableSortPreference = (preferenceKey = '') => {
   }
 
   const storedPreferences = readStoredPreferences();
+  const tableSortFields =
+    storedPreferences[TABLE_SORT_FIELD_PREFERENCES_KEY];
+  const tableSortDirections =
+    storedPreferences[TABLE_SORT_DIRECTION_PREFERENCES_KEY];
+
+  const resolvedField = isPlainObject(tableSortFields)
+    ? tableSortFields[preferenceKey]
+    : '';
+  const resolvedDirection = isPlainObject(tableSortDirections)
+    ? tableSortDirections[preferenceKey]
+    : '';
+
+  if (
+    typeof resolvedField === 'string' &&
+    resolvedField.trim() &&
+    (resolvedDirection === 'asc' || resolvedDirection === 'desc')
+  ) {
+    return {
+      direction: resolvedDirection,
+      field: resolvedField.trim(),
+    };
+  }
+
   const tableSorts = storedPreferences[TABLE_SORT_PREFERENCES_KEY];
 
   if (!isPlainObject(tableSorts)) {
@@ -201,7 +226,17 @@ export const persistTableSortPreference = (
   }
 
   const storedPreferences = readStoredPreferences();
-  const tableSorts = isPlainObject(
+  const tableSortFields = isPlainObject(
+    storedPreferences[TABLE_SORT_FIELD_PREFERENCES_KEY],
+  )
+    ? storedPreferences[TABLE_SORT_FIELD_PREFERENCES_KEY]
+    : {};
+  const tableSortDirections = isPlainObject(
+    storedPreferences[TABLE_SORT_DIRECTION_PREFERENCES_KEY],
+  )
+    ? storedPreferences[TABLE_SORT_DIRECTION_PREFERENCES_KEY]
+    : {};
+  const legacyTableSorts = isPlainObject(
     storedPreferences[TABLE_SORT_PREFERENCES_KEY],
   )
     ? storedPreferences[TABLE_SORT_PREFERENCES_KEY]
@@ -209,8 +244,16 @@ export const persistTableSortPreference = (
 
   writeStoredPreferences({
     ...storedPreferences,
+    [TABLE_SORT_FIELD_PREFERENCES_KEY]: {
+      ...tableSortFields,
+      [preferenceKey]: sort.field.trim(),
+    },
+    [TABLE_SORT_DIRECTION_PREFERENCES_KEY]: {
+      ...tableSortDirections,
+      [preferenceKey]: sort.direction,
+    },
     [TABLE_SORT_PREFERENCES_KEY]: {
-      ...tableSorts,
+      ...legacyTableSorts,
       [preferenceKey]: {
         direction: sort.direction,
         field: sort.field.trim(),

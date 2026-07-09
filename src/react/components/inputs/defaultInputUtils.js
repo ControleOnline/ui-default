@@ -116,6 +116,29 @@ export const resolveOptionLabel = (column, option, storeName = '') => {
 
 export const resolveStoreNameFromList = list => normalizeText(list).split('/')[0] || '';
 
+const filterItemsByListRequestParams = (items = [], column = null) => {
+  const requestParams =
+    column?.listRequestParams &&
+    typeof column.listRequestParams === 'object' &&
+    !Array.isArray(column.listRequestParams)
+      ? column.listRequestParams
+      : null;
+
+  if (!requestParams || Object.keys(requestParams).length === 0) {
+    return Array.isArray(items) ? items : [];
+  }
+
+  return (Array.isArray(items) ? items : []).filter(item =>
+    Object.entries(requestParams).every(([key, expectedValue]) => {
+      if (expectedValue === undefined || expectedValue === null || expectedValue === '') {
+        return true;
+      }
+
+      return normalizeText(item?.[key]) === normalizeText(expectedValue);
+    }),
+  );
+};
+
 export const mapOptions = (column, items = [], storeName = '') => {
   const seenKeys = new Set();
   const options = [];
@@ -151,7 +174,11 @@ export const buildOptionsFromColumn = (column, getOptionsForColumn = null, store
   if (!listStoreName) return [];
 
   const listStore = getAllStores()?.[listStoreName];
-  return mapOptions(column, listStore?.getters?.items || [], storeName);
+  return mapOptions(
+    column,
+    filterItemsByListRequestParams(listStore?.getters?.items || [], column),
+    storeName,
+  );
 };
 
 export const resolveCellText = ({ column, columns = [], row, storeName, value }) => {
