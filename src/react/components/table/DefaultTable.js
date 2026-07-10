@@ -518,6 +518,7 @@ const DefaultTable = ({
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const endReachedLockRef = useRef(false);
   const loadedListStoresRef = useRef(new Set());
+  const listOptionsWasFocusedRef = useRef(false);
   const previousPaginationStateRef = useRef({
     dataLength: Array.isArray(data) ? data.length : 0,
     filtersKey: JSON.stringify(filters || {}),
@@ -614,7 +615,12 @@ const DefaultTable = ({
   const resolvedSearchValue = normalizeText(resolvedFilters?.[searchKey]);
 
   useEffect(() => {
-    if (!listColumnsSignature) return;
+    const shouldRefreshCompanyScopedLists =
+      isFocused && !listOptionsWasFocusedRef.current;
+
+    listOptionsWasFocusedRef.current = isFocused;
+
+    if (!isFocused || !listColumnsSignature) return;
 
     const stores = getAllStores?.() || {};
     const loadPromises = [];
@@ -646,6 +652,9 @@ const DefaultTable = ({
       }
 
       const loadKey = `${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
+      if (shouldRefreshCompanyScopedLists && isCompanyScopedList) {
+        loadedListStoresRef.current.delete(loadKey);
+      }
       if (loadedListStoresRef.current.has(loadKey)) return;
 
       loadedListStoresRef.current.add(loadKey);
@@ -677,7 +686,7 @@ const DefaultTable = ({
     return () => {
       cancelled = true;
     };
-  }, [columnsForTable, currentCompany?.id, getOptionsForColumn, listColumnsSignature]);
+  }, [columnsForTable, currentCompany?.id, getOptionsForColumn, isFocused, listColumnsSignature]);
 
   const buildRequestQuery = useCallback(
     (page, append = false) => {
