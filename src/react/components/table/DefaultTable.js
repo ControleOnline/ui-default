@@ -550,7 +550,7 @@ const DefaultTable = ({
   const [viewMode, setViewMode] = useState(() => viewModeSeed);
   const [compactViewMode, setCompactViewMode] = useState(null);
   const { currentCompany } = peopleStore.getters || {};
-  const { colors: themeColors } = themeStore.getters || {};
+  const { colors: themeColors } = themeStore.getters;
   const themeTokens = useMemo(
     () => ({...themeColors, ...(currentCompany?.theme?.colors || {})}),
     [currentCompany?.theme?.colors, themeColors],
@@ -567,8 +567,22 @@ const DefaultTable = ({
   const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
   const tableMutedColor = palette.textSecondary;
-  const tableButtonBackgroundColor = palette.buttonBackground || resolvedAccentColor;
-  const tableButtonTextColor = palette.buttonText || palette.text;
+  const modalBackgroundColor = themeColors.modalBackground;
+  const modalBorderColor = themeColors.modalBorder;
+  const modalCloseIconColor = themeColors.modalCloseIcon;
+  const modalHeaderTextColor = themeColors.modalHeaderText;
+  const modalOverlayColor = themeColors.modalOverlay;
+  const modalTextColor = themeColors.modalText;
+  const checkboxBorderColor = themeColors.checkboxBorder;
+  const checkboxSelectedMarkColor = themeColors.checkboxSelectedMark;
+  const tableActionBackgroundColor = themeColors.tableActionBackground;
+  const tableActionBorderColor = themeColors.tableActionBorder;
+  const tableActionTextColor = themeColors.tableActionIcon;
+  const tableButtonBackgroundColor = themeColors.buttonBackground;
+  const tableButtonTextColor = themeColors.buttonText;
+  const tableFilterBackgroundColor = themeColors.tableFilterBackground;
+  const tableFilterBorderColor = themeColors.tableFilterBorder;
+  const tableFilterTextColor = themeColors.tableFilterText;
   const isFocused = useIsFocused();
   const {showError} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
@@ -1367,7 +1381,7 @@ const DefaultTable = ({
 
     const isActive = action.active === true;
     const hasLabel = normalizeText(action.label) !== '';
-    const actionColor = action.color || (isActive ? resolvedAccentColor : tableMutedColor);
+    const actionColor = action.color || (isActive ? tableActionTextColor : tableMutedColor);
 
     return (
       <TouchableOpacity
@@ -1375,7 +1389,7 @@ const DefaultTable = ({
         style={[
           styles.toolbarButton,
           isActive
-            ? { backgroundColor: withOpacity(resolvedAccentColor, 0.12), borderColor: resolvedAccentColor }
+            ? { backgroundColor: tableActionBackgroundColor, borderColor: tableActionBorderColor }
             : null,
           action.style,
         ]}
@@ -1396,7 +1410,7 @@ const DefaultTable = ({
           </Text>
         ) : null}
         {action.badge !== undefined && action.badge !== null ? (
-          <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || resolvedAccentColor }]}>
+          <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || tableActionTextColor }]}>
             {action.badge}
           </Text>
         ) : null}
@@ -1609,18 +1623,18 @@ const DefaultTable = ({
 
     return (
       <Modal visible={Boolean(editingRow)} transparent animationType="fade" onRequestClose={closeEditModal}>
-        <View style={[styles.modalOverlay, { backgroundColor: withOpacity(tableTextColor, 0.42) }]}>
-          <View style={[styles.modalCard, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: tableBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: tableTextColor }]}>
+        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
+          <View style={[styles.modalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]}>
                 {isCreate
                   ? global.t?.t(storeName, 'button', 'add') || 'Adicionar'
                   : global.t?.t(storeName, 'button', 'edit') || 'Editar'}
               </Text>
               <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
                 onPress={closeEditModal}>
-                <Icon name="x" size={18} color={tableMutedColor} />
+                <Icon name="x" size={18} color={modalCloseIconColor} />
               </TouchableOpacity>
             </View>
 
@@ -1649,18 +1663,18 @@ const DefaultTable = ({
 
     return (
       <Modal visible transparent animationType="fade" onRequestClose={() => setIsColumnMenuOpen(false)}>
-        <View style={[styles.modalOverlay, { backgroundColor: withOpacity(tableTextColor, 0.42) }]}>
-          <View style={[styles.modalCard, styles.columnMenuModalCard, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: tableBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: tableTextColor }]} numberOfLines={1}>
+        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
+          <View style={[styles.modalCard, styles.columnMenuModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
                 Colunas
               </Text>
               <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
                 activeOpacity={0.82}
                 onPress={() => setIsColumnMenuOpen(false)}
               >
-                <Icon name="x" size={16} color={tableMutedColor} />
+                <Icon name="x" size={16} color={modalCloseIconColor} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.columnMenuModalBody} contentContainerStyle={styles.columnMenuModalList}>
@@ -1676,8 +1690,8 @@ const DefaultTable = ({
 
                 return (
                   <TouchableOpacity key={fieldName} style={styles.columnMenuItem} activeOpacity={0.82} onPress={() => toggleColumn(column)}>
-                    <Icon name={checked ? 'check-square' : 'square'} size={16} color={checked ? resolvedAccentColor : tableMutedColor} />
-                    <Text style={[styles.columnMenuText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
+                    <Icon name={checked ? 'check-square' : 'square'} size={16} color={checked ? checkboxSelectedMarkColor : checkboxBorderColor} />
+                    <Text style={[styles.columnMenuText, { color: modalTextColor }]} numberOfLines={1}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -1738,14 +1752,14 @@ const DefaultTable = ({
               style={[
                 styles.toolbarButton,
                 { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor },
-                showColumnFilters ? { backgroundColor: withOpacity(resolvedAccentColor, 0.12), borderColor: resolvedAccentColor } : null,
+                showColumnFilters ? { backgroundColor: tableFilterBackgroundColor, borderColor: tableFilterBorderColor } : null,
               ]}
               activeOpacity={0.82}
               onPress={() => setShowColumnFilters(prev => !prev)}
             >
-              <Icon name="filter" size={14} color={showColumnFilters ? resolvedAccentColor : tableMutedColor} />
+              <Icon name="filter" size={14} color={showColumnFilters ? tableFilterTextColor : tableMutedColor} />
               {activeFilterCount > 0 ? (
-                <Text style={[styles.toolbarBadgeText, { color: resolvedAccentColor }]}>{activeFilterCount}</Text>
+                <Text style={[styles.toolbarBadgeText, { color: showColumnFilters ? tableFilterTextColor : tableMutedColor }]}>{activeFilterCount}</Text>
               ) : null}
             </TouchableOpacity>
           ) : null}

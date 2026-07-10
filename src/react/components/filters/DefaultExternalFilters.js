@@ -187,7 +187,7 @@ const DefaultExternalFilters = ({
   const themeStore = useStore('theme');
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const { currentCompany } = peopleStore.getters || {};
-  const { colors: themeColors } = themeStore.getters || {};
+  const { colors: themeColors } = themeStore.getters;
   const themeTokens = useMemo(
     () => ({...themeColors, ...(currentCompany?.theme?.colors || {})}),
     [currentCompany?.theme?.colors, themeColors],
@@ -202,6 +202,11 @@ const DefaultExternalFilters = ({
   const borderColor = palette.border;
   const textColor = palette.text;
   const textSecondaryColor = palette.textSecondary;
+  const buttonBackgroundColor = themeColors.buttonBackground;
+  const buttonTextColor = themeColors.buttonText;
+  const tableFilterBackgroundColor = themeColors.tableFilterBackground;
+  const tableFilterBorderColor = themeColors.tableFilterBorder;
+  const tableFilterTextColor = themeColors.tableFilterText;
   const onAccentColor = palette.secondary || palette.text;
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const filterColumns = useMemo(
@@ -339,23 +344,23 @@ const DefaultExternalFilters = ({
           style={[
             styles.mobileButton,
             { borderColor: borderColor, backgroundColor: surfaceColor },
-            activeCount > 0 ? { borderColor: resolvedAccentColor, backgroundColor: withOpacity(resolvedAccentColor, 0.14) } : null,
+            activeCount > 0 ? { borderColor: tableFilterBorderColor, backgroundColor: tableFilterBackgroundColor } : null,
           ]}
           activeOpacity={0.84}
           onPress={() => setIsFiltersModalOpen(true)}
         >
-          <Icon name="filter" size={15} color={activeCount > 0 ? resolvedAccentColor : textSecondaryColor} />
+          <Icon name="filter" size={15} color={activeCount > 0 ? tableFilterTextColor : textSecondaryColor} />
           <Text
             style={[
               styles.mobileButtonText,
               { color: textColor },
-              activeCount > 0 ? { color: resolvedAccentColor } : null,
+              activeCount > 0 ? { color: tableFilterTextColor } : null,
             ]}
           >
             {filterTitle}
           </Text>
           {activeCount > 0 ? (
-            <View style={[styles.mobileCountBadge, { backgroundColor: resolvedAccentColor }]}>
+            <View style={[styles.mobileCountBadge, { backgroundColor: tableFilterBorderColor }]}>
               <Text style={styles.mobileCountBadgeText}>{activeCount}</Text>
             </View>
           ) : null}
@@ -403,11 +408,11 @@ const DefaultExternalFilters = ({
                       </TouchableOpacity>
                     ) : null}
                     <TouchableOpacity
-                      style={[styles.modalPrimaryButton, { backgroundColor: resolvedAccentColor }]}
+                      style={[styles.modalPrimaryButton, { backgroundColor: buttonBackgroundColor }]}
                       activeOpacity={0.84}
                       onPress={() => setIsFiltersModalOpen(false)}
                     >
-                      <Text style={[styles.modalPrimaryButtonText, { color: onAccentColor }]}>
+                      <Text style={[styles.modalPrimaryButtonText, { color: buttonTextColor }]}>
                         {global.t?.t(storeName, 'button', 'apply')}
                       </Text>
                     </TouchableOpacity>

@@ -20,7 +20,7 @@ const DefaultSearch = ({
   value,
 }) => {
   const themeStore = useStore('theme');
-  const themeColors = themeStore?.getters?.colors || {};
+  const themeColors = themeStore.getters.colors;
   const palette = useMemo(
     () => ({
       buttonBackgroundSecondary: themeColors.buttonBackgroundSecondary,
