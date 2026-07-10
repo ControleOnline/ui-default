@@ -548,6 +548,7 @@ const DefaultTable = ({
   );
   const [visibleColumns, setVisibleColumns] = useState(() => visibleColumnsSeed);
   const [viewMode, setViewMode] = useState(() => viewModeSeed);
+  const [compactViewMode, setCompactViewMode] = useState(null);
   const { currentCompany } = peopleStore.getters || {};
   const { colors: themeColors } = themeStore.getters || {};
   const themeTokens = useMemo(
@@ -919,7 +920,23 @@ const DefaultTable = ({
   );
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const shouldForceCardsOnCompact = forceCardsOnCompact !== false;
-  const effectiveViewMode = isCompactView && shouldForceCardsOnCompact ? 'cards' : viewMode;
+  const effectiveViewMode =
+    isCompactView && shouldForceCardsOnCompact
+      ? (compactViewMode || 'cards')
+      : viewMode;
+  useEffect(() => {
+    if (!shouldForceCardsOnCompact) {
+      setCompactViewMode(null);
+      return;
+    }
+
+    if (isCompactView) {
+      setCompactViewMode('cards');
+      return;
+    }
+
+    setCompactViewMode(null);
+  }, [isCompactView, shouldForceCardsOnCompact]);
   const emptyStateLabel = resolvedIsLoading
     ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
     : 'Nenhum registro encontrado';
@@ -1243,21 +1260,31 @@ const DefaultTable = ({
   ]);
 
   const toggleViewMode = useCallback(() => {
-    setViewMode(prev => {
-      const nextViewMode = prev === 'table' ? 'cards' : 'table';
+    const currentViewMode =
+      isCompactView && shouldForceCardsOnCompact
+        ? (compactViewMode || 'cards')
+        : viewMode;
+    const nextViewMode = currentViewMode === 'table' ? 'cards' : 'table';
 
-      if (!visibleColumnsPreferenceKey) {
-        return nextViewMode;
-      }
+    if (isCompactView && shouldForceCardsOnCompact) {
+      setCompactViewMode(nextViewMode);
+    }
 
-      persistTableViewModePreference(
-        visibleColumnsPreferenceKey,
-        nextViewMode,
-      );
+    setViewMode(nextViewMode);
 
-      return nextViewMode;
-    });
+    if (!visibleColumnsPreferenceKey) {
+      return;
+    }
+
+    persistTableViewModePreference(
+      visibleColumnsPreferenceKey,
+      nextViewMode,
+    );
   }, [
+    compactViewMode,
+    isCompactView,
+    shouldForceCardsOnCompact,
+    viewMode,
     visibleColumnsPreferenceKey,
   ]);
 
@@ -1726,7 +1753,7 @@ const DefaultTable = ({
             activeOpacity={0.82}
             onPress={toggleViewMode}
           >
-            <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
+            <Icon name={effectiveViewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}

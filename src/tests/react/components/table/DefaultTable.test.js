@@ -8,6 +8,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 
 let consoleErrorSpy = null;
 let mockStores = {};
+let mockWindowDimensions = {width: 480, height: 800};
 
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
@@ -45,7 +46,7 @@ jest.mock('react-native', () => {
     Text: createComponent('Text'),
     TouchableOpacity: createComponent('TouchableOpacity'),
     View: createComponent('View'),
-    useWindowDimensions: jest.fn(() => ({width: 480, height: 800})),
+    useWindowDimensions: jest.fn(() => mockWindowDimensions),
   };
 });
 
@@ -75,6 +76,7 @@ const DefaultTable =
 describe('DefaultTable', () => {
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockWindowDimensions = {width: 480, height: 800};
 
     mockStores = {
       people: {
@@ -101,7 +103,7 @@ describe('DefaultTable', () => {
     }
   });
 
-  it('keeps the grid/list toggle visible on compact layouts even when cards are forced', () => {
+  it('keeps the list/card toggle visible on compact layouts even when cards are forced', () => {
     let tree;
 
     renderer.act(() => {
@@ -116,6 +118,48 @@ describe('DefaultTable', () => {
 
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
-    expect(iconNames).toEqual(expect.arrayContaining(['grid', 'columns']));
+    expect(iconNames).toEqual(expect.arrayContaining(['list', 'columns']));
+  });
+
+  it('forces cards when entering compact mode and still toggles between cards and list', () => {
+    const props = {
+      columns: [{key: 'name', label: 'Nome'}],
+      data: [{id: 1, name: 'Pedido 1'}],
+      showColumnFiltersButton: false,
+    };
+    let tree;
+
+    mockWindowDimensions = {width: 1024, height: 800};
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, props),
+      );
+    });
+
+    expect(tree.root.findAllByType('ScrollView')).toHaveLength(1);
+
+    mockWindowDimensions = {width: 480, height: 800};
+
+    renderer.act(() => {
+      tree.update(React.createElement(DefaultTable, props));
+    });
+
+    expect(tree.root.findAllByType('ScrollView')).toHaveLength(0);
+    expect(tree.root.findByProps({name: 'list'})).toBeTruthy();
+
+    renderer.act(() => {
+      tree.root.findByProps({name: 'list'}).parent.props.onPress();
+    });
+
+    expect(tree.root.findAllByType('ScrollView')).toHaveLength(1);
+    expect(tree.root.findByProps({name: 'grid'})).toBeTruthy();
+
+    renderer.act(() => {
+      tree.root.findByProps({name: 'grid'}).parent.props.onPress();
+    });
+
+    expect(tree.root.findAllByType('ScrollView')).toHaveLength(0);
+    expect(tree.root.findByProps({name: 'list'})).toBeTruthy();
   });
 });
