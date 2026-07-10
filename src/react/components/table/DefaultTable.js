@@ -506,6 +506,7 @@ const DefaultTable = ({
 }) => {
   const { width } = useWindowDimensions();
   const store = useStore(storeName);
+  const visibleColumnsStorageKey = visibleColumnsPreferenceKey || storeName;
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const [editingCell, setEditingCell] = useState(null);
@@ -532,10 +533,10 @@ const DefaultTable = ({
           ? store.getters.columns
           : columns,
         visibleColumns: resolveStoredVisibleColumnsPreference(
-          visibleColumnsPreferenceKey,
+          visibleColumnsStorageKey,
         ),
       }),
-    [columns, store?.getters?.columns, visibleColumnsPreferenceKey],
+    [columns, store?.getters?.columns, visibleColumnsStorageKey],
   );
   const viewModeSeed = useMemo(
     () =>
@@ -1227,9 +1228,9 @@ const DefaultTable = ({
       };
 
       actions?.setVisibleColumns?.(next);
-      if (visibleColumnsPreferenceKey) {
+      if (visibleColumnsStorageKey) {
         persistVisibleColumnsPreference(
-          visibleColumnsPreferenceKey,
+          visibleColumnsStorageKey,
           next,
         );
       }
@@ -1238,7 +1239,7 @@ const DefaultTable = ({
   }, [
     actions,
     columnsForTable,
-    visibleColumnsPreferenceKey,
+    visibleColumnsStorageKey,
   ]);
 
   const toggleViewMode = useCallback(() => {
