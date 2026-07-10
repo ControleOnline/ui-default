@@ -1720,15 +1720,13 @@ const DefaultTable = ({
               ) : null}
             </TouchableOpacity>
           ) : null}
-          {(!isCompactView || !shouldForceCardsOnCompact) ? (
-            <TouchableOpacity
-              style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-              activeOpacity={0.82}
-              onPress={toggleViewMode}
-            >
-              <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity
+            style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+            activeOpacity={0.82}
+            onPress={toggleViewMode}
+          >
+            <Icon name={viewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
             activeOpacity={0.82}
