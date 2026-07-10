@@ -567,7 +567,8 @@ const DefaultTable = ({
   const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
   const tableMutedColor = palette.textSecondary;
-  const tableOnAccentColor = palette.secondary || palette.text;
+  const tableButtonBackgroundColor = palette.buttonBackground || resolvedAccentColor;
+  const tableButtonTextColor = palette.buttonText || palette.text;
   const isFocused = useIsFocused();
   const {showError} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
@@ -1766,12 +1767,12 @@ const DefaultTable = ({
               style={[
                 styles.toolbarButton,
                 styles.toolbarAddButton,
-                { backgroundColor: resolvedAccentColor, borderColor: resolvedAccentColor },
+                { backgroundColor: tableButtonBackgroundColor, borderColor: tableButtonBackgroundColor },
               ]}
               activeOpacity={0.85}
               onPress={openAddForm}
             >
-              <Icon name="plus" size={16} color={tableOnAccentColor} />
+              <Icon name="plus" size={16} color={tableButtonTextColor} />
             </TouchableOpacity>
           ) : null}
         </View>
