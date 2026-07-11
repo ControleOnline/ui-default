@@ -73,20 +73,29 @@ const resolveListLoadParams = ({currentCompanyId, listStoreName}) => {
     return {};
   }
 
-  return {people: currentCompanyId};
+  return listStoreName === 'categories'
+    ? {company: currentCompanyId}
+    : {people: currentCompanyId};
 };
 
-const resolveColumnListLoadParams = ({column, currentCompanyId}) => {
+export const resolveColumnListLoadParams = ({
+  column,
+  currentCompanyId,
+  requestParams = {},
+}) => {
   const listStoreName = resolveStoreNameFromList(column?.list);
   const companyScopedParams = resolveListLoadParams({
     currentCompanyId,
     listStoreName,
   });
+  const resolvedCustomParams = typeof column?.listRequestParams === 'function'
+    ? column.listRequestParams({currentCompanyId, requestParams})
+    : column?.listRequestParams;
   const customParams =
-    column?.listRequestParams &&
-    typeof column.listRequestParams === 'object' &&
-    !Array.isArray(column.listRequestParams)
-      ? column.listRequestParams
+    resolvedCustomParams &&
+    typeof resolvedCustomParams === 'object' &&
+    !Array.isArray(resolvedCustomParams)
+      ? resolvedCustomParams
       : {};
 
   return {
@@ -514,6 +523,7 @@ const DefaultTable = ({
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const [, setListOptionsVersion] = useState(0);
+  const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
@@ -600,6 +610,7 @@ const DefaultTable = ({
   );
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
+  const listRequestParamsSignature = stableSerialize(requestParamsSeed);
   const initialFiltersSeed = autoMode
     ? (Object.keys(filters || {}).length > 0 ? filters : storeFilters)
     : (isObject(filters) ? filters : {});
@@ -630,6 +641,18 @@ const DefaultTable = ({
   const resolvedSort = autoMode ? autoSort : sort;
   const resolvedFilters = autoMode ? autoFilters : (filters || {});
   const resolvedSearchValue = normalizeText(resolvedFilters?.[searchKey]);
+  const resolvedGetOptionsForColumn = useCallback(
+    column => {
+      const explicitOptions = getOptionsForColumn?.(column);
+      if (Array.isArray(explicitOptions)) return explicitOptions;
+
+      const columnKey = getColumnKey(column);
+      return Array.isArray(listOptionsByColumn[columnKey])
+        ? listOptionsByColumn[columnKey]
+        : undefined;
+    },
+    [getOptionsForColumn, listOptionsByColumn],
+  );
 
   useEffect(() => {
     const shouldRefreshCompanyScopedLists =
@@ -639,6 +662,15 @@ const DefaultTable = ({
 
     if (!isFocused || !listColumnsSignature) return;
 
+    setListOptionsByColumn(current => ({
+      ...current,
+      ...Object.fromEntries(
+        columnsForTable
+          .filter(column => normalizeText(column?.list))
+          .map(column => [getColumnKey(column), []]),
+      ),
+    }));
+
     const stores = getAllStores?.() || {};
     const loadPromises = [];
 
@@ -646,7 +678,7 @@ const DefaultTable = ({
       if (!column?.list) return;
 
       const explicitOptions = getOptionsForColumn?.(column);
-      if (Array.isArray(explicitOptions) && explicitOptions.length > 0) return;
+      if (Array.isArray(explicitOptions)) return;
 
       const listStoreName = resolveStoreNameFromList(column.list);
       const actionName = resolveListActionName(column.list);
@@ -656,6 +688,7 @@ const DefaultTable = ({
       const listLoadParams = resolveColumnListLoadParams({
         column,
         currentCompanyId: currentCompany?.id,
+        requestParams: requestParamsSeed,
       });
       const isCompanyScopedList = Object.keys(listLoadParams).length > 0;
 
@@ -668,7 +701,8 @@ const DefaultTable = ({
         return;
       }
 
-      const loadKey = `${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
+      const columnKey = getColumnKey(column);
+      const loadKey = `${columnKey}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
       if (shouldRefreshCompanyScopedLists && isCompanyScopedList) {
         loadedListStoresRef.current.delete(loadKey);
       }
@@ -685,17 +719,24 @@ const DefaultTable = ({
               skipSystemError: true,
             },
           }),
-        ).catch(() => {
-          loadedListStoresRef.current.delete(loadKey);
-        }),
+        )
+          .then(response => ({columnKey, items: normalizeCollectionItems(response)}))
+          .catch(() => {
+            loadedListStoresRef.current.delete(loadKey);
+            return {columnKey, items: []};
+          }),
       );
     });
 
     if (loadPromises.length === 0) return;
 
     let cancelled = false;
-    Promise.allSettled(loadPromises).then(() => {
+    Promise.all(loadPromises).then(results => {
       if (!cancelled) {
+        setListOptionsByColumn(current => ({
+          ...current,
+          ...Object.fromEntries(results.map(result => [result.columnKey, result.items])),
+        }));
         setListOptionsVersion(version => version + 1);
       }
     });
@@ -703,7 +744,7 @@ const DefaultTable = ({
     return () => {
       cancelled = true;
     };
-  }, [columnsForTable, currentCompany?.id, getOptionsForColumn, isFocused, listColumnsSignature]);
+  }, [columnsForTable, currentCompany?.id, getOptionsForColumn, isFocused, listColumnsSignature, listRequestParamsSignature]);
 
   const buildRequestQuery = useCallback(
     (page, append = false) => {
@@ -1349,7 +1390,7 @@ const DefaultTable = ({
           column={column}
           columns={columnsForTable}
           editing={isEditing}
-          getOptionsForColumn={getOptionsForColumn}
+          getOptionsForColumn={resolvedGetOptionsForColumn}
           onCancelEditing={clearEdit}
           onSave={value => saveCell(row, column, value)}
           onStartEditing={() => beginEdit(row, column)}
@@ -1368,7 +1409,7 @@ const DefaultTable = ({
         accentColor={resolvedAccentColor}
         column={column}
         filters={resolvedFilters}
-        getOptionsForColumn={getOptionsForColumn}
+        getOptionsForColumn={resolvedGetOptionsForColumn}
         onChange={updateFilter}
         storeName={storeName}
         style={getColumnStyle(column)}
@@ -1453,7 +1494,7 @@ const DefaultTable = ({
             containerStyle={options.containerStyle}
             displayValue={options.displayValue}
             editing={isEditing}
-            getOptionsForColumn={getOptionsForColumn}
+            getOptionsForColumn={resolvedGetOptionsForColumn}
             inputStyle={options.inputStyle}
             label={options.label}
             numberOfLines={options.numberOfLines}
@@ -1484,7 +1525,7 @@ const DefaultTable = ({
       columnsForTable,
       editingCell,
       getColumnByField,
-      getOptionsForColumn,
+      resolvedGetOptionsForColumn,
       openEditModal,
       onRowPress,
       saveCell,
@@ -1642,7 +1683,7 @@ const DefaultTable = ({
               accentColor={resolvedAccentColor}
               actions={actions}
               columns={isCreate ? columnsForTable : editableColumns}
-              getOptionsForColumn={getOptionsForColumn}
+              getOptionsForColumn={resolvedGetOptionsForColumn}
               mode={formMode}
               onCancel={closeEditModal}
               onSaved={(savedItem, originalRow) => {

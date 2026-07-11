@@ -70,8 +70,38 @@ jest.mock('@controleonline/ui-layout/src/react/components/StateStore', () => pro
   React.createElement('StateStore', props, props.children),
 );
 
-const DefaultTable =
-  require('../../../../react/components/table/DefaultTable').default;
+const {
+  default: DefaultTable,
+  resolveColumnListLoadParams,
+} = require('../../../../react/components/table/DefaultTable');
+
+describe('resolveColumnListLoadParams', () => {
+  it('uses company for category stores and people for financial owner stores', () => {
+    expect(resolveColumnListLoadParams({
+      column: {list: 'categories/getItems'},
+      currentCompanyId: 21,
+    })).toEqual({company: 21});
+    expect(resolveColumnListLoadParams({
+      column: {list: 'wallet/getItems'},
+      currentCompanyId: 21,
+    })).toEqual({people: 21});
+    expect(resolveColumnListLoadParams({
+      column: {list: 'paymentType/getItems'},
+      currentCompanyId: 21,
+    })).toEqual({people: 21});
+  });
+
+  it('resolves contextual list params without losing the company scope', () => {
+    expect(resolveColumnListLoadParams({
+      column: {
+        list: 'categories/getItems',
+        listRequestParams: ({requestParams}) => ({context: requestParams.context}),
+      },
+      currentCompanyId: 21,
+      requestParams: {context: 'receive'},
+    })).toEqual({company: 21, context: 'receive'});
+  });
+});
 
 describe('DefaultTable', () => {
   beforeEach(() => {
