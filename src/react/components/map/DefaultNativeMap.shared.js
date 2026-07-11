@@ -3,6 +3,29 @@ import {resolveAppDomain} from '@controleonline/ui-common/src/utils/appDomain';
 const serializeForHtml = value =>
   JSON.stringify(value).replace(/</g, '\\u003c');
 
+const normalizeThemeColor = (value, fallback) => {
+  const normalizedValue = String(value || '').trim();
+  return normalizedValue || fallback;
+};
+
+export const resolveMapPopupTheme = popupTheme => ({
+  pageBackground: normalizeThemeColor(
+    popupTheme?.pageBackground,
+    popupTheme?.modalBackground || '#F8FAFC',
+  ),
+  modalBackground: normalizeThemeColor(popupTheme?.modalBackground, '#FFFFFF'),
+  modalHeaderText: normalizeThemeColor(popupTheme?.modalHeaderText, '#1A1A1A'),
+  modalText: normalizeThemeColor(popupTheme?.modalText, '#1A1A1A'),
+  textMuted: normalizeThemeColor(
+    popupTheme?.textMuted || popupTheme?.textSecondary,
+    '#64748B',
+  ),
+  dividerBorder: normalizeThemeColor(popupTheme?.dividerBorder, '#D7E1EC'),
+  buttonBackground: normalizeThemeColor(popupTheme?.buttonBackground, '#0E7490'),
+  buttonText: normalizeThemeColor(popupTheme?.buttonText, '#FFFFFF'),
+  modalShadow: normalizeThemeColor(popupTheme?.modalShadow, '#000000'),
+});
+
 export const resolveWebViewBaseUrlForDomain = configuredDomain => {
   const host = resolveAppDomain(configuredDomain);
   return host ? `https://${host}/` : 'https://app.controleonline.com/';
@@ -14,9 +37,11 @@ export const buildAndroidWebMapHtml = ({
   paths = [],
   routeColor = '#0EA5E9',
   userCoordinates = null,
+  popupTheme = null,
 }) => {
   const markers = Array.isArray(markerPayloads) ? markerPayloads : [];
   const routes = Array.isArray(paths) ? paths : [];
+  const resolvedPopupTheme = resolveMapPopupTheme(popupTheme);
 
   return `<!DOCTYPE html>
   <html lang="pt-BR">
@@ -32,7 +57,7 @@ export const buildAndroidWebMapHtml = ({
           width: 100%;
           height: 100%;
           overflow: hidden;
-          background: #f8fafc;
+          background: ${resolvedPopupTheme.modalBackground};
           font-family: Arial, sans-serif;
         }
 
@@ -54,47 +79,67 @@ export const buildAndroidWebMapHtml = ({
         .popup {
           min-width: 220px;
           max-width: 280px;
-          color: #0f172a;
+          color: ${resolvedPopupTheme.modalText};
         }
 
-        .popup-company {
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: #0369a1;
-          margin-bottom: 6px;
+        .popup-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .popup-logoWrap {
+          width: 58px;
+          height: 58px;
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid ${resolvedPopupTheme.dividerBorder};
+          background: ${resolvedPopupTheme.modalBackground};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .popup-logo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .popup-logoFallback {
+          color: ${resolvedPopupTheme.buttonBackground};
+          font-size: 18px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+        }
+
+        .popup-headerContent {
+          min-width: 0;
+          flex: 1;
         }
 
         .popup-title {
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 8px;
+          font-size: 18px;
+          font-weight: 800;
+          color: ${resolvedPopupTheme.modalHeaderText};
+          line-height: 1.2;
         }
 
         .popup-line {
           font-size: 13px;
           line-height: 1.45;
-          color: #0f172a;
+          color: ${resolvedPopupTheme.modalText};
           margin-bottom: 4px;
         }
 
-        .popup-meta-list {
-          display: grid;
-          gap: 6px;
+        .popup-summary {
           margin-top: 10px;
-        }
-
-        .popup-meta {
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
+          color: ${resolvedPopupTheme.textMuted};
           font-size: 12px;
-          color: #334155;
-        }
-
-        .popup-meta-label {
-          color: #64748b;
+          font-weight: 700;
         }
 
         .popup-actions {
@@ -106,20 +151,20 @@ export const buildAndroidWebMapHtml = ({
         .popup-action {
           flex: 1;
           border-radius: 999px;
-          border: 1px solid #cbd5e1;
+          border: 1px solid ${resolvedPopupTheme.buttonBackground};
           padding: 10px 12px;
           text-align: center;
           text-decoration: none;
-          color: #0f172a;
+          color: ${resolvedPopupTheme.buttonText};
           font-size: 12px;
           font-weight: 700;
-          background: #ffffff;
+          background: ${resolvedPopupTheme.buttonBackground};
         }
 
         .popup-action.primary {
-          border-color: transparent;
-          background: #0ea5e9;
-          color: #ffffff;
+          border-color: ${resolvedPopupTheme.buttonBackground};
+          background: ${resolvedPopupTheme.buttonBackground};
+          color: ${resolvedPopupTheme.buttonText};
         }
       </style>
     </head>
@@ -197,15 +242,29 @@ export const buildAndroidWebMapHtml = ({
           return '<div class="popup-line">' + escapeHtml(value) + '</div>';
         }
 
-        function buildPopupMeta(label, value) {
-          if (!value) {
+        function buildPopupTravelSummary(item, routeSummary) {
+          var distanceLabel =
+            routeSummary && routeSummary.distanceLabel
+              ? routeSummary.distanceLabel
+              : item && item.distanceLabel
+                ? item.distanceLabel
+                : '';
+          var durationLabel =
+            routeSummary && routeSummary.durationLabel
+              ? routeSummary.durationLabel
+              : item && item.durationLabel
+                ? item.durationLabel
+                : item && item.travelDurationLabel
+                  ? item.travelDurationLabel
+                  : '';
+
+          if (!distanceLabel && !durationLabel) {
             return '';
           }
 
           return (
-            '<div class="popup-meta">' +
-              '<span class="popup-meta-label">' + escapeHtml(label) + '</span>' +
-              '<span>' + escapeHtml(value) + '</span>' +
+            '<div class="popup-summary">' +
+              [distanceLabel, durationLabel].filter(Boolean).map(escapeHtml).join(' • ') +
             '</div>'
           );
         }
@@ -244,23 +303,56 @@ export const buildAndroidWebMapHtml = ({
           };
         }
 
-        function buildPopupContent(item) {
+        function buildPopupContent(item, routeSummary) {
           var navigationUrls = resolveMarkerNavigationUrls(item);
+          var title =
+            item && item.unitAlias
+              ? item.unitAlias
+              : item && item.alias
+                ? item.alias
+                : item && item.companyName
+                  ? item.companyName
+                  : item && item.title
+                    ? item.title
+                    : '';
+          var logoFallback = escapeHtml(
+            String(title || 'CO')
+              .trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .map(function (chunk) {
+                return chunk[0] || '';
+              })
+              .join('')
+              .toUpperCase()
+          );
+          var logoMarkup =
+            item && item.companyLogoUrl
+              ? (
+                  '<div class="popup-logoWrap">' +
+                    '<img class="popup-logo" src="' + escapeHtml(item.companyLogoUrl) + '" alt="' + escapeHtml(title || 'Unidade') + '" />' +
+                  '</div>'
+                )
+              : (
+                  '<div class="popup-logoWrap">' +
+                    '<div class="popup-logoFallback">' + logoFallback + '</div>' +
+                  '</div>'
+                );
 
           return (
             '<div class="popup">' +
-              '<div class="popup-company">' + escapeHtml(item.companyName) + '</div>' +
-              '<div class="popup-title">' + escapeHtml(item.title) + '</div>' +
+              '<div class="popup-header">' +
+                logoMarkup +
+                '<div class="popup-headerContent">' +
+                  '<div class="popup-title">' + escapeHtml(title) + '</div>' +
+                '</div>' +
+              '</div>' +
               buildPopupLine(item.addressLine) +
               buildPopupLine(item.addressExtra) +
-              '<div class="popup-meta-list">' +
-                buildPopupMeta('Telefone', item.phoneLabel) +
-                buildPopupMeta('Distancia', item.distanceLabel) +
-                buildPopupMeta('Horario', item.openingHours) +
-              '</div>' +
+              buildPopupTravelSummary(item, routeSummary) +
               '<div class="popup-actions">' +
                 buildPopupAction(navigationUrls.googleMapsUrl, 'Abrir no Maps', 'primary') +
-                buildPopupAction(navigationUrls.wazeUrl, 'Waze', '') +
+                buildPopupAction(navigationUrls.wazeUrl, 'Abrir no Waze', 'primary') +
               '</div>' +
             '</div>'
           );
@@ -462,7 +554,14 @@ export const buildAndroidWebMapHtml = ({
                       }
 
                       if (status === 'OK' && response) {
+                        var activeLeg = response && response.routes && response.routes[0] && response.routes[0].legs
+                          ? response.routes[0].legs[0]
+                          : null;
                         directionsRenderer.setDirections(response);
+                        infoWindow.setContent(buildPopupContent(item, {
+                          distanceLabel: activeLeg && activeLeg.distance ? activeLeg.distance.text : '',
+                          durationLabel: activeLeg && activeLeg.duration ? activeLeg.duration.text : '',
+                        }));
                         return;
                       }
 

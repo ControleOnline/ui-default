@@ -8,6 +8,7 @@ import {
   buildWazeNavigationUrl,
   buildAndroidWebMapHtml,
   resolveWebViewBaseUrlForDomain,
+  resolveMapPopupTheme,
 } from './DefaultNativeMap.shared';
 import {extractMapCoordinates} from './DefaultMap.shared';
 
@@ -102,7 +103,7 @@ const decodePolyline = encoded => {
   return coordinates;
 };
 
-const fetchRouteCoordinates = async ({apiKey, origin, destination}) => {
+const fetchRouteData = async ({apiKey, origin, destination}) => {
   if (
     !apiKey ||
     !Number.isFinite(origin?.latitude) ||
@@ -110,7 +111,11 @@ const fetchRouteCoordinates = async ({apiKey, origin, destination}) => {
     !Number.isFinite(destination?.latitude) ||
     !Number.isFinite(destination?.longitude)
   ) {
-    return [];
+    return {
+      coordinates: [],
+      distanceLabel: '',
+      durationLabel: '',
+    };
   }
 
   const response = await fetch(
@@ -122,12 +127,21 @@ const fetchRouteCoordinates = async ({apiKey, origin, destination}) => {
   );
   const payload = await response.json();
   const encodedPoints = payload?.routes?.[0]?.overview_polyline?.points;
+  const activeLeg = payload?.routes?.[0]?.legs?.[0] || null;
 
   if (payload?.status !== 'OK' || !encodedPoints) {
-    return [];
+    return {
+      coordinates: [],
+      distanceLabel: '',
+      durationLabel: '',
+    };
   }
 
-  return decodePolyline(encodedPoints);
+  return {
+    coordinates: decodePolyline(encodedPoints),
+    distanceLabel: String(activeLeg?.distance?.text || '').trim(),
+    durationLabel: String(activeLeg?.duration?.text || '').trim(),
+  };
 };
 
 const buildRegion = coordinates => {
@@ -159,20 +173,24 @@ const buildRegion = coordinates => {
   };
 };
 
-const MetaRow = ({label, value}) => {
+const MetaRow = ({label, value, popupTheme}) => {
   if (!value) {
     return null;
   }
 
   return (
     <View style={styles.metaRow}>
-      <Text style={styles.metaLabel}>{label}</Text>
-      <Text style={styles.metaValue}>{value}</Text>
+      <Text style={[styles.metaLabel, popupTheme && {color: popupTheme.textMuted}]}>
+        {label}
+      </Text>
+      <Text style={[styles.metaValue, popupTheme && {color: popupTheme.modalText}]}>
+        {value}
+      </Text>
     </View>
   );
 };
 
-const CalloutAction = ({label, onPress, primary = false}) => {
+const CalloutAction = ({label, onPress, popupTheme, primary = false}) => {
   if (!CalloutSubview || !label || typeof onPress !== 'function') {
     return null;
   }
@@ -180,12 +198,36 @@ const CalloutAction = ({label, onPress, primary = false}) => {
   return (
     <CalloutSubview
       onPress={onPress}
-      style={[styles.actionButton, primary && styles.actionButtonPrimary]}>
-      <Text style={[styles.actionText, primary && styles.actionTextPrimary]}>
+      style={[
+        styles.actionButton,
+        primary && styles.actionButtonPrimary,
+        popupTheme && {
+          borderColor: popupTheme.buttonBackground,
+          backgroundColor: popupTheme.buttonBackground,
+        },
+      ]}>
+      <Text
+        style={[
+          styles.actionText,
+          primary && styles.actionTextPrimary,
+          popupTheme && {color: popupTheme.buttonText},
+        ]}>
         {label}
       </Text>
     </CalloutSubview>
   );
+};
+
+const buildTravelSummary = (item, routeSummary = null) => {
+  const distanceLabel =
+    routeSummary?.distanceLabel || item?.distanceLabel || '';
+  const durationLabel =
+    routeSummary?.durationLabel ||
+    item?.durationLabel ||
+    item?.travelDurationLabel ||
+    '';
+
+  return [distanceLabel, durationLabel].filter(Boolean).join(' • ');
 };
 
 const resolveMarkerNavigationUrls = item => {
@@ -210,11 +252,13 @@ export default function DefaultNativeMap({
   paths = [],
   routeColor = '#0EA5E9',
   userCoordinates = null,
+  popupTheme = null,
 }) {
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [selectedMarkerId, setSelectedMarkerId] = useState(null);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [selectedRouteSummary, setSelectedRouteSummary] = useState(null);
   const [androidMapState, setAndroidMapState] = useState('loading');
   const [androidMapErrorMessage, setAndroidMapErrorMessage] = useState('');
   const hasUserCoordinates =
@@ -293,6 +337,10 @@ export default function DefaultNativeMap({
     () => resolveWebViewBaseUrlForDomain(env?.DOMAIN),
     [],
   );
+  const resolvedPopupTheme = useMemo(
+    () => resolveMapPopupTheme(popupTheme),
+    [popupTheme],
+  );
   const androidMapHtml = useMemo(() => {
     if (Platform.OS !== 'android') {
       return '';
@@ -304,16 +352,19 @@ export default function DefaultNativeMap({
       paths,
       routeColor,
       userCoordinates,
+      popupTheme: resolvedPopupTheme,
     });
-  }, [apiKey, markerPayloads, paths, routeColor, userCoordinates]);
+  }, [apiKey, markerPayloads, paths, resolvedPopupTheme, routeColor, userCoordinates]);
 
   useEffect(() => {
     if (!selectedMarkerId) {
+      setSelectedRouteSummary(null);
       return;
     }
 
     if (!selectedMarker) {
       setSelectedMarkerId(null);
+      setSelectedRouteSummary(null);
     }
   }, [selectedMarker, selectedMarkerId]);
 
@@ -330,12 +381,13 @@ export default function DefaultNativeMap({
   useEffect(() => {
     if (!hasUserCoordinates || !selectedMarker || !apiKey || !Polyline) {
       setRouteCoordinates([]);
+      setSelectedRouteSummary(null);
       return undefined;
     }
 
     let cancelled = false;
 
-    fetchRouteCoordinates({
+    fetchRouteData({
       apiKey,
       origin: {
         latitude: Number(userCoordinates.latitude),
@@ -346,14 +398,21 @@ export default function DefaultNativeMap({
         longitude: Number(selectedMarker.longitude),
       },
     })
-      .then(coordinates => {
+      .then(routeData => {
         if (!cancelled) {
-          setRouteCoordinates(Array.isArray(coordinates) ? coordinates : []);
+          setRouteCoordinates(
+            Array.isArray(routeData?.coordinates) ? routeData.coordinates : [],
+          );
+          setSelectedRouteSummary({
+            distanceLabel: String(routeData?.distanceLabel || '').trim(),
+            durationLabel: String(routeData?.durationLabel || '').trim(),
+          });
         }
       })
       .catch(() => {
         if (!cancelled) {
           setRouteCoordinates([]);
+          setSelectedRouteSummary(null);
         }
       });
 
@@ -530,6 +589,7 @@ export default function DefaultNativeMap({
           onPress={() => {
             setSelectedMarkerId(null);
             setRouteCoordinates([]);
+            setSelectedRouteSummary(null);
           }}
         />
       ) : null}
@@ -561,6 +621,18 @@ export default function DefaultNativeMap({
         : null}
       {markerPayloads.map(item => {
         const navigationUrls = resolveMarkerNavigationUrls(item);
+        const title = item?.unitAlias || item?.alias || item?.companyName || item?.title;
+        const travelSummary =
+          selectedMarkerId === item.id
+            ? buildTravelSummary(item, selectedRouteSummary)
+            : buildTravelSummary(item, null);
+        const logoFallback = String(title || 'CO')
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map(chunk => chunk[0] || '')
+          .join('')
+          .toUpperCase();
 
         return (
           <Marker
@@ -582,27 +654,79 @@ export default function DefaultNativeMap({
               </View>
             ) : null}
             <Callout tooltip>
-              <View style={styles.calloutCard}>
-                <Text style={styles.companyName}>{item.companyName}</Text>
-                <Text style={styles.title}>{item.title}</Text>
-                {item.addressLine ? <Text style={styles.line}>{item.addressLine}</Text> : null}
-                {item.addressExtra ? <Text style={styles.line}>{item.addressExtra}</Text> : null}
-
-                <View style={styles.metaList}>
-                  <MetaRow label="Telefone" value={item.phoneLabel} />
-                  <MetaRow label="Distancia" value={item.distanceLabel} />
-                  <MetaRow label="Horario" value={item.openingHours} />
+              <View
+                style={[
+                  styles.calloutCard,
+                  {
+                    backgroundColor: resolvedPopupTheme.modalBackground,
+                    shadowColor: resolvedPopupTheme.modalShadow,
+                  },
+                ]}>
+                <View style={styles.headerRow}>
+                  <View
+                    style={[
+                      styles.logoWrap,
+                      {borderColor: resolvedPopupTheme.dividerBorder},
+                    ]}>
+                    {item?.companyLogoUrl ? (
+                      <Image
+                        source={{uri: item.companyLogoUrl}}
+                        style={styles.logoImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text
+                        style={[
+                          styles.logoFallback,
+                          {color: resolvedPopupTheme.buttonBackground},
+                        ]}>
+                        {logoFallback}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.headerContent}>
+                    <Text
+                      style={[
+                        styles.title,
+                        {color: resolvedPopupTheme.modalHeaderText},
+                      ]}>
+                      {title}
+                    </Text>
+                  </View>
                 </View>
+                {item.addressLine ? (
+                  <Text style={[styles.line, {color: resolvedPopupTheme.modalText}]}>
+                    {item.addressLine}
+                  </Text>
+                ) : null}
+                {item.addressExtra ? (
+                  <Text style={[styles.line, {color: resolvedPopupTheme.modalText}]}>
+                    {item.addressExtra}
+                  </Text>
+                ) : null}
+
+                {travelSummary ? (
+                  <Text
+                    style={[
+                      styles.summaryText,
+                      {color: resolvedPopupTheme.textMuted},
+                    ]}>
+                    {travelSummary}
+                  </Text>
+                ) : null}
 
                 <View style={styles.actionsRow}>
                   <CalloutAction
                     label="Abrir no Maps"
                     onPress={() => openExternalUrl(navigationUrls.googleMapsUrl)}
+                    popupTheme={resolvedPopupTheme}
                     primary
                   />
                   <CalloutAction
-                    label="Waze"
+                    label="Abrir no Waze"
                     onPress={() => openExternalUrl(navigationUrls.wazeUrl)}
+                    popupTheme={resolvedPopupTheme}
+                    primary
                   />
                 </View>
               </View>

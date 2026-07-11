@@ -17,6 +17,7 @@ export default function DefaultMap({
   paths = [],
   userCoordinates = null,
   apiKey = '',
+  popupTheme = null,
 }) {
   const resolvedPayload = useMemo(
     () =>
@@ -46,6 +47,7 @@ export default function DefaultMap({
         markerPayloads={resolvedPayload.markerPayloads}
         userCoordinates={resolvedPayload.userCoordinates}
         paths={resolvedPayload.paths}
+        popupTheme={popupTheme}
       />
     );
   }

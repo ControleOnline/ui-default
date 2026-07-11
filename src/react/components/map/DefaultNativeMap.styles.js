@@ -52,6 +52,35 @@ export default StyleSheet.create({
     },
     elevation: 10,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  logoWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoFallback: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  headerContent: {
+    flex: 1,
+    minWidth: 0,
+  },
   companyName: {
     fontSize: 11,
     fontWeight: '700',
@@ -71,6 +100,11 @@ export default StyleSheet.create({
     lineHeight: 19,
     color: '#0F172A',
     marginBottom: 4,
+  },
+  summaryText: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: '700',
   },
   metaList: {
     marginTop: 10,

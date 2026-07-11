@@ -1,11 +1,13 @@
-import React, {useEffect, useRef} from 'react';
-import {Platform, View} from 'react-native';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {Image, Platform, Text, TouchableOpacity, View} from 'react-native';
 
 import styles from './DefaultGoogleMap.styles';
 import {
   buildGoogleMapsNavigationUrl,
   buildWazeNavigationUrl,
 } from './DefaultMap.shared';
+import {resolveMapPopupTheme} from './DefaultNativeMap.shared';
+import {resolveAddressDisplayParts} from '@controleonline/ui-common/src/react/utils/entityDisplay';
 
 const GOOGLE_MAPS_SCRIPT_ID = 'shop-google-maps-api-script';
 const GOOGLE_MAPS_CALLBACK_NAME = '__shopGoogleMapsApiReady__';
@@ -14,76 +16,78 @@ const GOOGLE_MAPS_POLL_INTERVAL_MS = 100;
 const ROUTE_COLOR = '#0EA5E9';
 const markerIconUrlValidationCache = new Map();
 
-const escapeHtml = value =>
-  String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+const buildPopupTravelSummary = (item, routeSummary = null) => {
+  const distanceLabel =
+    routeSummary?.distanceLabel || item?.distanceLabel || '';
+  const durationLabel =
+    routeSummary?.durationLabel ||
+    item?.durationLabel ||
+    item?.travelDurationLabel ||
+    '';
 
-const buildPopupLine = value => {
-  if (!value) {
-    return '';
-  }
-
-  return `<div class="shop-map-popup-line">${escapeHtml(value)}</div>`;
-};
-
-const buildPopupMeta = (label, value) => {
-  if (!value) {
+  if (!distanceLabel && !durationLabel) {
     return '';
   }
 
   return `
-    <div class="shop-map-popup-meta">
-      <span class="shop-map-popup-meta-label">${escapeHtml(label)}</span>
-      <span>${escapeHtml(value)}</span>
+    <div class="shop-map-popup-summary">
+      ${[distanceLabel, durationLabel].filter(Boolean).join(' • ')}
     </div>
   `;
 };
 
-const buildPopupContent = (item, position) => {
-  const navigationPosition = position || {
-    latitude: Number(item?.latitude),
-    longitude: Number(item?.longitude),
-  };
-  const googleMapsUrl =
-    item?.googleMapsUrl ||
-    buildGoogleMapsNavigationUrl(navigationPosition);
-  const wazeUrl = item?.wazeUrl || buildWazeNavigationUrl(navigationPosition);
+const buildPopupTravelSummaryText = (item, routeSummary = null) =>
+  buildPopupTravelSummary(item, routeSummary)
+    .replace(/<\/?div[^>]*>/g, '')
+    .trim();
 
-  return `
-  <div class="shop-map-popup">
-    <div class="shop-map-popup-company">${escapeHtml(item.companyName)}</div>
-    <div class="shop-map-popup-title">${escapeHtml(item.title)}</div>
-    ${buildPopupLine(item.addressLine)}
-    ${buildPopupLine(item.addressExtra)}
-    <div class="shop-map-popup-meta-list">
-      ${buildPopupMeta('Telefone', item.phoneLabel)}
-      ${buildPopupMeta('Distancia', item.distanceLabel)}
-      ${buildPopupMeta('Horario', item.openingHours)}
-    </div>
-    <div class="shop-map-popup-actions">
-      <a
-        class="shop-map-popup-action shop-map-popup-action-primary"
-        href="${escapeHtml(googleMapsUrl)}"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Abrir no Maps
-      </a>
-      <a
-        class="shop-map-popup-action"
-        href="${escapeHtml(wazeUrl)}"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Waze
-      </a>
-    </div>
-  </div>
-`;
+const normalizeText = value => String(value || '').trim();
+
+const formatPostalCode = value => {
+  const digits = String(value || '').replace(/\D+/g, '');
+
+  if (digits.length !== 8) {
+    return normalizeText(value);
+  }
+
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
+const extractAddressExtraFallback = value => {
+  const parts = String(value || '')
+    .split('•')
+    .map(item => normalizeText(item))
+    .filter(Boolean);
+
+  const postalCodeLine = formatPostalCode(parts.find(item => /\d{5,8}/.test(item)));
+  const cityStateLine = normalizeText(
+    parts.find(item => /\b[A-Z]{2}\b/.test(item) || item.includes('/')),
+  );
+
+  return {
+    cityStateLine,
+    postalCodeLine,
+  };
+};
+
+const extractAddressDisplayLines = item => {
+  const addressParts = resolveAddressDisplayParts(item);
+  const addressExtraFallback = extractAddressExtraFallback(item?.addressExtra);
+  const primaryLine = normalizeText(
+    addressParts.streetLine || addressParts.primary || item?.addressLine,
+  );
+  const cityStateLine = normalizeText(
+    addressParts.cityStateLine || addressExtraFallback.cityStateLine,
+  );
+  const postalCodeLine = formatPostalCode(
+    addressParts.postalCode || addressExtraFallback.postalCodeLine,
+  );
+
+  return {
+    primaryLine,
+    cityStateLine,
+    postalCodeLine,
+  };
 };
 
 const normalizeCoordinate = value => {
@@ -106,92 +110,8 @@ const extractCoordinates = address => {
   return {latitude, longitude};
 };
 
-const injectPopupStyles = () => {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  if (document.getElementById('shop-google-map-popup-styles')) {
-    return;
-  }
-
-  const styleElement = document.createElement('style');
-  styleElement.id = 'shop-google-map-popup-styles';
-  styleElement.textContent = `
-    .shop-map-popup {
-      min-width: 220px;
-      max-width: 280px;
-      color: #0f172a;
-      font-family: Arial, sans-serif;
-    }
-
-    .shop-map-popup-company {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #0369a1;
-      margin-bottom: 6px;
-    }
-
-    .shop-map-popup-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .shop-map-popup-line {
-      font-size: 13px;
-      line-height: 1.45;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-
-    .shop-map-popup-meta-list {
-      display: grid;
-      gap: 6px;
-      margin-top: 10px;
-    }
-
-    .shop-map-popup-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 12px;
-      color: #334155;
-    }
-
-    .shop-map-popup-meta-label {
-      color: #64748b;
-    }
-
-    .shop-map-popup-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .shop-map-popup-action {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid #cbd5e1;
-      padding: 10px 12px;
-      text-align: center;
-      text-decoration: none;
-      color: #0f172a;
-      font-size: 12px;
-      font-weight: 700;
-      background: #ffffff;
-    }
-
-    .shop-map-popup-action-primary {
-      border-color: transparent;
-      background: #0ea5e9;
-      color: #ffffff;
-    }
-  `;
-  document.head.appendChild(styleElement);
-};
+const buildPopupTitle = item =>
+  item?.unitAlias || item?.alias || item?.companyName || item?.title || 'Unidade';
 
 const loadGoogleMapsApi = apiKey => {
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -388,8 +308,49 @@ export default function DefaultGoogleMap({
   markerPayloads = [],
   paths = [],
   userCoordinates = null,
+  popupTheme = null,
 }) {
   const containerRef = useRef(null);
+  const directionsRendererRef = useRef(null);
+  const activeRouteRequestIdRef = useRef(0);
+  const [selectedMarkerId, setSelectedMarkerId] = useState(null);
+  const [selectedRouteSummary, setSelectedRouteSummary] = useState(null);
+  const resolvedPopupTheme = useMemo(
+    () => resolveMapPopupTheme(popupTheme),
+    [popupTheme],
+  );
+  const selectedMarker = useMemo(
+    () => markerPayloads.find(item => item.id === selectedMarkerId) || null,
+    [markerPayloads, selectedMarkerId],
+  );
+
+  useEffect(() => {
+    if (!selectedMarkerId) {
+      setSelectedRouteSummary(null);
+      return;
+    }
+
+    if (!selectedMarker) {
+      setSelectedMarkerId(null);
+      setSelectedRouteSummary(null);
+    }
+  }, [selectedMarker, selectedMarkerId]);
+
+  const openExternalUrl = useCallback(url => {
+    const normalizedUrl = String(url || '').trim();
+    if (!normalizedUrl || typeof window === 'undefined') {
+      return;
+    }
+
+    window.open(normalizedUrl, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const closePopup = useCallback(() => {
+    activeRouteRequestIdRef.current += 1;
+    setSelectedMarkerId(null);
+    setSelectedRouteSummary(null);
+    directionsRendererRef.current?.set('directions', null);
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -407,8 +368,6 @@ export default function DefaultGoogleMap({
 
     let cancelled = false;
 
-    injectPopupStyles();
-
     loadGoogleMapsApi(apiKey)
       .then(async () => {
         if (cancelled || !container || !window.google?.maps) {
@@ -425,8 +384,6 @@ export default function DefaultGoogleMap({
           zoomControl: false,
           disableDefaultUI: true,
         });
-
-        const infoWindow = new google.maps.InfoWindow({maxWidth: 320});
         const hasUserCoordinates =
           Number.isFinite(userCoordinates?.latitude) &&
           Number.isFinite(userCoordinates?.longitude);
@@ -444,7 +401,7 @@ export default function DefaultGoogleMap({
               },
             })
           : null;
-        let activeRouteRequestId = 0;
+        directionsRendererRef.current = directionsRenderer;
         const resolveMarkerPayload = async item => {
           const latitude = Number(item?.latitude);
           const longitude = Number(item?.longitude);
@@ -555,19 +512,15 @@ export default function DefaultGoogleMap({
           bounds.extend(position);
 
           marker.addListener('click', () => {
-            infoWindow.setContent(buildPopupContent(item, position));
-            infoWindow.open({
-              anchor: marker,
-              map,
-              shouldFocus: false,
-            });
+            setSelectedMarkerId(item.id);
+            setSelectedRouteSummary(null);
 
             if (!directionsService || !directionsRenderer) {
               return;
             }
 
-            const routeRequestId = activeRouteRequestId + 1;
-            activeRouteRequestId = routeRequestId;
+            const routeRequestId = activeRouteRequestIdRef.current + 1;
+            activeRouteRequestIdRef.current = routeRequestId;
 
             directionsService.route(
               {
@@ -582,17 +535,23 @@ export default function DefaultGoogleMap({
                 if (
                   cancelled ||
                   !directionsRenderer ||
-                  routeRequestId !== activeRouteRequestId
+                  routeRequestId !== activeRouteRequestIdRef.current
                 ) {
                   return;
                 }
 
                 if (status === 'OK' && response) {
+                  const activeLeg = response?.routes?.[0]?.legs?.[0] || null;
                   directionsRenderer.setDirections(response);
+                  setSelectedRouteSummary({
+                    distanceLabel: String(activeLeg?.distance?.text || '').trim(),
+                    durationLabel: String(activeLeg?.duration?.text || '').trim(),
+                  });
                   return;
                 }
 
                 directionsRenderer.set('directions', null);
+                setSelectedRouteSummary(null);
               },
             );
           });
@@ -681,6 +640,7 @@ export default function DefaultGoogleMap({
 
     return () => {
       cancelled = true;
+      directionsRendererRef.current = null;
     };
   }, [apiKey, markerPayloads, paths, userCoordinates]);
 
@@ -694,5 +654,159 @@ export default function DefaultGoogleMap({
     return null;
   }
 
-  return <View ref={containerRef} style={styles.mapViewport} />;
+  const selectedTitle = buildPopupTitle(selectedMarker);
+  const selectedTravelSummary = buildPopupTravelSummaryText(
+    selectedMarker,
+    selectedRouteSummary,
+  );
+  const selectedNavigationPosition = selectedMarker
+    ? {
+        latitude: Number(selectedMarker.latitude),
+        longitude: Number(selectedMarker.longitude),
+      }
+    : null;
+  const selectedAddressLines = extractAddressDisplayLines(selectedMarker);
+  const selectedGoogleMapsUrl = selectedMarker
+    ? selectedMarker.googleMapsUrl ||
+      buildGoogleMapsNavigationUrl(selectedNavigationPosition)
+    : '';
+  const selectedWazeUrl = selectedMarker
+    ? selectedMarker.wazeUrl || buildWazeNavigationUrl(selectedNavigationPosition)
+    : '';
+
+  return (
+    <View style={styles.mapRoot}>
+      <View ref={containerRef} style={styles.mapViewport} />
+      {selectedMarker ? (
+        <View pointerEvents="box-none" style={styles.popupOverlay}>
+          <View
+            style={[
+              styles.popupCard,
+              {
+                backgroundColor: resolvedPopupTheme.modalBackground,
+                shadowColor: resolvedPopupTheme.modalShadow,
+              },
+            ]}>
+            <View style={styles.popupHeaderRow}>
+              <View
+                style={[
+                  styles.popupLogoWrap,
+                  {borderColor: resolvedPopupTheme.dividerBorder},
+                ]}>
+                {selectedMarker.companyLogoUrl ? (
+                  <Image
+                    source={{uri: selectedMarker.companyLogoUrl}}
+                    style={styles.popupLogoImage}
+                    resizeMode="cover"
+                  />
+                ) : null}
+              </View>
+              <View style={styles.popupTitleWrap}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.popupTitle,
+                    {color: resolvedPopupTheme.modalHeaderText},
+                  ]}>
+                  {selectedTitle}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                accessibilityLabel="Fechar detalhes da unidade"
+                onPress={closePopup}
+                style={styles.popupCloseButton}>
+                <Text
+                  style={[
+                    styles.popupCloseText,
+                    {color: resolvedPopupTheme.modalHeaderText},
+                  ]}>
+                  ×
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={[
+                styles.popupInfoCard,
+                {
+                  backgroundColor: resolvedPopupTheme.pageBackground,
+                  borderColor: resolvedPopupTheme.dividerBorder,
+                },
+              ]}>
+              {selectedAddressLines.primaryLine ? (
+                <Text
+                  style={[
+                    styles.popupLine,
+                    {color: resolvedPopupTheme.modalText},
+                  ]}>
+                  {selectedAddressLines.primaryLine}
+                </Text>
+              ) : null}
+              {selectedAddressLines.cityStateLine ? (
+                <Text
+                  style={[
+                    styles.popupLine,
+                    {color: resolvedPopupTheme.modalText},
+                  ]}>
+                  {selectedAddressLines.cityStateLine}
+                </Text>
+              ) : null}
+              {selectedAddressLines.postalCodeLine ? (
+                <Text
+                  style={[
+                    styles.popupLine,
+                    {color: resolvedPopupTheme.modalText},
+                  ]}>
+                  {selectedAddressLines.postalCodeLine}
+                </Text>
+              ) : null}
+              {selectedTravelSummary ? (
+                <Text
+                  style={[
+                    styles.popupSummary,
+                    {color: resolvedPopupTheme.textMuted},
+                  ]}>
+                  {selectedTravelSummary}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.popupActionsRow}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => openExternalUrl(selectedGoogleMapsUrl)}
+                style={[
+                  styles.popupActionButton,
+                  {backgroundColor: resolvedPopupTheme.buttonBackground},
+                ]}>
+                <Text
+                  style={[
+                    styles.popupActionText,
+                    {color: resolvedPopupTheme.buttonText},
+                  ]}>
+                  Abrir no Maps
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => openExternalUrl(selectedWazeUrl)}
+                style={[
+                  styles.popupActionButton,
+                  {backgroundColor: resolvedPopupTheme.buttonBackground},
+                ]}>
+                <Text
+                  style={[
+                    styles.popupActionText,
+                    {color: resolvedPopupTheme.buttonText},
+                  ]}>
+                  Abrir no Waze
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 }
