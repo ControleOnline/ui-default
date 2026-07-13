@@ -16,7 +16,7 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import { getDateRange } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
-import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
+import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultSearch from '../filters/DefaultSearch';
@@ -577,6 +577,8 @@ const DefaultTable = ({
   const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
   const tableMutedColor = palette.textSecondary;
+  const panelBackgroundColor = themeColors.panelBackground;
+  const panelBorderColor = themeColors.panelBorder;
   const modalBackgroundColor = themeColors.modalBackground;
   const modalBorderColor = themeColors.modalBorder;
   const modalCloseIconColor = themeColors.modalCloseIcon;
@@ -585,10 +587,19 @@ const DefaultTable = ({
   const modalTextColor = themeColors.modalText;
   const checkboxBorderColor = themeColors.checkboxBorder;
   const checkboxSelectedMarkColor = themeColors.checkboxSelectedMark;
+  const toolbarBackgroundColor = themeColors.toolbarBackground;
+  const toolbarBorderColor = themeColors.toolbarBorder;
+  const toolbarCountBackgroundColor = themeColors.badgeBackground;
+  const toolbarCountTextColor = themeColors.badgeText;
   const tableActionBackgroundColor = themeColors.tableActionBackground;
   const tableActionBorderColor = themeColors.tableActionBorder;
   const tableActionTextColor = themeColors.tableActionIcon;
   const tableButtonBackgroundColor = themeColors.buttonBackground;
+  const tableButtonBorderColor = themeColors.buttonBorder;
+  const tableButtonIconColor = themeColors.buttonIcon;
+  const tableButtonPressedBackgroundColor = themeColors.buttonPressedBackground;
+  const tableButtonPressedBorderColor = themeColors.buttonPressedBorder;
+  const tableButtonPressedIconColor = themeColors.buttonPressedIcon;
   const tableButtonTextColor = themeColors.buttonText;
   const tableFilterBackgroundColor = themeColors.tableFilterBackground;
   const tableFilterBorderColor = themeColors.tableFilterBorder;
@@ -1422,16 +1433,14 @@ const DefaultTable = ({
 
     const isActive = action.active === true;
     const hasLabel = normalizeText(action.label) !== '';
-    const actionColor = action.color || (isActive ? tableActionTextColor : tableMutedColor);
+    const actionColor = action.color || tableActionTextColor;
 
     return (
       <TouchableOpacity
         key={action.key || action.icon || action.label}
         style={[
           styles.toolbarButton,
-          isActive
-            ? { backgroundColor: tableActionBackgroundColor, borderColor: tableActionBorderColor }
-            : null,
+          { backgroundColor: tableActionBackgroundColor, borderColor: tableActionBorderColor },
           action.style,
         ]}
         activeOpacity={0.82}
@@ -1744,13 +1753,13 @@ const DefaultTable = ({
   };
 
   return (
-    <View style={[styles.wrap, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]} onLayout={handleLayout}>
-      <View style={[styles.toolbar, { borderBottomColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}>
+    <View style={[styles.wrap, { borderColor: panelBorderColor, backgroundColor: panelBackgroundColor }]} onLayout={handleLayout}>
+      <View style={[styles.toolbar, { borderBottomColor: toolbarBorderColor, backgroundColor: toolbarBackgroundColor }]}>
         {shouldRenderCompactToolbarTotalItems ? (
           <View style={styles.toolbarCompactLead}>
-            <View style={[styles.toolbarCountPill, { backgroundColor: withOpacity(resolvedAccentColor, 0.12) }]}>
+            <View style={[styles.toolbarCountPill, { backgroundColor: toolbarCountBackgroundColor }]}>
               <Text
-                style={[styles.toolbarCountText, { color: resolvedAccentColor }]}
+                style={[styles.toolbarCountText, { color: toolbarCountTextColor }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.82}
@@ -1792,30 +1801,52 @@ const DefaultTable = ({
             <TouchableOpacity
               style={[
                 styles.toolbarButton,
-                { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor },
-                showColumnFilters ? { backgroundColor: tableFilterBackgroundColor, borderColor: tableFilterBorderColor } : null,
+                { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
+                showColumnFilters
+                  ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
+                  : null,
               ]}
               activeOpacity={0.82}
               onPress={() => setShowColumnFilters(prev => !prev)}
             >
-              <Icon name="filter" size={14} color={showColumnFilters ? tableFilterTextColor : tableMutedColor} />
+              <Icon
+                name="filter"
+                size={14}
+                color={showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor}
+              />
               {activeFilterCount > 0 ? (
-                <Text style={[styles.toolbarBadgeText, { color: showColumnFilters ? tableFilterTextColor : tableMutedColor }]}>{activeFilterCount}</Text>
+                <Text
+                  style={[
+                    styles.toolbarBadgeText,
+                    { color: showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor },
+                  ]}>
+                  {activeFilterCount}
+                </Text>
               ) : null}
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
-            style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+            style={[
+              styles.toolbarButton,
+              { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
+              effectiveViewMode !== 'table'
+                ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
+                : null,
+            ]}
             activeOpacity={0.82}
             onPress={toggleViewMode}
           >
-            <Icon name={effectiveViewMode === 'table' ? 'grid' : 'list'} size={14} color={tableMutedColor} />
+            <Icon
+              name={effectiveViewMode === 'table' ? 'grid' : 'list'}
+              size={14}
+              color={effectiveViewMode !== 'table' ? tableButtonPressedIconColor : tableButtonIconColor}
+            />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toolbarButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+            style={[styles.toolbarButton, { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor }]}
             activeOpacity={0.82}
             onPress={() => setIsColumnMenuOpen(prev => !prev)}>
-            <Icon name="columns" size={14} color={tableMutedColor} />
+            <Icon name="columns" size={14} color={tableButtonTextColor} />
           </TouchableOpacity>
           {shouldRenderAddButton ? (
             <TouchableOpacity
@@ -1956,9 +1987,9 @@ const DefaultTable = ({
             </View>
           ) : null}
           {shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems ? (
-            <View style={[styles.footerCountPill, { backgroundColor: withOpacity(resolvedAccentColor, 0.12) }]}>
+            <View style={[styles.footerCountPill, { backgroundColor: toolbarCountBackgroundColor }]}>
               <Text
-                style={[styles.footerCountText, { color: resolvedAccentColor }]}
+                style={[styles.footerCountText, { color: toolbarCountTextColor }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.82}
