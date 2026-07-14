@@ -1837,7 +1837,7 @@ const DefaultTable = ({
             onPress={toggleViewMode}
           >
             <Icon
-              name={effectiveViewMode === 'table' ? 'grid' : 'list'}
+              name={effectiveViewMode === 'table' ? 'list' : 'grid'}
               size={14}
               color={effectiveViewMode !== 'table' ? tableButtonPressedIconColor : tableButtonIconColor}
             />
