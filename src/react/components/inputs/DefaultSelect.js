@@ -98,9 +98,18 @@ const DefaultSelect = ({
     });
   };
 
-  const open = () => {
+  const open = async () => {
     if (!canEdit && !isForm) return;
-    if (!editing && !isForm) onStartEditing?.();
+    try {
+      if (!editing && !isForm) {
+        const maybePromise = onStartEditing?.();
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          await maybePromise;
+        }
+      }
+    } catch (error) {
+      return;
+    }
     setIsOpen(true);
   };
 

@@ -524,14 +524,12 @@ const DefaultTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
-  const [, setListOptionsVersion] = useState(0);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const endReachedLockRef = useRef(false);
   const loadedListStoresRef = useRef(new Set());
-  const listOptionsWasFocusedRef = useRef(false);
   const previousPaginationStateRef = useRef({
     dataLength: Array.isArray(data) ? data.length : 0,
     filtersKey: JSON.stringify(filters || {}),
@@ -613,17 +611,8 @@ const DefaultTable = ({
   const storeActions = store?.actions || {};
   const storeColumns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
-  const listColumnsSignature = useMemo(
-    () =>
-      columnsForTable
-        .filter(column => normalizeText(column?.list))
-        .map(column => `${getColumnKey(column)}:${normalizeText(column.list)}`)
-        .join('|'),
-    [columnsForTable],
-  );
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
-  const listRequestParamsSignature = stableSerialize(requestParamsSeed);
   const initialFiltersSeed = autoMode
     ? (Object.keys(filters || {}).length > 0 ? filters : storeFilters)
     : (isObject(filters) ? filters : {});
@@ -668,96 +657,105 @@ const DefaultTable = ({
   );
 
   useEffect(() => {
-    const shouldRefreshCompanyScopedLists =
-      isFocused && !listOptionsWasFocusedRef.current;
+    setListOptionsByColumn({});
+    loadedListStoresRef.current.clear();
+  }, [currentCompany?.id]);
 
-    listOptionsWasFocusedRef.current = isFocused;
-
-    if (!isFocused || !listColumnsSignature) return;
-
-    setListOptionsByColumn(current => ({
-      ...current,
-      ...Object.fromEntries(
-        columnsForTable
-          .filter(column => normalizeText(column?.list))
-          .map(column => [getColumnKey(column), []]),
-      ),
-    }));
-
-    const stores = getAllStores?.() || {};
-    const loadPromises = [];
-
-    columnsForTable.forEach(column => {
-      if (!column?.list) return;
-
-      const explicitOptions = getOptionsForColumn?.(column);
-      if (Array.isArray(explicitOptions)) return;
-
-      const listStoreName = resolveStoreNameFromList(column.list);
-      const actionName = resolveListActionName(column.list);
-      const listStore = stores?.[listStoreName];
-      const listAction = listStore?.actions?.[actionName];
-
-      const listLoadParams = resolveColumnListLoadParams({
-        column,
-        currentCompanyId: currentCompany?.id,
-        requestParams: requestParamsSeed,
-      });
-      const isCompanyScopedList = Object.keys(listLoadParams).length > 0;
-
-      if (!listStoreName || typeof listAction !== 'function') return;
-      if (
-        !isCompanyScopedList &&
-        Array.isArray(listStore?.getters?.items) &&
-        listStore.getters.items.length > 0
-      ) {
-        return;
-      }
-
-      const columnKey = getColumnKey(column);
-      const loadKey = `${columnKey}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
-      if (shouldRefreshCompanyScopedLists && isCompanyScopedList) {
-        loadedListStoresRef.current.delete(loadKey);
-      }
-      if (loadedListStoresRef.current.has(loadKey)) return;
-
-      loadedListStoresRef.current.add(loadKey);
-      loadPromises.push(
-        Promise.resolve(
-          listAction({
-            ...listLoadParams,
-            itemsPerPage: LIST_OPTIONS_PAGE_SIZE,
-            __storeMeta: {
-              dedupeKey: `default-table-list-options:${loadKey}`,
-              skipSystemError: true,
-            },
-          }),
-        )
-          .then(response => ({columnKey, items: normalizeCollectionItems(response)}))
-          .catch(() => {
-            loadedListStoresRef.current.delete(loadKey);
-            return {columnKey, items: []};
-          }),
+  const loadListOptionsForColumns = useCallback(
+    (targetColumns = []) => {
+      const columnsToLoad = (Array.isArray(targetColumns) ? targetColumns : []).filter(
+        column => normalizeText(column?.list),
       );
-    });
 
-    if (loadPromises.length === 0) return;
-
-    let cancelled = false;
-    Promise.all(loadPromises).then(results => {
-      if (!cancelled) {
-        setListOptionsByColumn(current => ({
-          ...current,
-          ...Object.fromEntries(results.map(result => [result.columnKey, result.items])),
-        }));
-        setListOptionsVersion(version => version + 1);
+      if (columnsToLoad.length === 0) {
+        return Promise.resolve([]);
       }
-    });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [columnsForTable, currentCompany?.id, getOptionsForColumn, isFocused, listColumnsSignature, listRequestParamsSignature]);
+      const stores = getAllStores?.() || {};
+      const loadPromises = [];
+
+      columnsToLoad.forEach(column => {
+        const explicitOptions = getOptionsForColumn?.(column);
+        if (Array.isArray(explicitOptions)) {
+          return;
+        }
+
+        const listStoreName = resolveStoreNameFromList(column.list);
+        const actionName = resolveListActionName(column.list);
+        const listStore = stores?.[listStoreName];
+        const listAction = listStore?.actions?.[actionName];
+
+        const listLoadParams = resolveColumnListLoadParams({
+          column,
+          currentCompanyId: currentCompany?.id,
+          requestParams: requestParamsSeed,
+        });
+        const isCompanyScopedList = Object.keys(listLoadParams).length > 0;
+
+        if (!listStoreName || typeof listAction !== 'function') {
+          return;
+        }
+
+        if (
+          !isCompanyScopedList &&
+          Array.isArray(listStore?.getters?.items) &&
+          listStore.getters.items.length > 0
+        ) {
+          const columnKey = getColumnKey(column);
+          setListOptionsByColumn(current => ({
+            ...current,
+            [columnKey]: normalizeCollectionItems(listStore.getters.items),
+          }));
+          return;
+        }
+
+        const columnKey = getColumnKey(column);
+        const loadKey = `${columnKey}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
+        if (loadedListStoresRef.current.has(loadKey)) {
+          return;
+        }
+
+        loadedListStoresRef.current.add(loadKey);
+        loadPromises.push(
+          Promise.resolve(
+            listAction({
+              ...listLoadParams,
+              itemsPerPage: LIST_OPTIONS_PAGE_SIZE,
+              __storeMeta: {
+                dedupeKey: `default-table-list-options:${loadKey}`,
+                skipSystemError: true,
+              },
+            }),
+          )
+            .then(response => ({columnKey, items: normalizeCollectionItems(response)}))
+            .catch(() => {
+              loadedListStoresRef.current.delete(loadKey);
+              return {columnKey, items: []};
+            }),
+        );
+      });
+
+      if (loadPromises.length === 0) {
+        return Promise.resolve([]);
+      }
+
+      return Promise.all(loadPromises).then(results => {
+        const nextOptionsByColumn = Object.fromEntries(
+          results.map(result => [result.columnKey, result.items]),
+        );
+
+        if (Object.keys(nextOptionsByColumn).length > 0) {
+          setListOptionsByColumn(current => ({
+            ...current,
+            ...nextOptionsByColumn,
+          }));
+        }
+
+        return results;
+      });
+    },
+    [currentCompany?.id, getOptionsForColumn, requestParamsSeed],
+  );
 
   const buildRequestQuery = useCallback(
     (page, append = false) => {
@@ -1164,10 +1162,11 @@ const DefaultTable = ({
     onDataLoaded(sortedData);
   }, [onDataLoaded, sortedData]);
 
-  const beginEdit = useCallback((row, column) => {
+  const beginEdit = useCallback(async (row, column) => {
     if (!isEditableColumn(column)) return;
+    await loadListOptionsForColumns([column]);
     setEditingCell(`${row?.id || row?.['@id']}:${getColumnKey(column)}`);
-  }, []);
+  }, [loadListOptionsForColumns]);
 
   const clearEdit = useCallback(() => {
     setEditingCell(null);
@@ -1247,7 +1246,13 @@ const DefaultTable = ({
     visibleColumnsPreferenceKey,
   ]);
 
-  const openEditModal = useCallback(row => {
+  const openEditModal = useCallback(async row => {
+    const listColumnsToLoad = columnsForTable.filter(
+      column => isEditableColumn(column) && normalizeText(column?.list),
+    );
+
+    await loadListOptionsForColumns(listColumnsToLoad);
+
     if (typeof onEditRow === 'function') {
       onEditRow(row);
       return;
@@ -1255,9 +1260,9 @@ const DefaultTable = ({
 
     setFormMode('edit');
     setEditingRow(row);
-  }, [onEditRow]);
+  }, [columnsForTable, loadListOptionsForColumns, onEditRow]);
 
-  const openAddForm = useCallback(() => {
+  const openAddForm = useCallback(async () => {
     if (typeof onAdd === 'function') {
       onAdd();
       return;
@@ -1265,9 +1270,13 @@ const DefaultTable = ({
 
     if (typeof actions.save !== 'function') return;
 
+    await loadListOptionsForColumns(
+      columnsForTable.filter(column => isEditableColumn(column) && normalizeText(column?.list)),
+    );
+
     setFormMode('create');
     setEditingRow({});
-  }, [actions, onAdd]);
+  }, [actions, columnsForTable, loadListOptionsForColumns, onAdd]);
 
   const closeEditModal = useCallback(() => {
     setEditingRow(null);
