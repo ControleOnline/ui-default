@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -504,6 +505,7 @@ const DefaultTable = ({
   showTotalItemsInFooter = true,
   showTotalItemsInCompactToolbar = false,
   showRowActions = true,
+  rowStyle = null,
   sort = null,
   storeName = '',
   summary = null,
@@ -1438,6 +1440,8 @@ const DefaultTable = ({
     return (
       <TouchableOpacity
         key={action.key || action.icon || action.label}
+        accessibilityRole="button"
+        accessibilityLabel={action.accessibilityLabel || action.label || action.key || action.icon}
         style={[
           styles.toolbarButton,
           { backgroundColor: tableActionBackgroundColor, borderColor: tableActionBorderColor },
@@ -1543,12 +1547,24 @@ const DefaultTable = ({
     ],
   );
 
-  const renderCardItem = row => {
+  const resolveRowStyle = useCallback(
+    (row, index) => {
+      if (typeof rowStyle === 'function') {
+        return rowStyle(row, index);
+      }
+
+      return rowStyle;
+    },
+    [rowStyle],
+  );
+
+  const renderCardItem = (row, index = 0) => {
     const helpers = buildRowHelpers(row);
+    const rowStyleValue = resolveRowStyle(row, index);
 
     if (typeof renderCard === 'function') {
       return (
-        <View key={row?.['@id'] || row?.id} style={styles.cardItem}>
+        <View key={row?.['@id'] || row?.id} style={[styles.cardItem, rowStyleValue]}>
           {renderCard({
             item: row,
             openEdit: helpers.openEdit,
@@ -1572,7 +1588,14 @@ const DefaultTable = ({
     }
 
     return (
-      <View key={row?.['@id'] || row?.id} style={[styles.defaultCard, { backgroundColor: tableSurfaceColor, borderColor: tableBorderColor }]}>
+      <View
+        key={row?.['@id'] || row?.id}
+        style={[
+          styles.defaultCard,
+          { backgroundColor: tableSurfaceColor, borderColor: tableBorderColor },
+          rowStyleValue,
+        ]}
+      >
         {tableColumns.map(column => (
           <View key={getColumnKey(column)} style={styles.defaultCardLine}>
             <Text style={[styles.defaultCardLabel, { color: tableMutedColor }]}>
@@ -1635,6 +1658,7 @@ const DefaultTable = ({
   const renderTableItem = ({ item: row, index }) => {
     const hasRowPress = typeof onRowPress === 'function';
     const RowComponent = hasRowPress ? TouchableOpacity : View;
+    const rowStyleValue = resolveRowStyle(row, index);
     const rowPressProps = hasRowPress
       ? {
         activeOpacity: 0.84,
@@ -1646,7 +1670,12 @@ const DefaultTable = ({
     return (
       <RowComponent
         key={getRowKey(row)}
-        style={[styles.row, tableLayoutStyle, { backgroundColor: rowBackgroundColor, borderBottomColor: tableBorderColor }]}
+        style={[
+          styles.row,
+          tableLayoutStyle,
+          { backgroundColor: rowBackgroundColor, borderBottomColor: tableBorderColor },
+          rowStyleValue,
+        ]}
         {...rowPressProps}
       >
         {tableColumns.map(column => (
@@ -1869,7 +1898,7 @@ const DefaultTable = ({
         <FlatList
           data={sortedData}
           keyExtractor={getRowKey}
-          renderItem={({ item }) => renderCardItem(item)}
+          renderItem={({ item, index }) => renderCardItem(item, index)}
           style={styles.cardsScroll}
           contentContainerStyle={styles.cardsGrid}
           ListEmptyComponent={renderEmptyState(false)}

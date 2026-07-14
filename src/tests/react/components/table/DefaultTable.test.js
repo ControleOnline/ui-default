@@ -35,8 +35,22 @@ jest.mock('react-native', () => {
   const createComponent = name => props =>
     React.createElement(name, props, props.children);
 
+  const FlatList = props => {
+    const items = Array.isArray(props.data) ? props.data : [];
+
+    return React.createElement(
+      'FlatList',
+      props,
+      items.map((item, index) =>
+        props.renderItem ? props.renderItem({item, index}) : null,
+      ),
+      items.length === 0 && props.ListEmptyComponent ? props.ListEmptyComponent : null,
+      props.ListFooterComponent || null,
+    );
+  };
+
   return {
-    FlatList: createComponent('FlatList'),
+    FlatList,
     Modal: createComponent('Modal'),
     Platform: {
       select: value => value.web || value.default || null,
@@ -148,7 +162,7 @@ describe('DefaultTable', () => {
 
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
-    expect(iconNames).toEqual(expect.arrayContaining(['list', 'columns']));
+    expect(iconNames).toEqual(expect.arrayContaining(['grid', 'columns']));
   });
 
   it('forces cards when entering compact mode and still toggles between cards and list', () => {
@@ -176,20 +190,57 @@ describe('DefaultTable', () => {
     });
 
     expect(tree.root.findAllByType('ScrollView')).toHaveLength(0);
-    expect(tree.root.findByProps({name: 'list'})).toBeTruthy();
-
-    renderer.act(() => {
-      tree.root.findByProps({name: 'list'}).parent.props.onPress();
-    });
-
-    expect(tree.root.findAllByType('ScrollView')).toHaveLength(1);
     expect(tree.root.findByProps({name: 'grid'})).toBeTruthy();
 
     renderer.act(() => {
       tree.root.findByProps({name: 'grid'}).parent.props.onPress();
     });
 
-    expect(tree.root.findAllByType('ScrollView')).toHaveLength(0);
+    expect(tree.root.findAllByType('ScrollView')).toHaveLength(1);
     expect(tree.root.findByProps({name: 'list'})).toBeTruthy();
+
+    renderer.act(() => {
+      tree.root.findByProps({name: 'list'}).parent.props.onPress();
+    });
+
+    expect(tree.root.findAllByType('ScrollView')).toHaveLength(0);
+    expect(tree.root.findByProps({name: 'grid'})).toBeTruthy();
+  });
+
+  it('applies a custom rowStyle to rendered table rows', () => {
+    let tree;
+    const rowStyle = jest.fn(() => ({
+      borderLeftColor: '#DC2626',
+      borderLeftWidth: 4,
+    }));
+
+    mockWindowDimensions = {width: 1024, height: 800};
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [{id: 1, name: 'Pedido 1'}],
+          onRowPress: () => {},
+          rowStyle,
+          showColumnFiltersButton: false,
+        }),
+      );
+    });
+
+    const row = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.props?.activeOpacity === 0.84);
+
+    expect(rowStyle).toHaveBeenCalledWith(
+      expect.objectContaining({id: 1, name: 'Pedido 1'}),
+      0,
+    );
+    expect(Array.isArray(row.props.style)).toBe(true);
+    expect(
+      row.props.style.some(
+        style => style && style.borderLeftWidth === 4 && style.borderLeftColor === '#DC2626',
+      ),
+    ).toBe(true);
   });
 });
