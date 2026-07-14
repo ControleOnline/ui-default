@@ -15,6 +15,7 @@ const DefaultColumnFilter = ({
   accentColor = '#2563EB',
   column,
   filters = {},
+  onBeforeOpen = null,
   getOptionsForColumn = null,
   onChange = null,
   storeName = '',
@@ -68,6 +69,7 @@ const DefaultColumnFilter = ({
           store={storeName}
           field={fieldName}
           icon="filter"
+          onBeforeOpen={onBeforeOpen}
           accentColor={accentColor}
           active={Boolean(selectedKey)}
           label={selected?.label || options[0]?.label || ''}

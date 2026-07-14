@@ -1431,6 +1431,11 @@ const DefaultTable = ({
         accentColor={resolvedAccentColor}
         column={column}
         filters={resolvedFilters}
+        onBeforeOpen={
+          column?.list && isEditableColumn(column)
+            ? () => loadListOptionsForColumns([column])
+            : null
+        }
         getOptionsForColumn={resolvedGetOptionsForColumn}
         onChange={updateFilter}
         storeName={storeName}

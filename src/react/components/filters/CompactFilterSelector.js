@@ -89,6 +89,7 @@ const CompactFilterSelector = ({
   label = '',
   labelCaption = '',
   onClose = null,
+  onBeforeOpen = null,
   onSelect = null,
   options = [],
   selectedKey = '',
@@ -121,10 +122,28 @@ const CompactFilterSelector = ({
   }, [onClose]);
 
   const openModal = useCallback(() => {
-    if (!disabled) {
-      setVisible(true);
+    if (disabled) {
+      return;
     }
-  }, [disabled]);
+
+    try {
+      const maybePromise = onBeforeOpen?.();
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        maybePromise
+          .then(() => {
+            setVisible(true);
+          })
+          .catch(() => {
+            // Keep the modal closed if the lazy load fails.
+          });
+        return;
+      }
+    } catch (error) {
+      return;
+    }
+
+    setVisible(true);
+  }, [disabled, onBeforeOpen]);
 
   const handleSelect = useCallback(optionKey => {
     const shouldClose = onSelect?.(optionKey, {
