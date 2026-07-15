@@ -9,6 +9,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 let consoleErrorSpy = null;
 let mockStores = {};
 let mockWindowDimensions = {width: 480, height: 800};
+let capturedDefaultInputProps = [];
 
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
@@ -76,9 +77,10 @@ jest.mock('../../../../react/components/form/DefaultForm', () => () =>
   React.createElement('DefaultForm'),
 );
 
-jest.mock('../../../../react/components/inputs/DefaultInput', () => () =>
-  React.createElement('DefaultInput'),
-);
+jest.mock('../../../../react/components/inputs/DefaultInput', () => props => {
+  capturedDefaultInputProps.push(props);
+  return React.createElement('DefaultInput', props);
+});
 
 jest.mock('@controleonline/ui-layout/src/react/components/StateStore', () => props =>
   React.createElement('StateStore', props, props.children),
@@ -121,6 +123,7 @@ describe('DefaultTable', () => {
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockWindowDimensions = {width: 480, height: 800};
+    capturedDefaultInputProps = [];
 
     mockStores = {
       people: {
@@ -269,5 +272,63 @@ describe('DefaultTable', () => {
     const footer = tree.root.findByType('CustomFooter');
 
     expect(footer.props.resolvedTotalItemsText).toBe('7 pedidos');
+  });
+
+  it('uses store actions when no explicit table actions are passed', async () => {
+    const save = jest.fn(() => Promise.resolve({
+      id: 1,
+      jobTitle: '/categories/2',
+    }));
+
+    mockStores.employee_profiles = {
+      actions: {
+        save,
+      },
+      getters: {
+        columns: [],
+      },
+    };
+
+    await renderer.act(async () => {
+      renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [
+            {
+              key: 'jobTitle',
+              label: 'Cargo',
+              editable: true,
+              list: 'categories/getItems',
+              formatList: item => ({
+                value: item.id,
+                label: item.name,
+              }),
+              saveFormat: value => `/categories/${parseInt(value.value || value, 10)}`,
+            },
+          ],
+          data: [{
+            id: 1,
+            jobTitle: '/categories/1',
+          }],
+          showColumnFiltersButton: false,
+          showRowActions: false,
+          storeName: 'employee_profiles',
+        }),
+      );
+    });
+
+    expect(capturedDefaultInputProps.length).toBeGreaterThan(0);
+
+    await renderer.act(async () => {
+      await capturedDefaultInputProps[0].onSave({
+        value: '2',
+        label: 'Departamento',
+        object: {id: 2, name: 'Departamento'},
+      });
+    });
+
+    expect(save).toHaveBeenCalledWith({
+      id: '1',
+      jobTitle: '/categories/2',
+    });
   });
 });

@@ -610,6 +610,13 @@ const DefaultTable = ({
   const autoMode = data === undefined && normalizeText(storeName) !== '';
   const searchKey = searchProps?.searchKey || 'search';
   const storeActions = store?.actions || {};
+  const resolvedActions = useMemo(
+    () => ({
+      ...storeActions,
+      ...(actions || {}),
+    }),
+    [actions, storeActions],
+  );
   const storeColumns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
@@ -832,7 +839,7 @@ const DefaultTable = ({
 
   const loadAutoPage = useCallback(
     (page, { append = false } = {}) => {
-      if (!autoMode || typeof storeActions.getItems !== 'function') {
+      if (!autoMode || typeof resolvedActions.getItems !== 'function') {
         return Promise.resolve([]);
       }
 
@@ -850,7 +857,7 @@ const DefaultTable = ({
 
       const query = buildRequestQuery(page, append);
 
-      return Promise.resolve(storeActions.getItems(query))
+      return Promise.resolve(resolvedActions.getItems(query))
         .then(response => {
           if (autoRequestIdRef.current !== requestId) {
             return response;
@@ -880,7 +887,7 @@ const DefaultTable = ({
           }
         });
     },
-    [autoMode, autoQuerySignature, buildRequestQuery, showError, storeActions],
+    [autoMode, autoQuerySignature, buildRequestQuery, resolvedActions, showError],
   );
 
   const availableColumns = useMemo(
@@ -924,7 +931,7 @@ const DefaultTable = ({
 
   useEffect(() => {
     if (!autoMode || !isFocused) return;
-    if (typeof storeActions.getItems !== 'function') return;
+    if (typeof resolvedActions.getItems !== 'function') return;
     if (
       autoLoading ||
       autoLoadingMore ||
@@ -943,7 +950,7 @@ const DefaultTable = ({
     autoQuerySignature,
     isFocused,
     loadAutoPage,
-    storeActions,
+    resolvedActions,
   ]);
 
   const tableColumns = useMemo(
@@ -968,7 +975,7 @@ const DefaultTable = ({
   const hasAddInstruction = addConfig === true || (isObject(addConfig) && addConfig.enabled !== false);
   const shouldRenderAddButton =
     hasAddInstruction &&
-    (typeof onAdd === 'function' || typeof actions.save === 'function');
+    (typeof onAdd === 'function' || typeof resolvedActions.save === 'function');
   const resolvedIsLoading = autoMode ? (autoLoading || autoLoadingMore) : Boolean(isLoading);
   const resolvedData = autoMode
     ? (autoHasLoaded && Array.isArray(store?.getters?.items) ? store.getters.items : [])
@@ -1190,7 +1197,7 @@ const DefaultTable = ({
 
   const saveCell = useCallback((row, column, nextValue) => {
     const fieldName = getColumnKey(column);
-    if (!fieldName || typeof actions.save !== 'function') {
+    if (!fieldName || typeof resolvedActions.save !== 'function') {
       clearEdit();
       return Promise.resolve(null);
     }
@@ -1213,7 +1220,7 @@ const DefaultTable = ({
 
     setSavingCell(cellKey);
 
-    return actions.save(payload)
+    return resolvedActions.save(payload)
       .then(savedItem => {
         onSaved?.(savedItem || { ...row, [fieldName]: nextValue }, row);
         return savedItem;
@@ -1226,7 +1233,7 @@ const DefaultTable = ({
         setSavingCell(null);
         clearEdit();
       });
-  }, [actions, clearEdit, onSaved]);
+  }, [clearEdit, onSaved, resolvedActions]);
 
   const requestSort = useCallback(column => {
     if (!isSortableColumn(column)) return;
@@ -1278,11 +1285,11 @@ const DefaultTable = ({
       return;
     }
 
-    if (typeof actions.save !== 'function') return;
+    if (typeof resolvedActions.save !== 'function') return;
 
     setFormMode('create');
     setEditingRow({});
-  }, [actions, onAdd]);
+  }, [onAdd, resolvedActions]);
 
   const closeEditModal = useCallback(() => {
     setEditingRow(null);
@@ -1294,12 +1301,12 @@ const DefaultTable = ({
 
     if (autoMode) {
       setAutoFilters(resolvedNextFilters);
-      storeActions.setFilters?.(resolvedNextFilters);
+      resolvedActions.setFilters?.(resolvedNextFilters);
       return;
     }
 
     onFilterChange?.(resolvedNextFilters);
-  }, [autoMode, onFilterChange, storeActions]);
+  }, [autoMode, onFilterChange, resolvedActions]);
 
   const updateFilter = useCallback((fieldName, value) => {
     const nextFilters = { ...(resolvedFilters || {}) };
@@ -1328,7 +1335,7 @@ const DefaultTable = ({
         [fieldName]: prev[fieldName] === false,
       };
 
-      actions?.setVisibleColumns?.(next);
+      resolvedActions?.setVisibleColumns?.(next);
       if (visibleColumnsStorageKey) {
         persistVisibleColumnsPreference(
           visibleColumnsStorageKey,
@@ -1338,7 +1345,7 @@ const DefaultTable = ({
       return next;
     });
   }, [
-    actions,
+    resolvedActions,
     columnsForTable,
     visibleColumnsStorageKey,
   ]);
@@ -1737,7 +1744,7 @@ const DefaultTable = ({
 
             <DefaultForm
               accentColor={resolvedAccentColor}
-              actions={actions}
+              actions={resolvedActions}
               columns={isCreate ? columnsForTable : editableColumns}
               getOptionsForColumn={resolvedGetOptionsForColumn}
               mode={formMode}
