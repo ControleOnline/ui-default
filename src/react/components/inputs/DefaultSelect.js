@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -31,6 +31,7 @@ const DefaultSelect = ({
   getOptionsForColumn = null,
   label = '',
   numberOfLines = 1,
+  onBeforeOpen = null,
   onCancelEditing = null,
   onChangeValue = null,
   onSave = null,
@@ -68,10 +69,6 @@ const DefaultSelect = ({
     );
   }, [options, searchText]);
 
-  useEffect(() => {
-    if (editing && autoSave) setIsOpen(true);
-  }, [autoSave, editing]);
-
   const close = () => {
     setIsOpen(false);
     setSearchText('');
@@ -106,6 +103,11 @@ const DefaultSelect = ({
         if (maybePromise && typeof maybePromise.then === 'function') {
           await maybePromise;
         }
+      }
+
+      const maybeLoad = onBeforeOpen?.();
+      if (maybeLoad && typeof maybeLoad.then === 'function') {
+        await maybeLoad;
       }
     } catch (error) {
       return;

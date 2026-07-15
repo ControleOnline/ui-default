@@ -1162,11 +1162,10 @@ const DefaultTable = ({
     onDataLoaded(sortedData);
   }, [onDataLoaded, sortedData]);
 
-  const beginEdit = useCallback(async (row, column) => {
+  const beginEdit = useCallback((row, column) => {
     if (!isEditableColumn(column)) return;
-    await loadListOptionsForColumns([column]);
     setEditingCell(`${row?.id || row?.['@id']}:${getColumnKey(column)}`);
-  }, [loadListOptionsForColumns]);
+  }, []);
 
   const clearEdit = useCallback(() => {
     setEditingCell(null);
@@ -1246,13 +1245,7 @@ const DefaultTable = ({
     visibleColumnsPreferenceKey,
   ]);
 
-  const openEditModal = useCallback(async row => {
-    const listColumnsToLoad = columnsForTable.filter(
-      column => isEditableColumn(column) && normalizeText(column?.list),
-    );
-
-    await loadListOptionsForColumns(listColumnsToLoad);
-
+  const openEditModal = useCallback(row => {
     if (typeof onEditRow === 'function') {
       onEditRow(row);
       return;
@@ -1260,9 +1253,9 @@ const DefaultTable = ({
 
     setFormMode('edit');
     setEditingRow(row);
-  }, [columnsForTable, loadListOptionsForColumns, onEditRow]);
+  }, [onEditRow]);
 
-  const openAddForm = useCallback(async () => {
+  const openAddForm = useCallback(() => {
     if (typeof onAdd === 'function') {
       onAdd();
       return;
@@ -1270,13 +1263,9 @@ const DefaultTable = ({
 
     if (typeof actions.save !== 'function') return;
 
-    await loadListOptionsForColumns(
-      columnsForTable.filter(column => isEditableColumn(column) && normalizeText(column?.list)),
-    );
-
     setFormMode('create');
     setEditingRow({});
-  }, [actions, columnsForTable, loadListOptionsForColumns, onAdd]);
+  }, [actions, onAdd]);
 
   const closeEditModal = useCallback(() => {
     setEditingRow(null);
@@ -1413,6 +1402,7 @@ const DefaultTable = ({
           columns={columnsForTable}
           editing={isEditing}
           getOptionsForColumn={resolvedGetOptionsForColumn}
+          onBeforeOpen={() => loadListOptionsForColumns([column])}
           onCancelEditing={clearEdit}
           onSave={value => saveCell(row, column, value)}
           onStartEditing={() => beginEdit(row, column)}
@@ -1521,6 +1511,7 @@ const DefaultTable = ({
             inputStyle={options.inputStyle}
             label={options.label}
             numberOfLines={options.numberOfLines}
+            onBeforeOpen={() => loadListOptionsForColumns([column])}
             onCancelEditing={clearEdit}
             onSave={value => saveCell(row, column, value)}
             onStartEditing={() => beginEdit(row, column)}
@@ -1733,6 +1724,7 @@ const DefaultTable = ({
               columns={isCreate ? columnsForTable : editableColumns}
               getOptionsForColumn={resolvedGetOptionsForColumn}
               mode={formMode}
+              onBeforeOpen={column => loadListOptionsForColumns([column])}
               onCancel={closeEditModal}
               onSaved={(savedItem, originalRow) => {
                 onSaved?.(savedItem, originalRow);

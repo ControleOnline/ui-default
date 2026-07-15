@@ -15,6 +15,7 @@
 - `columns` e a fonte de verdade para label, visibilidade, ordem, `editable`, `sortable`, `inputType`, `list`, `format`, `formatList`, `formatFilter`, `saveFormat`, `searchParam`, `externalFilter`, `summary` e `defaultSort`. `show:false` e um alias aceito para ocultar coluna, junto com `visible:false` e `table:false`.
 - Se uma coluna vier como `editable: false`, ela continua nao editavel mesmo que seja ordenavel. Se vier como `sortable: true`, a ordenacao precisa continuar funcionando.
 - `inputType: 'date-range'` exige filtro de intervalo. `externalFilter: true` habilita o filtro externo quando a listagem suporta esse contrato.
+- Campos `list` e selects com listas nao devem ser pre-carregados no mount nem na abertura do modal inteiro. O carregamento das opcoes acontece no `onBeforeOpen` do proprio campo ou filtro, para evitar requests globais desnecessarios.
 - Nada de search local, sort local, paginacao manual, contador local, total calculado por `reduce` ou cards paralelos quando o `DefaultTable` ja puder resolver isso pelo store.
 - `requestParams` serve para contexto fixo do fluxo, nao para duplicar estado de filtro que ja vive no store.
 - `pageSize` so deve ser usado quando o contrato externo exigir e com justificativa clara no modulo.
