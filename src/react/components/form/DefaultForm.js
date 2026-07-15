@@ -59,6 +59,7 @@ const DefaultForm = ({
   columns = [],
   getOptionsForColumn = null,
   mode = 'edit',
+  onBeforeOpen = null,
   onCancel = null,
   onSaved = null,
   row = {},
@@ -150,6 +151,7 @@ const DefaultForm = ({
                     editing
                     getOptionsForColumn={getOptionsForColumn}
                     label={label}
+                    onBeforeOpen={onBeforeOpen ? () => onBeforeOpen(column) : null}
                     onChangeValue={value => setDraft(prev => ({ ...prev, [fieldName]: value }))}
                     row={row}
                     showLabel

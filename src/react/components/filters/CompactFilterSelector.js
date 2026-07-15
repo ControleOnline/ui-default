@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -15,16 +16,34 @@ import {
 } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import createStyles from './CompactFilterSelector.styles';
 
-const buildTheme = accentColor => ({
-  accentColor: accentColor || '#2563EB',
-  activeBackgroundColor: `${accentColor || '#2563EB'}14`,
-  activeIconBackgroundColor: `${accentColor || '#2563EB'}24`,
-  backgroundColor: '#F8FAFC',
-  borderColor: '#E2E8F0',
-  iconBackgroundColor: '#E2E8F0',
-  optionBackgroundColor: '#F8FAFC',
-  optionBorderColor: '#E2E8F0',
-  textColor: '#0F172A',
+const buildTheme = ({ accentColor, themeColors = {} }) => ({
+  accentColor: accentColor,
+  activeBackgroundColor:
+    themeColors.activeBackgroundColor || `${accentColor}14`,
+  activeIconBackgroundColor:
+    themeColors.activeIconBackgroundColor || `${accentColor}24`,
+  activeChevronColor:
+    themeColors.activeChevronColor ||
+    themeColors.activeIconColor ||
+    accentColor,
+  activeIconColor: themeColors.activeIconColor || accentColor,
+  activeTextColor: themeColors.activeTextColor || accentColor,
+  backgroundColor: themeColors.backgroundColor || '#F8FAFC',
+  borderColor: themeColors.borderColor || '#E2E8F0',
+  captionColor: themeColors.captionColor || '#94A3B8',
+  chevronColor: themeColors.chevronColor || '#94A3B8',
+  closeIconColor: themeColors.closeIconColor || '#64748B',
+  iconBackgroundColor: themeColors.iconBackgroundColor || '#E2E8F0',
+  iconColor: themeColors.iconColor || '#64748B',
+  modalBackgroundColor: themeColors.modalBackgroundColor || '#FFFFFF',
+  modalOverlayColor:
+    themeColors.modalOverlayColor || 'rgba(15, 23, 42, 0.35)',
+  modalTitleColor: themeColors.modalTitleColor || '#0F172A',
+  optionBackgroundColor: themeColors.optionBackgroundColor || '#F8FAFC',
+  optionBorderColor: themeColors.optionBorderColor || '#E2E8F0',
+  optionSelectedTextColor:
+    themeColors.optionSelectedTextColor || accentColor,
+  textColor: themeColors.textColor || '#0F172A',
 });
 
 const noop = () => {};
@@ -70,22 +89,30 @@ const CompactFilterSelector = ({
   label = '',
   labelCaption = '',
   onClose = null,
+  onBeforeOpen = null,
   onSelect = null,
   options = [],
   selectedKey = '',
   field = '',
   store = '',
+  themeColors = {},
   title = '',
 }) => {
   const [visible, setVisible] = useState(false);
+  const { width: windowWidth } = useWindowDimensions();
+  const resolvedTheme = useMemo(
+    () => buildTheme({ accentColor, themeColors }),
+    [accentColor, themeColors],
+  );
   const styles = useMemo(
-    () => createStyles(buildTheme(accentColor), dense),
-    [accentColor, dense],
+    () => createStyles(resolvedTheme, dense, windowWidth),
+    [dense, resolvedTheme, windowWidth],
   );
-  const storeFieldLabel = useMemo(
-    () => resolveStoreFieldLabel({ fallbackLabel: labelCaption || title, field, store }),
-    [field, labelCaption, store, title],
-  );
+  const storeFieldLabel = resolveStoreFieldLabel({
+    fallbackLabel: labelCaption || title,
+    field,
+    store,
+  });
   const resolvedLabelCaption = labelCaption || storeFieldLabel;
   const resolvedTitle = title || storeFieldLabel;
 
@@ -95,10 +122,28 @@ const CompactFilterSelector = ({
   }, [onClose]);
 
   const openModal = useCallback(() => {
-    if (!disabled) {
-      setVisible(true);
+    if (disabled) {
+      return;
     }
-  }, [disabled]);
+
+    try {
+      const maybePromise = onBeforeOpen?.();
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        maybePromise
+          .then(() => {
+            setVisible(true);
+          })
+          .catch(() => {
+            // Keep the modal closed if the lazy load fails.
+          });
+        return;
+      }
+    } catch (error) {
+      return;
+    }
+
+    setVisible(true);
+  }, [disabled, onBeforeOpen]);
 
   const handleSelect = useCallback(optionKey => {
     const shouldClose = onSelect?.(optionKey, {
@@ -134,7 +179,7 @@ const CompactFilterSelector = ({
           <Icon
             name={icon}
             size={dense ? 14 : 15}
-            color={active ? accentColor : '#64748B'}
+            color={active ? resolvedTheme.activeIconColor : resolvedTheme.iconColor}
           />
         </View>
 
@@ -162,7 +207,7 @@ const CompactFilterSelector = ({
         <Icon
           name="chevron-down"
           size={dense ? 14 : 16}
-          color={active ? accentColor : '#94A3B8'}
+          color={active ? resolvedTheme.activeChevronColor : resolvedTheme.chevronColor}
         />
       </TouchableOpacity>
 
@@ -180,7 +225,7 @@ const CompactFilterSelector = ({
                   <Text style={styles.modalTitle}>{resolvedTitle}</Text>
 
                   <TouchableOpacity onPress={closeModal} activeOpacity={0.8}>
-                    <Icon name="x" size={20} color="#64748B" />
+                    <Icon name="x" size={20} color={resolvedTheme.closeIconColor} />
                   </TouchableOpacity>
                 </View>
 
@@ -212,7 +257,11 @@ const CompactFilterSelector = ({
                         </Text>
 
                         {isSelected ? (
-                          <Icon name="check" size={16} color={accentColor} />
+                          <Icon
+                            name="check"
+                            size={16}
+                            color={resolvedTheme.activeIconColor}
+                          />
                         ) : null}
                       </TouchableOpacity>
                     );

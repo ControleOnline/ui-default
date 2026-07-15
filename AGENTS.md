@@ -1,42 +1,48 @@
+# ui-default
+
 ## Escopo
-- Modulo base da arquitetura antiga com store default e utilitarios genericos.
-- Serve como apoio para fluxos legados.
 
-## Estado
-- Este modulo concentra o contrato default de listagens, stores herdados e componentes genericos de filtro.
-- A base Vue em `src/vue` e legado, mas ainda e referencia do comportamento de listagem/filtros.
-- Componentes React que implementam comportamento default de listagem ficam em `src/react`.
+- Biblioteca base de componentes reutilizaveis do front.
+- `DefaultTable` e o shell canonico de listagens React deste sistema.
 
-## Quando usar
-- Prompts sobre `default` store antigo, helpers herdados e base Quasar antiga.
+## Contrato do DefaultTable
 
-## Regra obrigatoria de componentes default
-- `ui-default` e o modulo dono dos componentes padrao de listagem, toolbar, filtros, inputs e edicao inline. Tudo o que for possivel deve ter um componente default aqui para que as telas do sistema sejam reutilizaveis, pequenas e componentizadas.
-- Toda tela nova ou alterada deve partir dos defaults e dos stores, sem excecao. A tela dona pode organizar contexto e visual especifico, mas nao deve recriar comportamento default de tabela, filtro, toolbar, input, select, formatacao ou edicao.
-- Desktop deve seguir o padrao do `DefaultTable`: visao em tabela, colunas vindas do store, edicao por celula/linha e botoes de acao no toolbar.
-- Mobile deve ser responsabilidade do `DefaultTable`: em React, ele alterna para cards em largura compacta e pode receber um renderer/componente de card customizado da tela. A tela dona nao deve criar `FlatList`/cards paralelos para substituir a listagem default.
-- Toda edicao do `DefaultTable` React deve usar `DefaultInput`/`DefaultSelect` deste modulo. Isso vale para celulas desktop, campos de card customizado via `renderField` e modal fallback.
-- A configuracao de cada coluna vem do store. Use `columns` para `list`, `label`, `format`, `formatList`, `formatFilter`, `saveFormat`, `inputType`, `visible`, `editable`, `filter`, `externalFilter`, `filterClass` e metadados equivalentes. Nao duplicar lista, label, formatacao ou regra de edicao na tela.
-- Acoes globais da listagem e atalhos de contexto pertencem ao toolbar default. Quando houver espaco, devem ficar na mesma linha da toolbar para economizar altura vertical.
-- Contagens de listagem (`totalItems`) pertencem sempre ao rodape sticky interno do `DefaultTable`; o componente deve ler o total do store da listagem quando a tela nao passar override explicito.
-- Resumos de colecao vindos do backend em `summary` pertencem ao rodape sticky interno do `DefaultTable`; telas consumidoras nao devem renderizar rodapes paralelos. O rodape de summary so deve ser omitido quando o store daquela listagem registrar `summary: false`.
-- O botao de adicionar pertence a toolbar superior do `DefaultTable` React, nunca solto/flutuante na tela nem no rodape. Ele deve ler `add` do store da listagem e receber da tela apenas o callback contextual quando a criacao exigir navegacao ou fluxo especifico. Quando houver `add: true` e a tela nao fornecer `onAdd`, o fallback padrao e abrir o `DefaultForm`.
+- A tela deve passar preferencialmente apenas `storeName` e contexto minimo, como `requestParams`, `onRowPress`, `renderCard`, `onAdd`, `onEdit` ou componentes extras realmente especificos.
+- O componente pode receber componentes de composicao para variacoes visuais, como `renderCard`, add personalizado, toolbar customizada, acoes auxiliares e modais de apoio; isso nao muda o contrato de que a listagem continua sendo responsabilidade do `DefaultTable`.
+- Quando `data` nao e informada e existe `storeName`, o `DefaultTable` trabalha em modo automatico e carrega os itens pelas actions do store.
+- O componente e responsavel por busca, ordenacao, filtros, paginação, infinite scroll, loading, erro, resumo, visibilidade de colunas, modo desktop e modo card no mobile.
+- O store nao e fallback: ele e a regra. Se `columns` define um comportamento, o `DefaultTable` deve obedecer sem recriar uma segunda regra na tela.
+- `columns` e a fonte de verdade para label, visibilidade, ordem, `editable`, `sortable`, `inputType`, `list`, `format`, `formatList`, `formatFilter`, `saveFormat`, `searchParam`, `externalFilter`, `summary` e `defaultSort`. `show:false` e um alias aceito para ocultar coluna, junto com `visible:false` e `table:false`.
+- Se uma coluna vier como `editable: false`, ela continua nao editavel mesmo que seja ordenavel. Se vier como `sortable: true`, a ordenacao precisa continuar funcionando.
+- `inputType: 'date-range'` exige filtro de intervalo. `externalFilter: true` habilita o filtro externo quando a listagem suporta esse contrato.
+- Campos `list` e selects com listas nao devem ser pre-carregados no mount nem na abertura do modal inteiro. O carregamento das opcoes acontece no `onBeforeOpen` do proprio campo ou filtro, para evitar requests globais desnecessarios.
+- Nada de search local, sort local, paginacao manual, contador local, total calculado por `reduce` ou cards paralelos quando o `DefaultTable` ja puder resolver isso pelo store.
+- `requestParams` serve para contexto fixo do fluxo, nao para duplicar estado de filtro que ja vive no store.
+- `pageSize` so deve ser usado quando o contrato externo exigir e com justificativa clara no modulo.
+- `summary` e `totalItems` vem do backend/store e pertencem ao rodape interno do `DefaultTable`.
+- `add: true` abre o `DefaultForm` quando a tela nao prover `onAdd`.
+- O modo controlado continua existindo apenas para excecoes reais de integracao; o padrao do sistema e o modo store-driven.
+- Loadings e erros devem seguir o fluxo central do sistema, sem banners ou estados paralelos na tela.
+- O `get` do store default pode preservar o `item` atual durante refresh quando receber `__storeMeta.preserveItem = true`; use esse modo quando a tela precisa atualizar o registro sem desmontar o detalhe em exibição.
+- Explicacoes permanentes de tela devem sair do corpo principal e ir para o `DefaultTooltip`, acionado por `?`, quando houver contexto necessario para o usuario.
 
-## Filtros
-- `filters` e o estado aplicado da listagem. Ele vive no store acessado por `${configs.store}/filters` e deve ser alterado por `SET_FILTERS`/`applyFilters`, nao por estado local paralelo como fonte da verdade.
-- `configs.filters` habilita ou desabilita a infraestrutura de filtros da listagem.
-- `configs.externalFilters` controla o painel externo de filtros. Em `DefaultTable.vue`, `DefaultExternalFilters` aparece apenas quando `configs.filters`, `configs.externalFilters != false`, `configs.headers != false` e a tela e desktop (`$q.screen.gt.sm`).
-- `DefaultExternalFilters.vue` nao inventa campos: ele percorre `columns` do store e exibe apenas colunas que passam por `shouldIncludeColumn(column)` e possuem `column.externalFilter == true`. Tambem adiciona filtros extras de `configs.components.customFilters`.
-- Filtros inline/de cabecalho da tabela aparecem por coluna quando `configs.filters` esta ativo e `column.filter != false`.
-- A configuracao visual e funcional de cada filtro deve vir da coluna do store: `key`/`name`, `label`, `filterClass`, `inputType`, `list`, `prefix`, `sufix`, `formatFilter`, `visible`, `filter` e `externalFilter`.
-- `FilterInputs.vue` escolhe o tipo de campo pela coluna: `inputType == 'date-range'` usa `DateRangeInput`, colunas com `list` usam `SelectInput`, e o restante usa `q-input`.
-- Novas telas React que substituam esse comportamento devem manter o mesmo contrato: filtros aparecem ou somem por configuracao de store/columns, e filtros compartilhados em `ui-default` devem receber `store` e `field` para resolverem a coluna/label internamente.
-- `DateShortcutFilter` e `CompactFilterSelector` pertencem a `ui-default/src/react/components/filters`. Nao recriar esses componentes em `ui-common` ou nos modulos donos das telas.
-- Busca textual padrao em listagens React deve entrar via `searchProps` do `DefaultTable`, renderizada pequena na toolbar com `DefaultSearch` de `ui-default/src/react/components/filters`, sincronizando `filters.search` quando a listagem usa store/default filters.
-- Quando uma tela React usar `DefaultTable`, o backend/store correspondente tambem precisa expor o contrato completo da listagem: ordenacao, pesquisa, filtros e paginacao. Campos de data devem ordenar pelo valor real no backend, e a busca deve ser implementada no backend com `CustomOrFilter` ou mecanismo equivalente, nunca por filtragem local escondida na tela.
-- Em React, `DefaultExternalFilters` e responsavel pelo comportamento responsivo dos filtros externos: desktop exibe os campos inline; largura compacta exibe um botao que abre modal. Telas consumidoras nao devem criar accordion/header mobile paralelo para esses filtros.
+## Componentes de feedback
 
-## Sumarios
-- Toda listagem que exibe totais deve consumir `getters.summary` preenchido pelo backend/store.
-- Nao calcular totais de listagem com `reduce` sobre `items`, porque `items` contem apenas a pagina carregada e pode ignorar filtros, paginacao ou regras de seguranca do backend.
-- Quando faltar um total, ajuste a entidade/backend usando `CollectionSummary` ou um resolver de summary especifico e deixe a action default gravar `data.summary` no store.
+- `StateStore` e o shell compartilhado para loading e saving de tela/seção.
+- O `mode` do `StateStore` e um preset generico do shell e pode variar conforme a tela; exemplos validos incluem `compact`, `display` e outros modos reais do fluxo.
+- `DefaultErrors` e o shell compartilhado para erro local/inline de tela ou tab; ele lê o `error` dos stores informados, aparece como popup, auto-fecha em 5 segundos e limpa o erro do store ao ser fechado.
+- `showError` continua sendo feedback transitório global; nao deve substituir `DefaultErrors` quando o erro for inline ou local.
+- Telas e componentes visuais nao devem usar `ActivityIndicator` direto quando o estado puder ser representado por `StateStore`.
+- O contrato de explicacao permanente continua sendo `DefaultTooltip`, sempre acionado por `?` e fora do corpo principal da tela.
+
+## Arquivos e imagens
+
+- `DefaultFile` e o componente compartilhado para arquivos/imagens vindos do backend.
+- Quando a fonte for um arquivo de download do backend, o componente deve resolver a URL com `app-domain=<dominio configurado>` e enviar o mesmo valor em `headers` quando a plataforma permitir.
+- Telas que exibem logo, fundo, avatar, banner ou qualquer arquivo de empresa devem preferir `DefaultFile` em vez de `Image` direto quando o contrato vier do backend.
+
+## Regra de uso
+
+- Telas antigas devem ser simplificadas para passar o store e apenas as excecoes declarativas que o store nao cobre.
+- Se a listagem precisa de outra regra de exibicao, a primeira opcao e mover essa regra para `columns` ou para o store correspondente.
+- Se duas telas repetem a mesma logica de listagem, a resposta e um componente default ou um ajuste no `DefaultTable`, nunca uma copia local do comportamento.

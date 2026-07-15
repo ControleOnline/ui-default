@@ -8,12 +8,14 @@ import {
 } from '../inputs/defaultInputUtils';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
+import { resolveNextDateFilterValue } from './dateFilterSelection';
 import styles from './DefaultColumnFilter.styles';
 
 const DefaultColumnFilter = ({
   accentColor = '#2563EB',
   column,
   filters = {},
+  onBeforeOpen = null,
   getOptionsForColumn = null,
   onChange = null,
   storeName = '',
@@ -25,7 +27,7 @@ const DefaultColumnFilter = ({
     return <View style={style} />;
   }
 
-  if (column?.inputType === 'date-range') {
+  if (column?.inputType === 'date-range' || column?.type === 'range-date') {
     const filterValue = filters?.[fieldName] || {};
     return (
       <View style={[style, styles.filterCell]}>
@@ -35,10 +37,12 @@ const DefaultColumnFilter = ({
           field={fieldName}
           value={filterValue.shortcut || 'all'}
           customRange={filterValue.customRange || { from: '', to: '' }}
-          onChange={optionKey => onChange?.(fieldName, optionKey === 'all' ? null : {
-            ...(filterValue || {}),
-            shortcut: optionKey,
-          })}
+          onChange={optionKey =>
+            onChange?.(
+              fieldName,
+              resolveNextDateFilterValue(filterValue, optionKey),
+            )
+          }
           onCustomRangeChange={range => onChange?.(fieldName, {
             ...(filterValue || {}),
             shortcut: 'custom',
@@ -50,9 +54,9 @@ const DefaultColumnFilter = ({
   }
 
   if (column?.list) {
-    const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn);
+    const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn, storeName);
     const options = [
-      { key: '', label: global.t?.t(storeName, 'label', 'select') || 'Todos' },
+      { key: '', label: global.t?.t(storeName, 'label', 'select') || 'Selecionar' },
       ...rawOptions,
     ];
     const selectedKey = normalizeOptionKey(filters?.[fieldName]);
@@ -65,6 +69,7 @@ const DefaultColumnFilter = ({
           store={storeName}
           field={fieldName}
           icon="filter"
+          onBeforeOpen={onBeforeOpen}
           accentColor={accentColor}
           active={Boolean(selectedKey)}
           label={selected?.label || options[0]?.label || ''}

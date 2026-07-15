@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -31,6 +31,7 @@ const DefaultSelect = ({
   getOptionsForColumn = null,
   label = '',
   numberOfLines = 1,
+  onBeforeOpen = null,
   onCancelEditing = null,
   onChangeValue = null,
   onSave = null,
@@ -49,8 +50,8 @@ const DefaultSelect = ({
   const fieldName = getColumnKey(column);
   const selectedKey = normalizeOptionKey(value ?? resolveEditValue(column, row));
   const options = useMemo(
-    () => buildOptionsFromColumn(column, getOptionsForColumn),
-    [column, getOptionsForColumn],
+    () => buildOptionsFromColumn(column, getOptionsForColumn, storeName),
+    [column, getOptionsForColumn, storeName],
   );
   const selected = options.find(option => option.key === selectedKey);
   const resolvedLabel =
@@ -67,10 +68,6 @@ const DefaultSelect = ({
       normalizeText(option.key).toLowerCase().includes(query),
     );
   }, [options, searchText]);
-
-  useEffect(() => {
-    if (editing && autoSave) setIsOpen(true);
-  }, [autoSave, editing]);
 
   const close = () => {
     setIsOpen(false);
@@ -98,9 +95,23 @@ const DefaultSelect = ({
     });
   };
 
-  const open = () => {
+  const open = async () => {
     if (!canEdit && !isForm) return;
-    if (!editing && !isForm) onStartEditing?.();
+    try {
+      if (!editing && !isForm) {
+        const maybePromise = onStartEditing?.();
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          await maybePromise;
+        }
+      }
+
+      const maybeLoad = onBeforeOpen?.();
+      if (maybeLoad && typeof maybeLoad.then === 'function') {
+        await maybeLoad;
+      }
+    } catch (error) {
+      return;
+    }
     setIsOpen(true);
   };
 
@@ -147,7 +158,7 @@ const DefaultSelect = ({
               <TextInput
                 style={[inputStyles.input, inputStyles.formInput]}
                 value={searchText}
-                placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search') || 'Buscar'}
+                placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search')}
                 onChangeText={setSearchText}
               />
             </View>

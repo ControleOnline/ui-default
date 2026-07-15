@@ -1,0 +1,115 @@
+import {StyleSheet} from 'react-native';
+
+export default StyleSheet.create({
+  mapRoot: {
+    flex: 1,
+    position: 'relative',
+  },
+  mapViewport: {
+    flex: 1,
+    backgroundColor: '#E5EEF5',
+  },
+  popupOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  popupCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+    shadowOffset: {
+      width: 0,
+      height: 18,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 12,
+  },
+  popupHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  popupLogoWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    flexShrink: 0,
+    marginRight: 12,
+  },
+  popupLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  popupTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  popupTitle: {
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '800',
+  },
+  popupCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  popupCloseText: {
+    fontSize: 28,
+    lineHeight: 30,
+    fontWeight: '400',
+  },
+  popupLine: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  popupInfoCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  popupSummary: {
+    marginTop: 10,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
+  popupActionsRow: {
+    flexDirection: 'row',
+    marginTop: 18,
+    marginHorizontal: -5,
+  },
+  popupActionButton: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    marginHorizontal: 5,
+  },
+  popupActionText: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '800',
+  },
+});

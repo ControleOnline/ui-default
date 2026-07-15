@@ -10,19 +10,60 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
+import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
+import { colors } from '@controleonline/../../src/styles/colors';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
+import { resolveNextDateFilterValue } from './dateFilterSelection';
 import styles from './DefaultExternalFilters.styles';
 
 const DEFAULT_COMPACT_BREAKPOINT = 768;
 const noop = () => {};
 
 const normalizeText = value => String(value || '').trim();
+const DEFAULT_TRANSLATABLE_FIELDS = new Set([
+  'active',
+  'app',
+  'channel',
+  'displaytype',
+  'featured',
+  'frequency',
+  'invoicetype',
+  'installments',
+  'ordertype',
+  'peopletype',
+  'pricecalculation',
+  'productcondition',
+  'realstatus',
+  'status',
+]);
 
 const getColumnKey = column => column?.key || column?.name || '';
 
+const normalizeColumnKey = value =>
+  normalizeText(value)
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+
+const shouldTranslateOptionLabel = (column, storeName, rawLabel) => {
+  if (column?.translate === false || !normalizeText(rawLabel) || !normalizeText(storeName)) {
+    return false;
+  }
+
+  if (column?.translate === true || Array.isArray(column?.list)) {
+    return true;
+  }
+
+  return [column?.key, column?.name, column?.label]
+    .map(normalizeColumnKey)
+    .filter(Boolean)
+    .some(candidate => DEFAULT_TRANSLATABLE_FIELDS.has(candidate));
+};
+
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
+  column?.show !== false &&
   column?.visible !== false &&
   column?.externalFilter === true &&
   column?.filter !== false &&
@@ -45,18 +86,27 @@ const isFilledFilterValue = value => {
   return normalizeText(value) !== '';
 };
 
-const resolveOptionLabel = (column, option) => {
+const resolveOptionLabel = (column, option, storeName = '') => {
   if (!option) return '';
+
+  const translateOptionLabel = rawLabel => {
+    const normalizedLabel = normalizeText(rawLabel);
+    if (!shouldTranslateOptionLabel(column, storeName, normalizedLabel)) {
+      return normalizedLabel;
+    }
+
+    return global.t?.t(storeName, 'label', normalizedLabel) || normalizedLabel;
+  };
 
   if (typeof column?.formatList === 'function') {
     const formatted = column.formatList(option, null, column);
     if (formatted && typeof formatted === 'object') {
-      return normalizeText(formatted.label ?? formatted.value);
+      return translateOptionLabel(formatted.label ?? formatted.value);
     }
-    if (formatted) return normalizeText(formatted);
+    if (formatted) return translateOptionLabel(formatted);
   }
 
-  return normalizeText(
+  const rawLabel = normalizeText(
     option.label ??
       option[column?.searchParam] ??
       option[column?.name] ??
@@ -67,16 +117,18 @@ const resolveOptionLabel = (column, option) => {
       option.alias ??
       option.id,
   );
+
+  return translateOptionLabel(rawLabel);
 };
 
-const buildColumnOptions = (column, options = []) => [
+const buildColumnOptions = (column, options = [], storeName = '') => [
   {
     key: '',
-    label: global.t?.t('invoice', 'label', 'select') || 'Todos',
+    label: global.t?.t(storeName || 'invoice', 'label', 'select'),
   },
   ...(Array.isArray(options) ? options : []).map(option => ({
     key: normalizeFilterValue(option),
-    label: resolveOptionLabel(column, option) || '-',
+    label: resolveOptionLabel(column, option, storeName) || '-',
   })),
 ];
 
@@ -115,12 +167,12 @@ const resolveIcon = column => {
   const key = getColumnKey(column);
   if (key === 'status') return 'check-circle';
   if (key === 'category') return 'tag';
-  if (column?.inputType === 'date-range') return 'calendar';
+  if (column?.inputType === 'date-range' || column?.type === 'range-date') return 'calendar';
   return 'sliders';
 };
 
 const DefaultExternalFilters = ({
-  accentColor = '#2563EB',
+  accentColor = null,
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
   columns = [],
   dateOptionKeys = ['all', 'today', 'yesterday', '7d', '30d', 'custom'],
@@ -131,7 +183,31 @@ const DefaultExternalFilters = ({
   storeName = '',
 }) => {
   const { width } = useWindowDimensions();
+  const peopleStore = useStore('people');
+  const themeStore = useStore('theme');
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const { currentCompany } = peopleStore.getters || {};
+  const { colors: themeColors } = themeStore.getters;
+  const themeTokens = useMemo(
+    () => ({...themeColors, ...(currentCompany?.theme?.colors || {})}),
+    [currentCompany?.theme?.colors, themeColors],
+  );
+  const palette = useMemo(
+    () => resolveThemePalette(themeTokens, colors),
+    [themeTokens],
+  );
+  const resolvedAccentColor = accentColor || palette.primary;
+  const surfaceColor = themeTokens['bg-odd-light'] || palette.background;
+  const panelColor = themeTokens['bg-headers-light'] || palette.background;
+  const borderColor = palette.border;
+  const textColor = palette.text;
+  const textSecondaryColor = palette.textSecondary;
+  const buttonBackgroundColor = themeColors.buttonBackground;
+  const buttonTextColor = themeColors.buttonText;
+  const tableFilterBackgroundColor = themeColors.tableFilterBackground;
+  const tableFilterBorderColor = themeColors.tableFilterBorder;
+  const tableFilterTextColor = themeColors.tableFilterText;
+  const onAccentColor = palette.secondary || palette.text;
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const filterColumns = useMemo(
     () => columns.filter(shouldIncludeColumn),
@@ -170,7 +246,7 @@ const DefaultExternalFilters = ({
     const key = getColumnKey(column);
     const fieldStyle = compact ? styles.modalField : styles.field;
 
-    if (column.inputType === 'date-range') {
+    if (column.inputType === 'date-range' || column.type === 'range-date') {
       const dateState = resolveDateState(filters[key]);
 
       return (
@@ -178,16 +254,10 @@ const DefaultExternalFilters = ({
           <DateShortcutFilter
             value={dateState.value}
             onChange={optionKey => {
-              if (optionKey === 'all') {
-                updateFilter(key, null);
-                return;
-              }
-
-              updateFilter(key, {
-                ...(filters[key] || {}),
-                shortcut: optionKey,
-                customRange: dateState.customRange,
-              });
+              updateFilter(
+                key,
+                resolveNextDateFilterValue(filters[key], optionKey),
+              );
             }}
             customRange={dateState.customRange}
             onCustomRangeChange={range => {
@@ -202,18 +272,18 @@ const DefaultExternalFilters = ({
             field={key}
             optionKeys={dateOptionKeys}
             colors={{
-              accent: accentColor,
+              accent: resolvedAccentColor,
               appBg: 'transparent',
-              border: '#CBD5E1',
-              borderSoft: '#E2E8F0',
-              cardBg: '#FFFFFF',
-              cardBgSoft: '#F8FAFC',
-              danger: '#DC2626',
+              border: borderColor,
+              borderSoft: withOpacity(borderColor, 0.72),
+              cardBg: palette.background,
+              cardBgSoft: surfaceColor,
+              danger: palette.error,
               isLight: true,
-              panelBg: '#EFF6FF',
-              pillTextDark: '#FFFFFF',
-              textPrimary: '#0F172A',
-              textSecondary: '#64748B',
+              panelBg: panelColor,
+              pillTextDark: onAccentColor,
+              textPrimary: textColor,
+              textSecondary: textSecondaryColor,
             }}
           />
         </View>
@@ -221,7 +291,7 @@ const DefaultExternalFilters = ({
     }
 
     if (column.list) {
-      const options = buildColumnOptions(column, getOptionsForColumn?.(column) || []);
+      const options = buildColumnOptions(column, getOptionsForColumn?.(column) || [], storeName);
       const selectedKey = normalizeFilterValue(filters[key]);
       const selectedLabel =
         options.find(option => option.key === selectedKey)?.label ||
@@ -233,7 +303,7 @@ const DefaultExternalFilters = ({
           <CompactFilterSelector
             icon={resolveIcon(column)}
             label={selectedLabel}
-            accentColor={accentColor}
+            accentColor={resolvedAccentColor}
             active={Boolean(selectedKey)}
             dense
             store={storeName}
@@ -250,12 +320,12 @@ const DefaultExternalFilters = ({
     }
 
     return (
-      <View key={key} style={[fieldStyle, styles.inputWrap]}>
-        <Text style={styles.inputLabel}>
+      <View key={key} style={[fieldStyle, styles.inputWrap, { borderColor, backgroundColor: surfaceColor }]}>
+        <Text style={[styles.inputLabel, { color: textSecondaryColor }]}>
           {global.t?.t(storeName, 'input', column.label || key)}
         </Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: textColor }]}
           value={normalizeText(filters[key])}
           onChangeText={value => updateFilter(key, value)}
           onSubmitEditing={() => onChangeFilters?.(filters)}
@@ -264,7 +334,7 @@ const DefaultExternalFilters = ({
     );
   };
 
-  const filterTitle = global.t?.t(storeName, 'label', 'filters') || 'Filtros';
+  const filterTitle = global.t?.t(storeName, 'label', 'filters');
   const filterFields = compact => filterColumns.map(column => renderFilterField(column, compact));
 
   if (isCompactView) {
@@ -273,22 +343,24 @@ const DefaultExternalFilters = ({
         <TouchableOpacity
           style={[
             styles.mobileButton,
-            activeCount > 0 ? { borderColor: accentColor, backgroundColor: `${accentColor}14` } : null,
+            { borderColor: borderColor, backgroundColor: surfaceColor },
+            activeCount > 0 ? { borderColor: tableFilterBorderColor, backgroundColor: tableFilterBackgroundColor } : null,
           ]}
           activeOpacity={0.84}
           onPress={() => setIsFiltersModalOpen(true)}
         >
-          <Icon name="filter" size={15} color={activeCount > 0 ? accentColor : '#64748B'} />
+          <Icon name="filter" size={15} color={activeCount > 0 ? tableFilterTextColor : textSecondaryColor} />
           <Text
             style={[
               styles.mobileButtonText,
-              activeCount > 0 ? { color: accentColor } : null,
+              { color: textColor },
+              activeCount > 0 ? { color: tableFilterTextColor } : null,
             ]}
           >
             {filterTitle}
           </Text>
           {activeCount > 0 ? (
-            <View style={[styles.mobileCountBadge, { backgroundColor: accentColor }]}>
+            <View style={[styles.mobileCountBadge, { backgroundColor: tableFilterBorderColor }]}>
               <Text style={styles.mobileCountBadgeText}>{activeCount}</Text>
             </View>
           ) : null}
@@ -301,17 +373,17 @@ const DefaultExternalFilters = ({
           onRequestClose={() => setIsFiltersModalOpen(false)}
         >
           <TouchableWithoutFeedback onPress={() => setIsFiltersModalOpen(false)}>
-            <View style={styles.modalOverlay}>
+            <View style={[styles.modalOverlay, { backgroundColor: withOpacity(textColor, 0.42) }]}>
               <TouchableWithoutFeedback onPress={noop}>
-                <View style={styles.modalCard}>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>{filterTitle}</Text>
+                <View style={[styles.modalCard, { borderColor, backgroundColor: surfaceColor }]}>
+                  <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
+                    <Text style={[styles.modalTitle, { color: textColor }]}>{filterTitle}</Text>
                     <TouchableOpacity
-                      style={styles.modalCloseButton}
+                      style={[styles.modalCloseButton, { borderColor: borderColor, backgroundColor: surfaceColor }]}
                       activeOpacity={0.82}
                       onPress={() => setIsFiltersModalOpen(false)}
                     >
-                      <Icon name="x" size={18} color="#64748B" />
+                      <Icon name="x" size={18} color={textSecondaryColor} />
                     </TouchableOpacity>
                   </View>
 
@@ -323,25 +395,25 @@ const DefaultExternalFilters = ({
                     {filterFields(true)}
                   </ScrollView>
 
-                  <View style={styles.modalActions}>
+                  <View style={[styles.modalActions, { borderTopColor: borderColor }]}>
                     {activeCount > 0 ? (
                       <TouchableOpacity
-                        style={styles.modalSecondaryButton}
+                        style={[styles.modalSecondaryButton, { borderColor: borderColor, backgroundColor: surfaceColor }]}
                         activeOpacity={0.84}
                         onPress={clearFilters}
                       >
-                        <Text style={styles.modalSecondaryButtonText}>
-                          {global.t?.t(storeName, 'button', 'clear') || 'Limpar'}
+                        <Text style={[styles.modalSecondaryButtonText, { color: textColor }]}>
+                          {global.t?.t(storeName, 'button', 'clear')}
                         </Text>
                       </TouchableOpacity>
                     ) : null}
                     <TouchableOpacity
-                      style={[styles.modalPrimaryButton, { backgroundColor: accentColor }]}
+                      style={[styles.modalPrimaryButton, { backgroundColor: buttonBackgroundColor }]}
                       activeOpacity={0.84}
                       onPress={() => setIsFiltersModalOpen(false)}
                     >
-                      <Text style={styles.modalPrimaryButtonText}>
-                        {global.t?.t(storeName, 'button', 'apply') || 'Aplicar'}
+                      <Text style={[styles.modalPrimaryButtonText, { color: buttonTextColor }]}>
+                        {global.t?.t(storeName, 'button', 'apply')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -354,17 +426,17 @@ const DefaultExternalFilters = ({
     );
   }
 
-  return (
+    return (
     <View style={styles.wrap}>
       {filterFields(false)}
 
       {activeCount > 0 ? (
         <TouchableOpacity
-          style={styles.clearButton}
+          style={[styles.clearButton, { borderColor: borderColor, backgroundColor: surfaceColor }]}
           activeOpacity={0.82}
           onPress={clearFilters}
         >
-          <Icon name="x" size={14} color="#64748B" />
+          <Icon name="x" size={14} color={textSecondaryColor} />
         </TouchableOpacity>
       ) : null}
     </View>

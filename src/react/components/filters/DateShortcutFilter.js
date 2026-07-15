@@ -16,18 +16,18 @@ import {
 } from '@controleonline/ui-common/src/react/utils/storeColumns';
 
 const createDefaultColors = colors => ({
-  accent: colors?.accent || '#0EA5E9',
+  accent: colors?.accent,
   appBg: colors?.appBg || 'transparent',
-  border: colors?.border || '#CBD5E1',
-  borderSoft: colors?.borderSoft || '#E2E8F0',
-  cardBg: colors?.cardBg || '#FFFFFF',
-  cardBgSoft: colors?.cardBgSoft || '#F8FAFC',
-  danger: colors?.danger || '#DC2626',
+  border: colors?.border,
+  borderSoft: colors?.borderSoft,
+  cardBg: colors?.cardBg,
+  cardBgSoft: colors?.cardBgSoft,
+  danger: colors?.danger,
   isLight: typeof colors?.isLight === 'boolean' ? colors.isLight : true,
-  panelBg: colors?.panelBg || '#F1F5F9',
-  pillTextDark: colors?.pillTextDark || '#0F172A',
-  textPrimary: colors?.textPrimary || '#0F172A',
-  textSecondary: colors?.textSecondary || '#64748B',
+  panelBg: colors?.panelBg,
+  pillTextDark: colors?.pillTextDark,
+  textPrimary: colors?.textPrimary,
+  textSecondary: colors?.textSecondary,
 });
 
 const COMPACT_DATE_LABELS = {
@@ -36,6 +36,7 @@ const COMPACT_DATE_LABELS = {
   yesterday: 'Ontem',
   '7d': '7 dias',
   '30d': '30 dias',
+  '90d': '90 dias',
   this_month: 'Este mes',
   last_month: 'Mes ant.',
   custom: 'Periodo',
@@ -92,18 +93,12 @@ const DateShortcutFilter = ({
   const [isCustomEditorVisible, setIsCustomEditorVisible] = useState(
     value === 'custom',
   );
-  const options = useMemo(
-    () => buildDateFilterOptions(optionKeys),
-    [optionKeys],
-  );
-  const periodLabel = useMemo(
-    () => resolveStoreFieldLabel({
-      fallbackLabel: labelCaption || resolveDateFilterTitle(),
-      field,
-      store,
-    }),
-    [field, labelCaption, store],
-  );
+  const options = buildDateFilterOptions(optionKeys);
+  const periodLabel = resolveStoreFieldLabel({
+    fallbackLabel: labelCaption || resolveDateFilterTitle(),
+    field,
+    store,
+  });
   const activeRangeSummary = useMemo(
     () => resolveDateRangeSummary(value, customRange),
     [customRange, value],
@@ -252,7 +247,6 @@ const DateShortcutFilter = ({
                   return;
                 }
 
-                onChange?.('custom');
                 close();
               }}
             >

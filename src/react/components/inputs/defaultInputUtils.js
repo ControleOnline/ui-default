@@ -3,8 +3,49 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnValue } from '@controleonline/ui-common/src/react/utils/storeColumns';
 
 export const normalizeText = value => String(value ?? '').trim();
+const formatHumanLabel = value =>
+  normalizeText(value)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/^\w/, letter => letter.toUpperCase());
+const DEFAULT_TRANSLATABLE_FIELDS = new Set([
+  'active',
+  'app',
+  'channel',
+  'displaytype',
+  'featured',
+  'frequency',
+  'invoicetype',
+  'installments',
+  'ordertype',
+  'peopletype',
+  'pricecalculation',
+  'productcondition',
+  'realstatus',
+  'status',
+]);
 
 export const getColumnKey = column => column?.key || column?.name || '';
+
+const normalizeColumnKey = value =>
+  normalizeText(value)
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+
+const shouldTranslateOptionLabel = (column, storeName, rawLabel) => {
+  if (column?.translate === false || !normalizeText(rawLabel) || !normalizeText(storeName)) {
+    return false;
+  }
+
+  if (column?.translate === true || Array.isArray(column?.list)) {
+    return true;
+  }
+
+  return [column?.key, column?.name, column?.label]
+    .map(normalizeColumnKey)
+    .filter(Boolean)
+    .some(candidate => DEFAULT_TRANSLATABLE_FIELDS.has(candidate));
+};
 
 export const normalizeId = value => {
   if (!value) return '';
@@ -35,18 +76,30 @@ export const normalizeOptionKey = option => {
   );
 };
 
-export const resolveOptionLabel = (column, option) => {
+export const resolveOptionLabel = (column, option, storeName = '') => {
   if (!option) return '';
+
+  const translateOptionLabel = rawLabel => {
+    const normalizedLabel = normalizeText(rawLabel);
+    if (!shouldTranslateOptionLabel(column, storeName, normalizedLabel)) {
+      return normalizedLabel;
+    }
+
+    const translated = global.t?.t(storeName, 'label', normalizedLabel) || normalizedLabel;
+    return normalizeText(translated) === formatHumanLabel(normalizedLabel)
+      ? normalizedLabel
+      : translated;
+  };
 
   if (typeof column?.formatList === 'function') {
     const formatted = column.formatList(option, null, column);
     if (formatted && typeof formatted === 'object') {
-      return normalizeText(formatted.label ?? formatted.value);
+      return translateOptionLabel(formatted.label ?? formatted.value);
     }
-    if (formatted) return normalizeText(formatted);
+    if (formatted) return translateOptionLabel(formatted);
   }
 
-  return normalizeText(
+  const rawLabel = normalizeText(
     option.label ??
       option[column?.searchParam] ??
       option[column?.name] ??
@@ -57,32 +110,75 @@ export const resolveOptionLabel = (column, option) => {
       option.alias ??
       option.id,
   );
+
+  return translateOptionLabel(rawLabel);
 };
 
 export const resolveStoreNameFromList = list => normalizeText(list).split('/')[0] || '';
 
-export const mapOptions = (column, items = []) =>
-  (Array.isArray(items) ? items : []).map(item => ({
-    key: normalizeOptionKey(
+const filterItemsByListRequestParams = (items = [], column = null) => {
+  const requestParams =
+    column?.listRequestParams &&
+    typeof column.listRequestParams === 'object' &&
+    !Array.isArray(column.listRequestParams)
+      ? column.listRequestParams
+      : null;
+
+  if (!requestParams || Object.keys(requestParams).length === 0) {
+    return Array.isArray(items) ? items : [];
+  }
+
+  return (Array.isArray(items) ? items : []).filter(item =>
+    Object.entries(requestParams).every(([key, expectedValue]) => {
+      if (expectedValue === undefined || expectedValue === null || expectedValue === '') {
+        return true;
+      }
+
+      return normalizeText(item?.[key]) === normalizeText(expectedValue);
+    }),
+  );
+};
+
+export const mapOptions = (column, items = [], storeName = '') => {
+  const seenKeys = new Set();
+  const options = [];
+
+  (Array.isArray(items) ? items : []).forEach(item => {
+    const formatted =
       typeof column?.formatList === 'function'
         ? column.formatList(item, null, column)
-        : item,
-    ) || normalizeOptionKey(item),
-    label: resolveOptionLabel(column, item) || '-',
-    raw: item,
-  }));
+        : item;
+    const key = normalizeOptionKey(formatted) || normalizeOptionKey(item);
+    const dedupeKey = key || normalizeText(resolveOptionLabel(column, item, storeName)).toLowerCase();
 
-export const buildOptionsFromColumn = (column, getOptionsForColumn = null) => {
+    if (dedupeKey && seenKeys.has(dedupeKey)) return;
+    if (dedupeKey) seenKeys.add(dedupeKey);
+
+    options.push({
+      key,
+      label: resolveOptionLabel(column, item, storeName) || '-',
+      raw: item,
+    });
+  });
+
+  return options;
+};
+
+export const buildOptionsFromColumn = (column, getOptionsForColumn = null, storeName = '') => {
   const explicitOptions = getOptionsForColumn?.(column);
   if (Array.isArray(explicitOptions) && explicitOptions.length > 0) {
-    return mapOptions(column, explicitOptions);
+    return mapOptions(column, explicitOptions, storeName);
   }
 
   const listStoreName = resolveStoreNameFromList(column?.list);
   if (!listStoreName) return [];
 
   const listStore = getAllStores()?.[listStoreName];
-  return mapOptions(column, listStore?.getters?.items || []);
+  return mapOptions(
+    column,
+    filterItemsByListRequestParams(listStore?.getters?.items || [], column),
+    storeName,
+  );
 };
 
 export const resolveCellText = ({ column, columns = [], row, storeName, value }) => {
