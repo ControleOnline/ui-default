@@ -1235,6 +1235,14 @@ const DefaultTable = ({
       });
   }, [clearEdit, onSaved, resolvedActions]);
 
+  const requestRowPress = useCallback(row => {
+    if (editingCell || savingCell || typeof onRowPress !== 'function') {
+      return;
+    }
+
+    onRowPress(row);
+  }, [editingCell, onRowPress, savingCell]);
+
   const requestSort = useCallback(column => {
     if (!isSortableColumn(column)) return;
 
@@ -1509,7 +1517,7 @@ const DefaultTable = ({
   const buildRowHelpers = useCallback(
     row => {
       const openEdit = () => openEditModal(row);
-      const openRow = typeof onRowPress === 'function' ? () => onRowPress(row) : null;
+      const openRow = typeof onRowPress === 'function' ? () => requestRowPress(row) : null;
       const renderValue = (fieldName, fallback = '-') => {
         const column = getColumnByField(fieldName);
         if (!column) return fallback;
@@ -1566,6 +1574,7 @@ const DefaultTable = ({
       resolvedGetOptionsForColumn,
       openEditModal,
       onRowPress,
+      requestRowPress,
       saveCell,
       savingCell,
       storeName,
@@ -1687,7 +1696,7 @@ const DefaultTable = ({
     const rowPressProps = hasRowPress
       ? {
         activeOpacity: 0.84,
-        onPress: () => onRowPress(row),
+        onPress: () => requestRowPress(row),
       }
       : {};
     const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;

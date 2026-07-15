@@ -247,6 +247,111 @@ describe('DefaultTable', () => {
     ).toBe(true);
   });
 
+  it('blocks row navigation while an inline cell is editing or saving', async () => {
+    let resolveSave;
+    const onRowPress = jest.fn();
+    const save = jest.fn(() => new Promise(resolve => {
+      resolveSave = resolve;
+    }));
+    let tree;
+
+    mockWindowDimensions = {width: 1024, height: 800};
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          actions: {save},
+          columns: [{key: 'name', label: 'Nome', editable: true}],
+          data: [{id: 1, name: 'Cliente'}],
+          onRowPress,
+          showColumnFiltersButton: false,
+          showRowActions: false,
+        }),
+      );
+    });
+
+    const findRow = () => tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.props?.activeOpacity === 0.84);
+    const latestInput = () => capturedDefaultInputProps[capturedDefaultInputProps.length - 1];
+
+    renderer.act(() => {
+      findRow().props.onPress();
+    });
+    expect(onRowPress).toHaveBeenCalledTimes(1);
+    onRowPress.mockClear();
+
+    renderer.act(() => {
+      latestInput().onStartEditing();
+    });
+    renderer.act(() => {
+      findRow().props.onPress();
+    });
+    expect(onRowPress).not.toHaveBeenCalled();
+
+    let savePromise;
+    renderer.act(() => {
+      savePromise = latestInput().onSave('Cliente alterado');
+    });
+    renderer.act(() => {
+      latestInput().onCancelEditing();
+    });
+    renderer.act(() => {
+      findRow().props.onPress();
+    });
+    expect(onRowPress).not.toHaveBeenCalled();
+
+    await renderer.act(async () => {
+      resolveSave({id: 1, name: 'Cliente alterado'});
+      await savePromise;
+    });
+
+    renderer.act(() => {
+      findRow().props.onPress();
+    });
+    expect(onRowPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('protects custom card openRow while a card field is editing', () => {
+    const onRowPress = jest.fn();
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome', editable: true}],
+          data: [{id: 1, name: 'Cliente'}],
+          onRowPress,
+          renderCard: ({openRow, renderField}) => React.createElement(
+            'CustomCard',
+            {openRow},
+            renderField('name'),
+          ),
+          showColumnFiltersButton: false,
+          showRowActions: false,
+        }),
+      );
+    });
+
+    const latestInput = () => capturedDefaultInputProps[capturedDefaultInputProps.length - 1];
+
+    renderer.act(() => {
+      latestInput().onStartEditing();
+    });
+    renderer.act(() => {
+      tree.root.findByType('CustomCard').props.openRow();
+    });
+    expect(onRowPress).not.toHaveBeenCalled();
+
+    renderer.act(() => {
+      latestInput().onCancelEditing();
+    });
+    renderer.act(() => {
+      tree.root.findByType('CustomCard').props.openRow();
+    });
+    expect(onRowPress).toHaveBeenCalledTimes(1);
+  });
+
   it('renders a custom footer component when provided', () => {
     let tree;
 
