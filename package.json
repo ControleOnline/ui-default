@@ -1,6 +1,6 @@
 {
   "name": "@controleonline/ui-default",
-  "version": "1.0.263",
+  "version": "1.0.264",
   "author": "ControleOnline",
   "description": "ControleOnline Default Quasar UI Component",
   "license": "MIT",
@@ -15,7 +15,4 @@
   "browserslist": [
     "last 1 version, not dead, ie >= 11"
   ],
-  "dependencies": {
-    "@controleonline/ui-legacy": "*"
-  }
 }
