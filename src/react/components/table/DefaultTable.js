@@ -14,7 +14,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores, useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
-import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
+import StateStore from '@controleonline/ui-common/src/react/components/StateStore';
 import { getDateRange } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { resolveThemePalette } from '@controleonline/../../src/styles/branding';

@@ -82,7 +82,7 @@ jest.mock('../../../../react/components/inputs/DefaultInput', () => props => {
   return React.createElement('DefaultInput', props);
 });
 
-jest.mock('@controleonline/ui-layout/src/react/components/StateStore', () => props =>
+jest.mock('@controleonline/ui-common/src/react/components/StateStore', () => props =>
   React.createElement('StateStore', props, props.children),
 );
 
