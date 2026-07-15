@@ -513,6 +513,7 @@ const DefaultTable = ({
   totalItems = null,
   totalItemsLabel = null,
   totalItemsText = null,
+  footerComponent = null,
   visibleColumnsPreferenceKey = '',
 }) => {
   const { width } = useWindowDimensions();
@@ -1082,6 +1083,22 @@ const DefaultTable = ({
   const shouldRenderFooterBar =
     (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
     summaryEntries.length > 0;
+  const footerProps = {
+    columns: columnsForTable,
+    resolvedAccentColor,
+    resolvedTotalItemsText,
+    shouldRenderCompactToolbarTotalItems,
+    shouldRenderFooterTotalItems,
+    storeName,
+    summaryEntries,
+    summaryLabels,
+    tableBorderColor,
+    tableMutedColor,
+    tableSurfaceColor,
+    tableTextColor,
+    toolbarCountBackgroundColor,
+    toolbarCountTextColor,
+  };
 
   const sortedData = useMemo(() => {
     const items = Array.isArray(resolvedData) ? [...resolvedData] : [];
@@ -1985,7 +2002,13 @@ const DefaultTable = ({
 
       {renderLoadingOverlay()}
 
-      {shouldRenderFooterBar ? (
+      {footerComponent ? (
+        React.isValidElement(footerComponent) ? (
+          footerComponent
+        ) : (
+          React.createElement(footerComponent, footerProps)
+        )
+      ) : shouldRenderFooterBar ? (
         <View style={[styles.footerBar, { backgroundColor: tableSurfaceColor, borderTopColor: tableBorderColor }]}>
           {summaryEntries.length > 0 ? (
             <View style={styles.footerSummaryList}>

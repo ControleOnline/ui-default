@@ -243,4 +243,31 @@ describe('DefaultTable', () => {
       ),
     ).toBe(true);
   });
+
+  it('renders a custom footer component when provided', () => {
+    let tree;
+
+    const FooterComponent = props =>
+      React.createElement('CustomFooter', {
+        resolvedTotalItemsText: props.resolvedTotalItemsText,
+      });
+
+    mockWindowDimensions = {width: 1024, height: 800};
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [{id: 1, name: 'Pedido 1'}],
+          footerComponent: FooterComponent,
+          showColumnFiltersButton: false,
+          totalItemsText: '7 pedidos',
+        }),
+      );
+    });
+
+    const footer = tree.root.findByType('CustomFooter');
+
+    expect(footer.props.resolvedTotalItemsText).toBe('7 pedidos');
+  });
 });
