@@ -6,6 +6,10 @@ const {describe, expect, it} = global;
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
+jest.mock('@store', () => ({
+  getAllStores: () => ({}),
+}));
+
 jest.mock('react-native', () => {
   const React = require('react');
   const createComponent = name => props =>
