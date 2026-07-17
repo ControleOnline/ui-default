@@ -52,7 +52,6 @@ const IDENTITY_CELL_MIN_WIDTH = 76;
 const MONEY_CELL_MIN_WIDTH = 132;
 const ACTIONS_CELL_WIDTH = 60;
 const SUMMARY_OPERATIONS = ['sum', 'count', 'avg', 'min', 'max'];
-const LIST_OPTIONS_PAGE_SIZE = 100;
 
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
@@ -499,6 +498,7 @@ const DefaultTable = ({
   onDataLoaded = null,
   requestParams = {},
   renderCard = null,
+  rowActionsComponent = null,
   searchProps = null,
   toolbarActions = [],
   showColumnFiltersButton = true,
@@ -648,6 +648,7 @@ const DefaultTable = ({
   const autoErroredQueryKeyRef = useRef('');
   const autoPageRef = useRef(0);
   const pageSizeNumber = Number(requestParamsSeed.itemsPerPage || pageSize || 50) || 50;
+  const hasCustomRowActions = typeof rowActionsComponent === 'function';
   const resolvedSort = autoMode ? autoSort : sort;
   const resolvedFilters = autoMode ? autoFilters : (filters || {});
   const resolvedSearchValue = normalizeText(resolvedFilters?.[searchKey]);
@@ -728,7 +729,6 @@ const DefaultTable = ({
           Promise.resolve(
             listAction({
               ...listLoadParams,
-              itemsPerPage: LIST_OPTIONS_PAGE_SIZE,
               __storeMeta: {
                 dedupeKey: `default-table-list-options:${loadKey}`,
                 skipSystemError: true,
@@ -967,9 +967,11 @@ const DefaultTable = ({
     () => Object.values(resolvedFilters || {}).filter(value => normalizeText(value) !== '').length,
     [resolvedFilters],
   );
+  const hasEditAction =
+    editableColumns.length > 0 || typeof onEditRow === 'function';
   const hasRowActions =
     showRowActions !== false &&
-    (editableColumns.length > 0 || typeof onEditRow === 'function');
+    (hasEditAction || hasCustomRowActions);
   const storeAddConfig = store?.getters?.add;
   const addConfig = add !== null && add !== undefined ? add : storeAddConfig;
   const hasAddInstruction = addConfig === true || (isObject(addConfig) && addConfig.enabled !== false);
@@ -984,10 +986,13 @@ const DefaultTable = ({
     () =>
       tableColumns.reduce(
         (totalWidth, column) => totalWidth + getColumnMinWidth(column),
-        hasRowActions ? ACTIONS_CELL_WIDTH : 0,
+        hasRowActions ? (hasCustomRowActions ? 96 : ACTIONS_CELL_WIDTH) : 0,
       ),
-    [hasRowActions, tableColumns],
+    [hasCustomRowActions, hasRowActions, tableColumns],
   );
+  const actionsCellWidth = hasRowActions
+    ? (hasCustomRowActions ? 96 : ACTIONS_CELL_WIDTH)
+    : 0;
   const tableWidth = Math.max(tableContainerWidth, tableMinimumWidth);
   const tableLayoutStyle = useMemo(
     () => (tableWidth > 0 ? { minWidth: tableWidth, width: tableWidth } : null),
@@ -1595,6 +1600,22 @@ const DefaultTable = ({
   const renderCardItem = (row, index = 0) => {
     const helpers = buildRowHelpers(row);
     const rowStyleValue = resolveRowStyle(row, index);
+    const RowActionsComponent = rowActionsComponent;
+    const customRowActions = hasCustomRowActions ? (
+      <RowActionsComponent
+        openEdit={helpers.openEdit}
+        openRow={helpers.openRow}
+        row={row}
+      />
+    ) : null;
+    const editButton = hasEditAction ? (
+      <TouchableOpacity
+        style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+        activeOpacity={0.82}
+        onPress={helpers.openEdit}>
+        <Icon name="edit-2" size={14} color={tableMutedColor} />
+      </TouchableOpacity>
+    ) : null;
 
     if (typeof renderCard === 'function') {
       return (
@@ -1609,12 +1630,8 @@ const DefaultTable = ({
           })}
           {hasRowActions ? (
             <View style={styles.cardActions}>
-              <TouchableOpacity
-                style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-                activeOpacity={0.82}
-                onPress={helpers.openEdit}>
-                <Icon name="edit-2" size={14} color={tableMutedColor} />
-              </TouchableOpacity>
+              {customRowActions}
+              {editButton}
             </View>
           ) : null}
         </View>
@@ -1647,12 +1664,10 @@ const DefaultTable = ({
           </View>
         ))}
         {hasRowActions ? (
-          <TouchableOpacity
-            style={[styles.cardEditButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-            activeOpacity={0.82}
-            onPress={helpers.openEdit}>
-            <Icon name="edit-2" size={14} color={tableMutedColor} />
-          </TouchableOpacity>
+          <View style={styles.cardActionGroup}>
+            {customRowActions}
+            {editButton}
+          </View>
         ) : null}
       </View>
     );
@@ -1700,6 +1715,22 @@ const DefaultTable = ({
       }
       : {};
     const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;
+    const RowActionsComponent = rowActionsComponent;
+    const customRowActions = hasCustomRowActions ? (
+      <RowActionsComponent
+        openEdit={() => openEditModal(row)}
+        openRow={typeof onRowPress === 'function' ? () => requestRowPress(row) : null}
+        row={row}
+      />
+    ) : null;
+    const editButton = hasEditAction ? (
+      <TouchableOpacity
+        style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+        activeOpacity={0.82}
+        onPress={() => openEditModal(row)}>
+        <Icon name="edit-2" size={14} color={tableMutedColor} />
+      </TouchableOpacity>
+    ) : null;
 
     return (
       <RowComponent
@@ -1718,13 +1749,17 @@ const DefaultTable = ({
           </React.Fragment>
         ))}
         {hasRowActions ? (
-          <View style={[styles.cell, styles.actionsCell]}>
-            <TouchableOpacity
-              style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-              activeOpacity={0.82}
-              onPress={() => openEditModal(row)}>
-              <Icon name="edit-2" size={14} color={tableMutedColor} />
-            </TouchableOpacity>
+          <View
+            style={[
+              styles.cell,
+              styles.actionsCell,
+              { minWidth: actionsCellWidth, width: actionsCellWidth, flexBasis: actionsCellWidth, maxWidth: actionsCellWidth },
+            ]}
+          >
+            <View style={styles.rowActionsGroup}>
+              {customRowActions}
+              {editButton}
+            </View>
           </View>
         ) : null}
       </RowComponent>
@@ -1980,7 +2015,18 @@ const DefaultTable = ({
                 );
               })}
               {hasRowActions ? (
-                <View style={[styles.cell, styles.actionsCell]}>
+                <View
+                  style={[
+                    styles.cell,
+                    styles.actionsCell,
+                    {
+                      minWidth: actionsCellWidth,
+                      width: actionsCellWidth,
+                      flexBasis: actionsCellWidth,
+                      maxWidth: actionsCellWidth,
+                    },
+                  ]}
+                >
                   <Text style={[styles.headerText, { color: tableTextColor }]}>Acoes</Text>
                 </View>
               ) : null}
@@ -1993,7 +2039,20 @@ const DefaultTable = ({
                     {renderColumnFilter(column)}
                   </React.Fragment>
                 ))}
-                {hasRowActions ? <View style={[styles.cell, styles.actionsCell]} /> : null}
+                {hasRowActions ? (
+                  <View
+                    style={[
+                      styles.cell,
+                      styles.actionsCell,
+                      {
+                        minWidth: actionsCellWidth,
+                        width: actionsCellWidth,
+                        flexBasis: actionsCellWidth,
+                        maxWidth: actionsCellWidth,
+                      },
+                    ]}
+                  />
+                ) : null}
               </View>
             ) : null}
 

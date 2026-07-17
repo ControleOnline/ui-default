@@ -294,6 +294,12 @@ const styles = StyleSheet.create({
     maxWidth: 72,
     alignItems: 'center',
   },
+  rowActionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
   iconButton: {
     width: 28,
     height: 28,
@@ -339,6 +345,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 10,
     bottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardActionGroup: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   defaultCard: {
     borderWidth: 1,
