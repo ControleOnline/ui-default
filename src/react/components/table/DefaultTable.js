@@ -47,6 +47,8 @@ import styles from './DefaultTable.styles';
 
 const DEFAULT_CELL_MIN_WIDTH = 118;
 const DEFAULT_COMPACT_BREAKPOINT = 768;
+const COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH = 400;
+const COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH = 350;
 const END_REACHED_THRESHOLD = 0.35;
 const IDENTITY_CELL_MIN_WIDTH = 76;
 const MONEY_CELL_MIN_WIDTH = 132;
@@ -525,6 +527,7 @@ const DefaultTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
@@ -1036,6 +1039,11 @@ const DefaultTable = ({
     showTotalItemsInCompactToolbar === true &&
     isCompactView &&
     shouldRenderTotalItems;
+  const shouldCollapseToolbarSearch =
+    Boolean(searchProps) &&
+    ((width > 0 && width <= COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH) ||
+      (tableContainerWidth > 0 &&
+        tableContainerWidth <= COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH));
   const resolvedTotalItemsText =
     normalizeText(totalItemsText) !== ''
       ? totalItemsText
@@ -1851,6 +1859,116 @@ const DefaultTable = ({
     );
   };
 
+  const renderTableControls = () => (
+    <>
+      {showColumnFiltersButton ? (
+        <TouchableOpacity
+          style={[
+            styles.toolbarButton,
+            { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
+            showColumnFilters
+              ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
+              : null,
+          ]}
+          activeOpacity={0.82}
+          onPress={() => setShowColumnFilters(prev => !prev)}
+        >
+          <Icon
+            name="filter"
+            size={14}
+            color={showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor}
+          />
+          {activeFilterCount > 0 ? (
+            <Text
+              style={[
+                styles.toolbarBadgeText,
+                { color: showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor },
+              ]}>
+              {activeFilterCount}
+            </Text>
+          ) : null}
+        </TouchableOpacity>
+      ) : null}
+      <TouchableOpacity
+        style={[
+          styles.toolbarButton,
+          { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
+          effectiveViewMode !== 'table'
+            ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
+            : null,
+        ]}
+        activeOpacity={0.82}
+        onPress={toggleViewMode}
+      >
+        <Icon
+          name={effectiveViewMode === 'table' ? 'list' : 'grid'}
+          size={14}
+          color={effectiveViewMode !== 'table' ? tableButtonPressedIconColor : tableButtonIconColor}
+        />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.toolbarButton, { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor }]}
+        activeOpacity={0.82}
+        onPress={() => setIsColumnMenuOpen(prev => !prev)}>
+        <Icon name="columns" size={14} color={tableButtonTextColor} />
+      </TouchableOpacity>
+      {shouldRenderAddButton ? (
+        <TouchableOpacity
+          style={[
+            styles.toolbarButton,
+            styles.toolbarAddButton,
+            { backgroundColor: tableButtonBackgroundColor, borderColor: tableButtonBackgroundColor },
+          ]}
+          activeOpacity={0.85}
+          onPress={openAddForm}
+        >
+          <Icon name="plus" size={16} color={tableButtonTextColor} />
+        </TouchableOpacity>
+      ) : null}
+    </>
+  );
+
+  const renderSearchModal = () => {
+    if (!isSearchModalOpen || !searchProps) return null;
+
+    return (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setIsSearchModalOpen(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
+          <View style={[styles.modalCard, styles.searchModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
+                {global.t?.t(storeName, 'label', 'search')}
+              </Text>
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
+                activeOpacity={0.82}
+                onPress={() => setIsSearchModalOpen(false)}
+              >
+                <Icon name="x" size={16} color={modalCloseIconColor} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.searchModalBody}>
+              <DefaultSearch
+                autoFocus
+                accentColor={resolvedAccentColor}
+                storeName={storeName}
+                {...searchProps}
+                filters={autoMode ? resolvedFilters : searchProps?.filters}
+                onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
+                onSearch={value => {
+                  searchProps?.onSearch?.(value);
+                  setIsSearchModalOpen(false);
+                }}
+                value={autoMode ? resolvedSearchValue : searchProps?.value}
+                style={[styles.searchModalInput, searchProps?.style]}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <View style={[styles.wrap, { borderColor: panelBorderColor, backgroundColor: panelBackgroundColor }]} onLayout={handleLayout}>
       <View style={[styles.toolbar, { borderBottomColor: toolbarBorderColor, backgroundColor: toolbarBackgroundColor }]}>
@@ -1883,7 +2001,7 @@ const DefaultTable = ({
         ) : null}
 
         <View style={shouldRenderCompactToolbarTotalItems ? styles.toolbarCompactActions : styles.toolbarLeft}>
-          {!shouldRenderCompactToolbarTotalItems && searchProps ? (
+          {!shouldRenderCompactToolbarTotalItems && searchProps && !shouldCollapseToolbarSearch ? (
             <DefaultSearch
               accentColor={resolvedAccentColor}
               compact
@@ -1895,74 +2013,28 @@ const DefaultTable = ({
               style={[styles.toolbarSearch, searchProps?.style]}
             />
           ) : null}
-          {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}
-          {showColumnFiltersButton ? (
+          {!shouldRenderCompactToolbarTotalItems && shouldCollapseToolbarSearch ? (
             <TouchableOpacity
               style={[
-                styles.toolbarButton,
+                styles.toolbarSearchButton,
                 { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-                showColumnFilters
-                  ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
-                  : null,
               ]}
+              accessibilityLabel={global.t?.t(storeName, 'label', 'search')}
               activeOpacity={0.82}
-              onPress={() => setShowColumnFilters(prev => !prev)}
+              onPress={() => setIsSearchModalOpen(true)}
             >
-              <Icon
-                name="filter"
-                size={14}
-                color={showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor}
-              />
-              {activeFilterCount > 0 ? (
-                <Text
-                  style={[
-                    styles.toolbarBadgeText,
-                    { color: showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor },
-                  ]}>
-                  {activeFilterCount}
-                </Text>
-              ) : null}
+              <Icon name="search" size={14} color={tableButtonIconColor} />
             </TouchableOpacity>
           ) : null}
-          <TouchableOpacity
-            style={[
-              styles.toolbarButton,
-              { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-              effectiveViewMode !== 'table'
-                ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
-                : null,
-            ]}
-            activeOpacity={0.82}
-            onPress={toggleViewMode}
-          >
-            <Icon
-              name={effectiveViewMode === 'table' ? 'list' : 'grid'}
-              size={14}
-              color={effectiveViewMode !== 'table' ? tableButtonPressedIconColor : tableButtonIconColor}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toolbarButton, { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor }]}
-            activeOpacity={0.82}
-            onPress={() => setIsColumnMenuOpen(prev => !prev)}>
-            <Icon name="columns" size={14} color={tableButtonTextColor} />
-          </TouchableOpacity>
-          {shouldRenderAddButton ? (
-            <TouchableOpacity
-              style={[
-                styles.toolbarButton,
-                styles.toolbarAddButton,
-                { backgroundColor: tableButtonBackgroundColor, borderColor: tableButtonBackgroundColor },
-              ]}
-              activeOpacity={0.85}
-              onPress={openAddForm}
-            >
-              <Icon name="plus" size={16} color={tableButtonTextColor} />
-            </TouchableOpacity>
-          ) : null}
+          <View style={styles.toolbarActionGroup}>
+            {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}
+            {renderTableControls()}
+          </View>
         </View>
 
       </View>
+
+      {renderSearchModal()}
 
       {effectiveViewMode === 'cards' ? (
         <FlatList

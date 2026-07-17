@@ -69,8 +69,8 @@ jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => () =
   React.createElement('DefaultColumnFilter'),
 );
 
-jest.mock('../../../../react/components/filters/DefaultSearch', () => () =>
-  React.createElement('DefaultSearch'),
+jest.mock('../../../../react/components/filters/DefaultSearch', () => props =>
+  React.createElement('DefaultSearch', props),
 );
 
 jest.mock('../../../../react/components/form/DefaultForm', () => () =>
@@ -166,6 +166,49 @@ describe('DefaultTable', () => {
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
     expect(iconNames).toEqual(expect.arrayContaining(['grid', 'columns']));
+  });
+
+  it('keeps the complete search aligned in the toolbar when there is enough room', () => {
+    mockWindowDimensions = {width: 430, height: 932};
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [],
+          searchProps: {placeholder: 'Buscar pedidos'},
+        }),
+      );
+    });
+
+    expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(1);
+    expect(tree.root.findAllByType('icon').map(node => node.props.name)).not.toContain('search');
+  });
+
+  it('collapses search into an icon on narrow toolbars and opens the search modal', () => {
+    mockWindowDimensions = {width: 375, height: 667};
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [],
+          searchProps: {placeholder: 'Buscar pedidos'},
+        }),
+      );
+    });
+
+    expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(0);
+    const searchButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'search'));
+
+    renderer.act(() => searchButton.props.onPress());
+
+    expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(1);
+    expect(tree.root.findByType('DefaultSearch').props.autoFocus).toBe(true);
   });
 
   it('forces cards when entering compact mode and still toggles between cards and list', () => {
