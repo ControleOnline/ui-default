@@ -211,6 +211,51 @@ describe('DefaultTable', () => {
     expect(tree.root.findByType('DefaultSearch').props.autoFocus).toBe(true);
   });
 
+  it('keeps the financial compact toolbar aligned when the total is already in the footer', () => {
+    mockWindowDimensions = {width: 375, height: 667};
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [],
+          searchProps: {placeholder: 'Buscar lançamentos'},
+          showTotalItemsInCompactToolbar: true,
+          showTotalItemsInFooter: true,
+          totalItems: 27,
+        }),
+      );
+    });
+
+    const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
+
+    expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(0);
+    expect(iconNames).toEqual(expect.arrayContaining(['search', 'filter', 'grid', 'columns']));
+    expect(
+      tree.root.findAllByType('Text').filter(node => node.props.children === '27 registros'),
+    ).toHaveLength(1);
+  });
+
+  it('preserves the compact toolbar total when the footer total is disabled', () => {
+    mockWindowDimensions = {width: 375, height: 667};
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [],
+          showTotalItemsInCompactToolbar: true,
+          showTotalItemsInFooter: false,
+          totalItems: 27,
+        }),
+      );
+    });
+
+    expect(tree.root.findAllByType('Text').map(node => node.props.children)).toContain('27 registros');
+  });
+
   it('forces cards when entering compact mode and still toggles between cards and list', () => {
     const props = {
       columns: [{key: 'name', label: 'Nome'}],

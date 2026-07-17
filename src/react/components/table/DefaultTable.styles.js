@@ -33,6 +33,9 @@ const styles = StyleSheet.create({
     gap: 6,
     zIndex: 10,
   },
+  toolbarWithCompactTotal: {
+    flexWrap: 'wrap',
+  },
   toolbarLeft: {
     flex: 1,
     width: '100%',

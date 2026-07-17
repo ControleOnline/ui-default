@@ -1038,7 +1038,8 @@ const DefaultTable = ({
   const shouldRenderCompactToolbarTotalItems =
     showTotalItemsInCompactToolbar === true &&
     isCompactView &&
-    shouldRenderTotalItems;
+    shouldRenderTotalItems &&
+    !shouldRenderFooterTotalItems;
   const shouldCollapseToolbarSearch =
     Boolean(searchProps) &&
     ((width > 0 && width <= COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH) ||
@@ -1971,7 +1972,12 @@ const DefaultTable = ({
 
   return (
     <View style={[styles.wrap, { borderColor: panelBorderColor, backgroundColor: panelBackgroundColor }]} onLayout={handleLayout}>
-      <View style={[styles.toolbar, { borderBottomColor: toolbarBorderColor, backgroundColor: toolbarBackgroundColor }]}>
+      <View
+        style={[
+          styles.toolbar,
+          shouldRenderCompactToolbarTotalItems ? styles.toolbarWithCompactTotal : null,
+          { borderBottomColor: toolbarBorderColor, backgroundColor: toolbarBackgroundColor },
+        ]}>
         {shouldRenderCompactToolbarTotalItems ? (
           <View style={styles.toolbarCompactLead}>
             <View style={[styles.toolbarCountPill, { backgroundColor: toolbarCountBackgroundColor }]}>
