@@ -11,6 +11,23 @@ let mockWindowDimensions = {width: 480, height: 800};
 let mockCapturedColumnFilterProps = [];
 let mockCapturedDefaultInputProps = [];
 
+const createLocalStorageMock = () => {
+  let storage = {};
+
+  return {
+    clear: () => {
+      storage = {};
+    },
+    getItem: key => (key in storage ? storage[key] : null),
+    removeItem: key => {
+      delete storage[key];
+    },
+    setItem: (key, value) => {
+      storage[key] = String(value);
+    },
+  };
+};
+
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
   useStore: jest.fn(name => mockStores[name] || {actions: {}, getters: {}}),
@@ -18,6 +35,10 @@ jest.mock('@store', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useIsFocused: jest.fn(() => false),
+  useRoute: jest.fn(() => ({
+    key: 'OrderHistoryPage-key',
+    name: 'OrderHistoryPage',
+  })),
 }));
 
 jest.mock('@controleonline/ui-common/src/react/components/MessageService', () => ({
@@ -96,6 +117,9 @@ const {
   default: DefaultTable,
   resolveColumnListLoadParams,
 } = require('../../../../react/components/table/DefaultTable');
+const {
+  DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+} = require('../../../../react/utils/tableVisibleColumnsPreferences');
 
 describe('resolveColumnListLoadParams', () => {
   it('uses company for category stores and people for financial owner stores', () => {
@@ -131,6 +155,7 @@ describe('DefaultTable', () => {
     mockWindowDimensions = {width: 480, height: 800};
     mockCapturedColumnFilterProps = [];
     mockCapturedDefaultInputProps = [];
+    global.localStorage = createLocalStorageMock();
 
     mockStores = {
       people: {
@@ -274,6 +299,67 @@ describe('DefaultTable', () => {
 
     expect(tree.root.findAllByType('DefaultColumnFilter')).toHaveLength(2);
     expect(mockCapturedColumnFilterProps.map(props => props.column.key)).toEqual(['name', 'status']);
+  });
+
+  it('persists filters and sort under default-table[store][route]', () => {
+    const setFilters = jest.fn();
+    mockWindowDimensions = {width: 1024, height: 800};
+    mockStores.orders = {
+      actions: {
+        setFilters,
+      },
+      getters: {
+        columns: [
+          {key: 'status', label: 'Status', sortable: true},
+          {key: 'price', label: 'Preco'},
+        ],
+        filters: {},
+      },
+    };
+
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          searchProps: {placeholder: 'Buscar pedidos'},
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    renderer.act(() => {
+      tree.root.findByType('DefaultSearch').props.onChangeFilters({
+        search: '72813',
+      });
+    });
+
+    const statusHeader = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('Text').some(text => text.props.children === 'Status'));
+
+    renderer.act(() => {
+      statusHeader.props.onPress();
+    });
+
+    expect(setFilters).toHaveBeenCalledWith({search: '72813'});
+    expect(
+      JSON.parse(
+        global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
+      ),
+    ).toEqual({
+      orders: {
+        OrderHistoryPage: {
+          filters: {
+            search: '72813',
+          },
+          sort: {
+            direction: 'asc',
+            field: 'status',
+          },
+        },
+      },
+    });
   });
 
   it('preserves the compact toolbar total when the footer total is disabled', () => {

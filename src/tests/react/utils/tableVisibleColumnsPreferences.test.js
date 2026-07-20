@@ -1,17 +1,20 @@
 const {
   DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
-  TABLE_SORT_DIRECTION_PREFERENCES_KEY,
-  TABLE_SORT_FIELD_PREFERENCES_KEY,
+  TABLE_FILTER_PREFERENCES_KEY,
   TABLE_SORT_PREFERENCES_KEY,
   TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY,
   TABLE_VIEW_MODE_PREFERENCES_KEY,
   buildDefaultVisibleColumns,
+  persistTableFiltersPreference,
   persistTableSortPreference,
   persistTableViewModePreference,
   persistVisibleColumnsPreference,
+  resolveDefaultTablePreferenceScope,
+  resolveStoredTableFiltersPreference,
   resolveStoredTableSortPreference,
   resolveStoredTableViewModePreference,
   resolveStoredVisibleColumnsPreference,
+  sanitizeTableFiltersPreference,
   sanitizeVisibleColumnsPreference,
 } = require('../../../react/utils/tableVisibleColumnsPreferences');
 
@@ -40,6 +43,10 @@ describe('tableVisibleColumnsPreferences', () => {
     { name: 'status' },
     { name: 'price', visible: false },
   ];
+  const scope = {
+    storeKey: 'financialEntries',
+    routeKey: 'receivables',
+  };
 
   beforeEach(() => {
     global.localStorage = createLocalStorageMock();
@@ -69,26 +76,65 @@ describe('tableVisibleColumnsPreferences', () => {
     });
   });
 
-  it('reads and writes visible columns preferences under the per-page bucket', () => {
+  it('builds the route and store preference scope', () => {
+    global.location = {pathname: '/order-history-page'};
+
+    expect(
+      resolveDefaultTablePreferenceScope({
+        route: {name: 'IgnoredRoute'},
+        storeName: 'orders',
+      }),
+    ).toEqual({
+      routeKey: 'order-history-page',
+      storeKey: 'orders',
+    });
+
+    delete global.location;
+  });
+
+  it('sanitizes stored filters against filterable columns and search key', () => {
+    expect(
+      sanitizeTableFiltersPreference({
+        columns: [
+          {name: 'status'},
+          {name: 'internal', filter: false},
+        ],
+        filters: {
+          internal: 'hidden',
+          search: 'pedido',
+          status: 'paid',
+          unknown: 'ignored',
+        },
+      }),
+    ).toEqual({
+      search: 'pedido',
+      status: 'paid',
+    });
+  });
+
+  it('reads and writes visible columns under default-table[store][route]', () => {
     global.localStorage.setItem(
       DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
       JSON.stringify({
         theme: 'light',
-        [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: {
-          'financialEntries:receivables': {
-            id: false,
+        financialEntries: {
+          receivables: {
+            [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: {
+              id: false,
+            },
           },
         },
       }),
     );
 
-    expect(
-      resolveStoredVisibleColumnsPreference('financialEntries:receivables'),
-    ).toEqual({
+    expect(resolveStoredVisibleColumnsPreference(scope)).toEqual({
       id: false,
     });
 
-    persistVisibleColumnsPreference('financialEntries:payables', {
+    persistVisibleColumnsPreference({
+      storeKey: 'financialEntries',
+      routeKey: 'payables',
+    }, {
       id: true,
       status: false,
     });
@@ -99,81 +145,91 @@ describe('tableVisibleColumnsPreferences', () => {
       ),
     ).toEqual({
       theme: 'light',
-      [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: {
-        'financialEntries:receivables': {
-          id: false,
+      financialEntries: {
+        receivables: {
+          [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: {
+            id: false,
+          },
         },
-        'financialEntries:payables': {
-          id: true,
-          status: false,
+        payables: {
+          [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: {
+            id: true,
+            status: false,
+          },
         },
       },
     });
   });
 
-  it('reads and writes the preferred table view mode by page', () => {
+  it('reads and writes view mode under default-table[store][route]', () => {
     global.localStorage.setItem(
       DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
       JSON.stringify({
-        [TABLE_VIEW_MODE_PREFERENCES_KEY]: {
-          'financialEntries:payables': 'cards',
+        financialEntries: {
+          payables: {
+            [TABLE_VIEW_MODE_PREFERENCES_KEY]: 'cards',
+          },
         },
       }),
     );
 
     expect(
       resolveStoredTableViewModePreference(
-        'financialEntries:payables',
+        {storeKey: 'financialEntries', routeKey: 'payables'},
         'table',
       ),
     ).toBe('cards');
 
     expect(
-      resolveStoredTableViewModePreference(
-        'financialEntries:receivables',
-        'table',
-      ),
+      resolveStoredTableViewModePreference(scope, 'table'),
     ).toBe('table');
 
-    persistTableViewModePreference('financialEntries:receivables', 'table');
+    persistTableViewModePreference(scope, 'table');
 
     expect(
       JSON.parse(
         global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
       ),
     ).toEqual({
-      [TABLE_VIEW_MODE_PREFERENCES_KEY]: {
-        'financialEntries:payables': 'cards',
-        'financialEntries:receivables': 'table',
+      financialEntries: {
+        payables: {
+          [TABLE_VIEW_MODE_PREFERENCES_KEY]: 'cards',
+        },
+        receivables: {
+          [TABLE_VIEW_MODE_PREFERENCES_KEY]: 'table',
+        },
       },
     });
   });
 
-  it('reads and writes the preferred sort by page', () => {
+  it('reads and writes sort under default-table[store][route]', () => {
     global.localStorage.setItem(
       DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
       JSON.stringify({
-        [TABLE_SORT_FIELD_PREFERENCES_KEY]: {
-          'financialEntries:payables': 'price',
-        },
-        [TABLE_SORT_DIRECTION_PREFERENCES_KEY]: {
-          'financialEntries:payables': 'asc',
+        financialEntries: {
+          payables: {
+            [TABLE_SORT_PREFERENCES_KEY]: {
+              direction: 'asc',
+              field: 'price',
+            },
+          },
         },
       }),
     );
 
     expect(
-      resolveStoredTableSortPreference('financialEntries:payables'),
+      resolveStoredTableSortPreference({
+        storeKey: 'financialEntries',
+        routeKey: 'payables',
+      }),
     ).toEqual({
       direction: 'asc',
       field: 'price',
     });
 
-    expect(
-      resolveStoredTableSortPreference('financialEntries:receivables'),
-    ).toBeNull();
+    expect(resolveStoredTableSortPreference(scope)).toBeNull();
 
-    persistTableSortPreference('financialEntries:receivables', {
+    persistTableSortPreference(scope, {
       direction: 'desc',
       field: 'dueDate',
     });
@@ -183,41 +239,47 @@ describe('tableVisibleColumnsPreferences', () => {
         global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
       ),
     ).toEqual({
-      [TABLE_SORT_FIELD_PREFERENCES_KEY]: {
-        'financialEntries:payables': 'price',
-        'financialEntries:receivables': 'dueDate',
-      },
-      [TABLE_SORT_DIRECTION_PREFERENCES_KEY]: {
-        'financialEntries:payables': 'asc',
-        'financialEntries:receivables': 'desc',
-      },
-      [TABLE_SORT_PREFERENCES_KEY]: {
-        'financialEntries:receivables': {
-          direction: 'desc',
-          field: 'dueDate',
+      financialEntries: {
+        payables: {
+          [TABLE_SORT_PREFERENCES_KEY]: {
+            direction: 'asc',
+            field: 'price',
+          },
+        },
+        receivables: {
+          [TABLE_SORT_PREFERENCES_KEY]: {
+            direction: 'desc',
+            field: 'dueDate',
+          },
         },
       },
     });
   });
 
-  it('keeps reading the legacy combined sort format when needed', () => {
-    global.localStorage.setItem(
-      DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
-      JSON.stringify({
-        [TABLE_SORT_PREFERENCES_KEY]: {
-          'financialEntries:ownTransfers': {
-            direction: 'asc',
-            field: 'createdAt',
-          },
-        },
-      }),
-    );
+  it('reads and writes filters under default-table[store][route]', () => {
+    persistTableFiltersPreference(scope, {
+      search: '72813',
+      status: 'paid',
+    });
+
+    expect(resolveStoredTableFiltersPreference(scope)).toEqual({
+      search: '72813',
+      status: 'paid',
+    });
 
     expect(
-      resolveStoredTableSortPreference('financialEntries:ownTransfers'),
+      JSON.parse(
+        global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
+      ),
     ).toEqual({
-      direction: 'asc',
-      field: 'createdAt',
+      financialEntries: {
+        receivables: {
+          [TABLE_FILTER_PREFERENCES_KEY]: {
+            search: '72813',
+            status: 'paid',
+          },
+        },
+      },
     });
   });
 });

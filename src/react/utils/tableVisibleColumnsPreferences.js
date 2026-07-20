@@ -1,14 +1,55 @@
-export const TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY = 'tableVisibleColumns';
-export const TABLE_VIEW_MODE_PREFERENCES_KEY = 'tableViewModes';
-export const TABLE_SORT_PREFERENCES_KEY = 'tableSorts';
-export const TABLE_SORT_FIELD_PREFERENCES_KEY = 'tableSortFields';
-export const TABLE_SORT_DIRECTION_PREFERENCES_KEY = 'tableSortDirections';
-export const DEFAULT_TABLE_PREFERENCES_STORAGE_KEY = 'DefaultTablePreferences';
+export const TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY = 'visibleColumns';
+export const TABLE_VIEW_MODE_PREFERENCES_KEY = 'viewMode';
+export const TABLE_SORT_PREFERENCES_KEY = 'sort';
+export const TABLE_FILTER_PREFERENCES_KEY = 'filters';
+export const DEFAULT_TABLE_PREFERENCES_STORAGE_KEY = 'default-table';
 
 const isPlainObject = value =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
 const getColumnKey = column => column?.key || column?.name || '';
+
+const normalizePreferenceSegment = value =>
+  String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/[/?#]+/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
+export const resolveDefaultTablePreferenceScope = ({
+  route = null,
+  storeName = '',
+  preferenceKey = '',
+} = {}) => {
+  const routeName =
+    normalizePreferenceSegment(globalThis?.location?.pathname) ||
+    normalizePreferenceSegment(route?.name) ||
+    normalizePreferenceSegment(route?.key) ||
+    'unknown-route';
+  const customSegment = normalizePreferenceSegment(preferenceKey);
+
+  /*
+   * @agents DefaultTable preferences are saved as [store][route].
+   * The same store can back different screens, so filters, sort, view mode,
+   * and column visibility must never be keyed only by store or only by route.
+   */
+  return {
+    routeKey: [routeName, customSegment].filter(Boolean).join(':'),
+    storeKey: normalizePreferenceSegment(storeName) || 'unknown-store',
+  };
+};
+
+const normalizePreferenceScope = scope => {
+  if (!isPlainObject(scope)) {
+    return null;
+  }
+
+  const storeKey = normalizePreferenceSegment(scope.storeKey);
+  const routeKey = normalizePreferenceSegment(scope.routeKey);
+
+  return storeKey && routeKey ? {storeKey, routeKey} : null;
+};
 
 const readStoredPreferences = () => {
   try {
@@ -34,8 +75,49 @@ const writeStoredPreferences = preferences => {
       JSON.stringify(preferences),
     );
   } catch {
-    // localStorage can be unavailable in some runtimes
+    // localStorage can be unavailable in some runtimes.
   }
+};
+
+const readScopedPreference = scope => {
+  const resolvedScope = normalizePreferenceScope(scope);
+  if (!resolvedScope) {
+    return {};
+  }
+
+  const storedPreferences = readStoredPreferences();
+  const storePreferences = storedPreferences[resolvedScope.storeKey];
+  const routePreferences = isPlainObject(storePreferences)
+    ? storePreferences[resolvedScope.routeKey]
+    : null;
+
+  return isPlainObject(routePreferences) ? routePreferences : {};
+};
+
+const writeScopedPreference = (scope, nextValues = {}) => {
+  const resolvedScope = normalizePreferenceScope(scope);
+  if (!resolvedScope || !isPlainObject(nextValues)) {
+    return;
+  }
+
+  const storedPreferences = readStoredPreferences();
+  const storePreferences = isPlainObject(storedPreferences[resolvedScope.storeKey])
+    ? storedPreferences[resolvedScope.storeKey]
+    : {};
+  const routePreferences = isPlainObject(storePreferences[resolvedScope.routeKey])
+    ? storePreferences[resolvedScope.routeKey]
+    : {};
+
+  writeStoredPreferences({
+    ...storedPreferences,
+    [resolvedScope.storeKey]: {
+      ...storePreferences,
+      [resolvedScope.routeKey]: {
+        ...routePreferences,
+        ...nextValues,
+      },
+    },
+  });
 };
 
 export const buildDefaultVisibleColumns = columns =>
@@ -66,127 +148,82 @@ export const sanitizeVisibleColumnsPreference = ({
   }, {});
 };
 
-export const resolveStoredVisibleColumnsPreference = preferenceKey => {
-  if (!preferenceKey) {
-    return null;
+export const sanitizeTableFiltersPreference = ({
+  columns = [],
+  filters = null,
+  searchKey = 'search',
+}) => {
+  if (!isPlainObject(filters)) {
+    return {};
   }
 
-  const storedPreferences = readStoredPreferences();
-  const tableVisibleColumns = storedPreferences[TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY];
+  const allowedFields = new Set(
+    (Array.isArray(columns) ? columns : [])
+      .filter(column => column?.filter !== false && column?.filters !== false)
+      .map(getColumnKey)
+      .filter(Boolean),
+  );
 
-  if (!isPlainObject(tableVisibleColumns)) {
-    return null;
+  if (searchKey) {
+    allowedFields.add(searchKey);
   }
 
-  const pagePreference = tableVisibleColumns[preferenceKey];
-  return isPlainObject(pagePreference) ? pagePreference : null;
+  return Object.keys(filters).reduce((accumulator, key) => {
+    if (allowedFields.has(key)) {
+      accumulator[key] = filters[key];
+    }
+
+    return accumulator;
+  }, {});
+};
+
+export const resolveStoredVisibleColumnsPreference = scope => {
+  const visibleColumns =
+    readScopedPreference(scope)[TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY];
+
+  return isPlainObject(visibleColumns) ? visibleColumns : null;
 };
 
 export const persistVisibleColumnsPreference = (
-  preferenceKey = '',
+  scope = null,
   visibleColumns = {},
 ) => {
-  if (!preferenceKey || !isPlainObject(visibleColumns)) {
+  if (!isPlainObject(visibleColumns)) {
     return;
   }
 
-  const storedPreferences = readStoredPreferences();
-  const tableVisibleColumns = isPlainObject(
-    storedPreferences[TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY],
-  )
-    ? storedPreferences[TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]
-    : {};
-
-  writeStoredPreferences({
-    ...storedPreferences,
-    [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: {
-      ...tableVisibleColumns,
-      [preferenceKey]: visibleColumns,
-    },
+  writeScopedPreference(scope, {
+    [TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY]: visibleColumns,
   });
 };
 
 export const resolveStoredTableViewModePreference = (
-  preferenceKey = '',
+  scope = null,
   fallbackViewMode = 'table',
 ) => {
-  if (!preferenceKey) {
-    return fallbackViewMode;
-  }
+  const resolvedViewMode =
+    readScopedPreference(scope)[TABLE_VIEW_MODE_PREFERENCES_KEY];
 
-  const storedPreferences = readStoredPreferences();
-  const tableViewModes = storedPreferences[TABLE_VIEW_MODE_PREFERENCES_KEY];
-
-  if (!isPlainObject(tableViewModes)) {
-    return fallbackViewMode;
-  }
-
-  const resolvedViewMode = tableViewModes[preferenceKey];
   return resolvedViewMode === 'cards' || resolvedViewMode === 'table'
     ? resolvedViewMode
     : fallbackViewMode;
 };
 
 export const persistTableViewModePreference = (
-  preferenceKey = '',
+  scope = null,
   viewMode = 'table',
 ) => {
-  if (!preferenceKey || (viewMode !== 'cards' && viewMode !== 'table')) {
+  if (viewMode !== 'cards' && viewMode !== 'table') {
     return;
   }
 
-  const storedPreferences = readStoredPreferences();
-  const tableViewModes = isPlainObject(
-    storedPreferences[TABLE_VIEW_MODE_PREFERENCES_KEY],
-  )
-    ? storedPreferences[TABLE_VIEW_MODE_PREFERENCES_KEY]
-    : {};
-
-  writeStoredPreferences({
-    ...storedPreferences,
-    [TABLE_VIEW_MODE_PREFERENCES_KEY]: {
-      ...tableViewModes,
-      [preferenceKey]: viewMode,
-    },
+  writeScopedPreference(scope, {
+    [TABLE_VIEW_MODE_PREFERENCES_KEY]: viewMode,
   });
 };
 
-export const resolveStoredTableSortPreference = (preferenceKey = '') => {
-  if (!preferenceKey) {
-    return null;
-  }
-
-  const storedPreferences = readStoredPreferences();
-  const tableSortFields =
-    storedPreferences[TABLE_SORT_FIELD_PREFERENCES_KEY];
-  const tableSortDirections =
-    storedPreferences[TABLE_SORT_DIRECTION_PREFERENCES_KEY];
-
-  const resolvedField = isPlainObject(tableSortFields)
-    ? tableSortFields[preferenceKey]
-    : '';
-  const resolvedDirection = isPlainObject(tableSortDirections)
-    ? tableSortDirections[preferenceKey]
-    : '';
-
-  if (
-    typeof resolvedField === 'string' &&
-    resolvedField.trim() &&
-    (resolvedDirection === 'asc' || resolvedDirection === 'desc')
-  ) {
-    return {
-      direction: resolvedDirection,
-      field: resolvedField.trim(),
-    };
-  }
-
-  const tableSorts = storedPreferences[TABLE_SORT_PREFERENCES_KEY];
-
-  if (!isPlainObject(tableSorts)) {
-    return null;
-  }
-
-  const resolvedSort = tableSorts[preferenceKey];
+export const resolveStoredTableSortPreference = (scope = null) => {
+  const resolvedSort = readScopedPreference(scope)[TABLE_SORT_PREFERENCES_KEY];
 
   if (!isPlainObject(resolvedSort)) {
     return null;
@@ -212,11 +249,10 @@ export const resolveStoredTableSortPreference = (preferenceKey = '') => {
 };
 
 export const persistTableSortPreference = (
-  preferenceKey = '',
+  scope = null,
   sort = null,
 ) => {
   if (
-    !preferenceKey ||
     !isPlainObject(sort) ||
     (sort.direction !== 'asc' && sort.direction !== 'desc') ||
     typeof sort.field !== 'string' ||
@@ -225,40 +261,28 @@ export const persistTableSortPreference = (
     return;
   }
 
-  const storedPreferences = readStoredPreferences();
-  const tableSortFields = isPlainObject(
-    storedPreferences[TABLE_SORT_FIELD_PREFERENCES_KEY],
-  )
-    ? storedPreferences[TABLE_SORT_FIELD_PREFERENCES_KEY]
-    : {};
-  const tableSortDirections = isPlainObject(
-    storedPreferences[TABLE_SORT_DIRECTION_PREFERENCES_KEY],
-  )
-    ? storedPreferences[TABLE_SORT_DIRECTION_PREFERENCES_KEY]
-    : {};
-  const legacyTableSorts = isPlainObject(
-    storedPreferences[TABLE_SORT_PREFERENCES_KEY],
-  )
-    ? storedPreferences[TABLE_SORT_PREFERENCES_KEY]
-    : {};
-
-  writeStoredPreferences({
-    ...storedPreferences,
-    [TABLE_SORT_FIELD_PREFERENCES_KEY]: {
-      ...tableSortFields,
-      [preferenceKey]: sort.field.trim(),
-    },
-    [TABLE_SORT_DIRECTION_PREFERENCES_KEY]: {
-      ...tableSortDirections,
-      [preferenceKey]: sort.direction,
-    },
+  writeScopedPreference(scope, {
     [TABLE_SORT_PREFERENCES_KEY]: {
-      ...legacyTableSorts,
-      [preferenceKey]: {
-        direction: sort.direction,
-        field: sort.field.trim(),
-      },
+      direction: sort.direction,
+      field: sort.field.trim(),
     },
   });
 };
 
+export const resolveStoredTableFiltersPreference = (scope = null) => {
+  const resolvedFilters = readScopedPreference(scope)[TABLE_FILTER_PREFERENCES_KEY];
+  return isPlainObject(resolvedFilters) ? resolvedFilters : null;
+};
+
+export const persistTableFiltersPreference = (
+  scope = null,
+  filters = {},
+) => {
+  if (!isPlainObject(filters)) {
+    return;
+  }
+
+  writeScopedPreference(scope, {
+    [TABLE_FILTER_PREFERENCES_KEY]: filters,
+  });
+};

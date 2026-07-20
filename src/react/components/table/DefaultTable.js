@@ -9,7 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores, useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
@@ -36,12 +36,16 @@ import {
   resolveEditValue,
 } from '../inputs/defaultInputUtils';
 import {
+  persistTableFiltersPreference,
   persistTableSortPreference,
   persistTableViewModePreference,
   persistVisibleColumnsPreference,
+  resolveDefaultTablePreferenceScope,
+  resolveStoredTableFiltersPreference,
   resolveStoredTableSortPreference,
   resolveStoredTableViewModePreference,
   resolveStoredVisibleColumnsPreference,
+  sanitizeTableFiltersPreference,
   sanitizeVisibleColumnsPreference,
 } from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultTable.styles';
@@ -523,8 +527,22 @@ const DefaultTable = ({
   visibleColumnsPreferenceKey = '',
 }) => {
   const { width } = useWindowDimensions();
+  const route = useRoute?.();
   const store = useStore(storeName);
-  const visibleColumnsStorageKey = visibleColumnsPreferenceKey || storeName;
+  const tablePreferenceScope = useMemo(
+    () =>
+      resolveDefaultTablePreferenceScope({
+        preferenceKey: visibleColumnsPreferenceKey,
+        route,
+        storeName,
+      }),
+    [route?.key, route?.name, storeName, visibleColumnsPreferenceKey],
+  );
+  const tablePreferenceSignature = useMemo(
+    () => stableSerialize(tablePreferenceScope),
+    [tablePreferenceScope],
+  );
+  const visibleColumnsStorageKey = tablePreferenceScope;
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const [editingCell, setEditingCell] = useState(null);
@@ -563,10 +581,10 @@ const DefaultTable = ({
   const viewModeSeed = useMemo(
     () =>
       resolveStoredTableViewModePreference(
-        visibleColumnsPreferenceKey,
+        tablePreferenceScope,
         initialViewMode,
       ),
-    [initialViewMode, visibleColumnsPreferenceKey],
+    [initialViewMode, tablePreferenceScope],
   );
   const [visibleColumns, setVisibleColumns] = useState(() => visibleColumnsSeed);
   const [viewMode, setViewMode] = useState(() => viewModeSeed);
@@ -638,8 +656,32 @@ const DefaultTable = ({
   );
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
   const isFiltersControlled = typeof onFilterChange === 'function';
+  const storedFiltersPreference = useMemo(
+    () => resolveStoredTableFiltersPreference(tablePreferenceScope),
+    [tablePreferenceScope],
+  );
+  const hasStoredFiltersPreference = isObject(storedFiltersPreference);
+  const storedFiltersSeed = useMemo(
+    () =>
+      sanitizeTableFiltersPreference({
+        columns: columnsForTable,
+        filters: storedFiltersPreference,
+        searchKey,
+      }),
+    [columnsForTable, searchKey, storedFiltersPreference],
+  );
+  const storedFiltersSeedSignature = useMemo(
+    () => stableSerialize(storedFiltersSeed),
+    [storedFiltersSeed],
+  );
   const initialFiltersSeed = autoMode
-    ? (Object.keys(filters || {}).length > 0 ? filters : storeFilters)
+    ? (
+      Object.keys(filters || {}).length > 0
+        ? filters
+        : hasStoredFiltersPreference
+          ? storedFiltersSeed
+          : storeFilters
+    )
     : (isObject(filters) ? filters : {});
   const [autoFilters, setAutoFilters] = useState(() => initialFiltersSeed);
   const controlledFiltersSignature = useMemo(
@@ -655,9 +697,9 @@ const DefaultTable = ({
       sanitizeStoredSortPreference({
         columns: columnsForTable,
         fallbackSort: sort || defaultSortSeed || null,
-        sort: resolveStoredTableSortPreference(visibleColumnsPreferenceKey),
+        sort: resolveStoredTableSortPreference(tablePreferenceScope),
       }),
-    [columnsForTable, defaultSortSeed, sort, visibleColumnsPreferenceKey],
+    [columnsForTable, defaultSortSeed, sort, tablePreferenceScope],
   );
   const storedSortSeedSignature = useMemo(
     () => stableSerialize(storedSortSeed),
@@ -672,6 +714,7 @@ const DefaultTable = ({
   const autoLoadedQueryKeyRef = useRef('');
   const autoErroredQueryKeyRef = useRef('');
   const autoPageRef = useRef(0);
+  const hasAppliedStoredFiltersRef = useRef(false);
   const pageSizeNumber = Number(requestParamsSeed.itemsPerPage || pageSize || 50) || 50;
   const hasCustomRowActions = typeof rowActionsComponent === 'function';
   const resolvedSort = autoMode ? autoSort : sort;
@@ -947,6 +990,20 @@ const DefaultTable = ({
   useEffect(() => {
     if (!autoMode || isFiltersControlled) return;
 
+    if (hasStoredFiltersPreference && !hasAppliedStoredFiltersRef.current) {
+      hasAppliedStoredFiltersRef.current = true;
+      setAutoFilters(prev =>
+        stableSerialize(prev) === storedFiltersSeedSignature
+          ? prev
+          : storedFiltersSeed,
+      );
+
+      if (storeFiltersSignature !== storedFiltersSeedSignature) {
+        setStoreFilters?.(storedFiltersSeed);
+      }
+      return;
+    }
+
     setAutoFilters(prev => {
       if (stableSerialize(prev) === storeFiltersSignature) {
         return prev;
@@ -954,7 +1011,20 @@ const DefaultTable = ({
 
       return storeFilters;
     });
-  }, [autoMode, isFiltersControlled, storeFiltersSignature]);
+  }, [
+    autoMode,
+    hasStoredFiltersPreference,
+    isFiltersControlled,
+    setStoreFilters,
+    storeFilters,
+    storeFiltersSignature,
+    storedFiltersSeed,
+    storedFiltersSeedSignature,
+  ]);
+
+  useEffect(() => {
+    hasAppliedStoredFiltersRef.current = false;
+  }, [tablePreferenceSignature]);
 
   useEffect(() => {
     if (!autoMode || !isFiltersControlled) return;
@@ -1324,12 +1394,7 @@ const DefaultTable = ({
       field: fieldName,
     };
 
-    if (visibleColumnsPreferenceKey) {
-      persistTableSortPreference(
-        visibleColumnsPreferenceKey,
-        nextSort,
-      );
-    }
+    persistTableSortPreference(tablePreferenceScope, nextSort);
 
     if (autoMode) {
       setAutoSort(nextSort);
@@ -1342,7 +1407,7 @@ const DefaultTable = ({
     onSortChange,
     resolvedSort?.direction,
     resolvedSort?.field,
-    visibleColumnsPreferenceKey,
+    tablePreferenceScope,
   ]);
 
   const openEditModal = useCallback(row => {
@@ -1374,6 +1439,13 @@ const DefaultTable = ({
 
   const commitFilters = useCallback(nextFilters => {
     const resolvedNextFilters = isObject(nextFilters) ? nextFilters : {};
+    const persistedFilters = sanitizeTableFiltersPreference({
+      columns: columnsForTable,
+      filters: resolvedNextFilters,
+      searchKey,
+    });
+
+    persistTableFiltersPreference(tablePreferenceScope, persistedFilters);
 
     if (autoMode) {
       setAutoFilters(resolvedNextFilters);
@@ -1383,7 +1455,14 @@ const DefaultTable = ({
     }
 
     onFilterChange?.(resolvedNextFilters);
-  }, [autoMode, onFilterChange, setStoreFilters]);
+  }, [
+    autoMode,
+    columnsForTable,
+    onFilterChange,
+    searchKey,
+    setStoreFilters,
+    tablePreferenceScope,
+  ]);
 
   const updateFilter = useCallback((fieldName, value) => {
     const nextFilters = { ...(resolvedFilters || {}) };
@@ -1440,20 +1519,16 @@ const DefaultTable = ({
 
     setViewMode(nextViewMode);
 
-    if (!visibleColumnsPreferenceKey) {
-      return;
-    }
-
     persistTableViewModePreference(
-      visibleColumnsPreferenceKey,
+      tablePreferenceScope,
       nextViewMode,
     );
   }, [
     compactViewMode,
     isCompactView,
     shouldForceCardsOnCompact,
+    tablePreferenceScope,
     viewMode,
-    visibleColumnsPreferenceKey,
   ]);
 
   const handleEndReached = useCallback(() => {
