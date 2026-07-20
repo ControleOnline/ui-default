@@ -20,6 +20,7 @@ import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/util
 import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
+import DefaultExternalFilters from '../filters/DefaultExternalFilters';
 import DefaultSearch from '../filters/DefaultSearch';
 import DefaultForm from '../form/DefaultForm';
 import DefaultInput from '../inputs/DefaultInput';
@@ -503,6 +504,7 @@ const DefaultTable = ({
   rowActionsComponent = null,
   searchProps = null,
   toolbarActions = [],
+  showExternalFilters = false,
   showColumnFiltersButton = true,
   showTotalItemsInFooter = true,
   showTotalItemsInCompactToolbar = false,
@@ -530,6 +532,7 @@ const DefaultTable = ({
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
+  const [showExternalFiltersPanel, setShowExternalFiltersPanel] = useState(false);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const endReachedLockRef = useRef(false);
@@ -960,6 +963,11 @@ const DefaultTable = ({
     () => columnsForTable.filter(column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false),
     [columnsForTable, visibleColumns],
   );
+  const externalFilterColumns = useMemo(
+    () => columnsForTable.filter(column => column?.externalFilter === true),
+    [columnsForTable],
+  );
+  const hasExternalFilters = showExternalFilters && externalFilterColumns.length > 0;
 
   const editableColumns = useMemo(
     () => tableColumns.filter(isEditableColumn),
@@ -1007,6 +1015,9 @@ const DefaultTable = ({
     isCompactView && shouldForceCardsOnCompact
       ? (compactViewMode || 'cards')
       : viewMode;
+  useEffect(() => {
+    setShowExternalFiltersPanel(hasExternalFilters && !isCompactView);
+  }, [hasExternalFilters, isCompactView]);
   useEffect(() => {
     if (!shouldForceCardsOnCompact) {
       setCompactViewMode(null);
@@ -1860,30 +1871,41 @@ const DefaultTable = ({
     );
   };
 
-  const renderTableControls = () => (
+  const renderTableControls = () => {
+    const shouldRenderExternalFilterToggle = hasExternalFilters && isCompactView;
+    const shouldRenderColumnFilterToggle =
+      showColumnFiltersButton && effectiveViewMode === 'table' && !shouldRenderExternalFilterToggle;
+    const filterToggleActive = shouldRenderExternalFilterToggle
+      ? showExternalFiltersPanel
+      : showColumnFilters;
+    const handleFilterToggle = shouldRenderExternalFilterToggle
+      ? () => setShowExternalFiltersPanel(prev => !prev)
+      : () => setShowColumnFilters(prev => !prev);
+
+    return (
     <>
-      {showColumnFiltersButton ? (
+      {shouldRenderExternalFilterToggle || shouldRenderColumnFilterToggle ? (
         <TouchableOpacity
           style={[
             styles.toolbarButton,
             { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-            showColumnFilters
+            filterToggleActive
               ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
               : null,
           ]}
           activeOpacity={0.82}
-          onPress={() => setShowColumnFilters(prev => !prev)}
+          onPress={handleFilterToggle}
         >
           <Icon
             name="filter"
             size={14}
-            color={showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor}
+            color={filterToggleActive ? tableButtonPressedIconColor : tableButtonIconColor}
           />
           {activeFilterCount > 0 ? (
             <Text
               style={[
                 styles.toolbarBadgeText,
-                { color: showColumnFilters ? tableButtonPressedIconColor : tableButtonIconColor },
+                { color: filterToggleActive ? tableButtonPressedIconColor : tableButtonIconColor },
               ]}>
               {activeFilterCount}
             </Text>
@@ -1927,7 +1949,8 @@ const DefaultTable = ({
         </TouchableOpacity>
       ) : null}
     </>
-  );
+    );
+  };
 
   const renderSearchModal = () => {
     if (!isSearchModalOpen || !searchProps) return null;
@@ -2041,6 +2064,18 @@ const DefaultTable = ({
       </View>
 
       {renderSearchModal()}
+
+      {hasExternalFilters && showExternalFiltersPanel ? (
+        <DefaultExternalFilters
+          accentColor={resolvedAccentColor}
+          columns={externalFilterColumns}
+          forceInline={isCompactView}
+          filters={resolvedFilters}
+          getOptionsForColumn={resolvedGetOptionsForColumn}
+          onChangeFilters={commitFilters}
+          storeName={storeName}
+        />
+      ) : null}
 
       {effectiveViewMode === 'cards' ? (
         <FlatList

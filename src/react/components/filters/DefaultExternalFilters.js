@@ -177,6 +177,7 @@ const DefaultExternalFilters = ({
   columns = [],
   dateOptionKeys = ['all', 'today', 'yesterday', '7d', '30d', 'custom'],
   filters = {},
+  forceInline = false,
   getOptionsForColumn = null,
   onActiveCountChange = null,
   onChangeFilters = null,
@@ -337,7 +338,7 @@ const DefaultExternalFilters = ({
   const filterTitle = global.t?.t(storeName, 'label', 'filters');
   const filterFields = compact => filterColumns.map(column => renderFilterField(column, compact));
 
-  if (isCompactView) {
+  if (isCompactView && !forceInline) {
     return (
       <View style={styles.mobileWrap}>
         <TouchableOpacity

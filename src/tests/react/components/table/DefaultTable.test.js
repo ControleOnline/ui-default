@@ -10,6 +10,7 @@ let consoleErrorSpy = null;
 let mockStores = {};
 let mockWindowDimensions = {width: 480, height: 800};
 let capturedDefaultInputProps = [];
+let capturedExternalFiltersProps = [];
 
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
@@ -69,6 +70,11 @@ jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => () =
   React.createElement('DefaultColumnFilter'),
 );
 
+jest.mock('../../../../react/components/filters/DefaultExternalFilters', () => props => {
+  capturedExternalFiltersProps.push(props);
+  return React.createElement('DefaultExternalFilters', props);
+});
+
 jest.mock('../../../../react/components/filters/DefaultSearch', () => props =>
   React.createElement('DefaultSearch', props),
 );
@@ -124,6 +130,7 @@ describe('DefaultTable', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockWindowDimensions = {width: 480, height: 800};
     capturedDefaultInputProps = [];
+    capturedExternalFiltersProps = [];
 
     mockStores = {
       people: {
@@ -231,10 +238,49 @@ describe('DefaultTable', () => {
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
     expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(0);
-    expect(iconNames).toEqual(expect.arrayContaining(['search', 'filter', 'grid', 'columns']));
+    expect(iconNames).toEqual(expect.arrayContaining(['search', 'grid', 'columns']));
+    expect(iconNames).not.toContain('filter');
     expect(
       tree.root.findAllByType('Text').filter(node => node.props.children === '27 registros'),
     ).toHaveLength(1);
+  });
+
+  it('uses the compact filter button to show external filters when cards hide column headers', () => {
+    mockWindowDimensions = {width: 375, height: 667};
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [
+            {key: 'name', label: 'Nome'},
+            {
+              key: 'integration',
+              label: 'Integração',
+              externalFilter: true,
+              list: [{value: 'pos', label: 'POS'}],
+            },
+          ],
+          data: [],
+          showExternalFilters: true,
+        }),
+      );
+    });
+
+    expect(tree.root.findAllByType('DefaultExternalFilters')).toHaveLength(0);
+    const filterButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'filter'));
+
+    renderer.act(() => filterButton.props.onPress());
+
+    expect(tree.root.findAllByType('DefaultExternalFilters')).toHaveLength(1);
+    expect(capturedExternalFiltersProps.at(-1)).toEqual(
+      expect.objectContaining({
+        forceInline: true,
+        storeName: '',
+      }),
+    );
   });
 
   it('preserves the compact toolbar total when the footer total is disabled', () => {
