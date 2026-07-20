@@ -3,6 +3,7 @@ import { TextInput, View } from 'react-native';
 import {
   buildOptionsFromColumn,
   getColumnKey,
+  isDateLikeColumn,
   normalizeOptionKey,
   normalizeText,
 } from '../inputs/defaultInputUtils';
@@ -27,7 +28,7 @@ const DefaultColumnFilter = ({
     return <View style={style} />;
   }
 
-  if (column?.inputType === 'date-range' || column?.type === 'range-date') {
+  if (isDateLikeColumn(column)) {
     const filterValue = filters?.[fieldName] || {};
     return (
       <View style={[style, styles.filterCell]}>
@@ -35,6 +36,7 @@ const DefaultColumnFilter = ({
           dense
           store={storeName}
           field={fieldName}
+          labelCaption={global.t?.t(storeName, 'label', column?.label || fieldName)}
           value={filterValue.shortcut || 'all'}
           customRange={filterValue.customRange || { from: '', to: '' }}
           onChange={optionKey =>

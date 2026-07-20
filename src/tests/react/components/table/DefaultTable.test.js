@@ -1,6 +1,5 @@
 const React = require('react');
 const renderer = require('react-test-renderer');
-const {jest} = require('@jest/globals');
 
 const {afterEach, beforeEach, describe, expect, it} = global;
 
@@ -9,8 +8,8 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 let consoleErrorSpy = null;
 let mockStores = {};
 let mockWindowDimensions = {width: 480, height: 800};
+let mockCapturedColumnFilterProps = [];
 let capturedDefaultInputProps = [];
-let capturedExternalFiltersProps = [];
 
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
@@ -66,13 +65,9 @@ jest.mock('react-native', () => {
   };
 });
 
-jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => () =>
-  React.createElement('DefaultColumnFilter'),
-);
-
-jest.mock('../../../../react/components/filters/DefaultExternalFilters', () => props => {
-  capturedExternalFiltersProps.push(props);
-  return React.createElement('DefaultExternalFilters', props);
+jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => props => {
+  mockCapturedColumnFilterProps.push(props);
+  return React.createElement('DefaultColumnFilter', props);
 });
 
 jest.mock('../../../../react/components/filters/DefaultSearch', () => props =>
@@ -129,8 +124,8 @@ describe('DefaultTable', () => {
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockWindowDimensions = {width: 480, height: 800};
+    mockCapturedColumnFilterProps = [];
     capturedDefaultInputProps = [];
-    capturedExternalFiltersProps = [];
 
     mockStores = {
       people: {
@@ -238,14 +233,13 @@ describe('DefaultTable', () => {
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
     expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(0);
-    expect(iconNames).toEqual(expect.arrayContaining(['search', 'grid', 'columns']));
-    expect(iconNames).not.toContain('filter');
+    expect(iconNames).toEqual(expect.arrayContaining(['search', 'filter', 'grid', 'columns']));
     expect(
       tree.root.findAllByType('Text').filter(node => node.props.children === '27 registros'),
     ).toHaveLength(1);
   });
 
-  it('uses the compact filter button to show external filters when cards hide column headers', () => {
+  it('opens the filters modal with filterable columns only', () => {
     mockWindowDimensions = {width: 375, height: 667};
     let tree;
 
@@ -254,33 +248,27 @@ describe('DefaultTable', () => {
         React.createElement(DefaultTable, {
           columns: [
             {key: 'name', label: 'Nome'},
+            {key: 'ignored', label: 'Ignorado', filter: false},
             {
-              key: 'integration',
-              label: 'Integração',
-              externalFilter: true,
+              key: 'status',
+              label: 'Status',
               list: [{value: 'pos', label: 'POS'}],
             },
           ],
           data: [],
-          showExternalFilters: true,
         }),
       );
     });
 
-    expect(tree.root.findAllByType('DefaultExternalFilters')).toHaveLength(0);
+    expect(tree.root.findAllByType('DefaultColumnFilter')).toHaveLength(0);
     const filterButton = tree.root
       .findAllByType('TouchableOpacity')
       .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'filter'));
 
     renderer.act(() => filterButton.props.onPress());
 
-    expect(tree.root.findAllByType('DefaultExternalFilters')).toHaveLength(1);
-    expect(capturedExternalFiltersProps.at(-1)).toEqual(
-      expect.objectContaining({
-        forceInline: true,
-        storeName: '',
-      }),
-    );
+    expect(tree.root.findAllByType('DefaultColumnFilter')).toHaveLength(2);
+    expect(mockCapturedColumnFilterProps.map(props => props.column.key)).toEqual(['name', 'status']);
   });
 
   it('preserves the compact toolbar total when the footer total is disabled', () => {

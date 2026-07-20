@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
+import { isDateLikeColumn } from '../inputs/defaultInputUtils';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
@@ -71,7 +72,7 @@ const shouldIncludeColumn = column =>
 
 const normalizeFilterValue = value => {
   if (value && typeof value === 'object') {
-    return normalizeFilterValue(value.value ?? value.id ?? value['@id'] ?? '');
+    return normalizeFilterValue(value.value ?? value.id ?? value['@id'] ?? value.key ?? '');
   }
 
   return normalizeText(value);
@@ -124,7 +125,9 @@ const resolveOptionLabel = (column, option, storeName = '') => {
 const buildColumnOptions = (column, options = [], storeName = '') => [
   {
     key: '',
-    label: global.t?.t(storeName || 'invoice', 'label', 'select'),
+    label:
+      column?.emptyOptionLabel ||
+      global.t?.t(storeName || 'invoice', 'label', 'select'),
   },
   ...(Array.isArray(options) ? options : []).map(option => ({
     key: normalizeFilterValue(option),
@@ -167,7 +170,7 @@ const resolveIcon = column => {
   const key = getColumnKey(column);
   if (key === 'status') return 'check-circle';
   if (key === 'category') return 'tag';
-  if (column?.inputType === 'date-range' || column?.type === 'range-date') return 'calendar';
+  if (isDateLikeColumn(column)) return 'calendar';
   return 'sliders';
 };
 
@@ -177,7 +180,6 @@ const DefaultExternalFilters = ({
   columns = [],
   dateOptionKeys = ['all', 'today', 'yesterday', '7d', '30d', 'custom'],
   filters = {},
-  forceInline = false,
   getOptionsForColumn = null,
   onActiveCountChange = null,
   onChangeFilters = null,
@@ -247,7 +249,7 @@ const DefaultExternalFilters = ({
     const key = getColumnKey(column);
     const fieldStyle = compact ? styles.modalField : styles.field;
 
-    if (column.inputType === 'date-range' || column.type === 'range-date') {
+    if (isDateLikeColumn(column)) {
       const dateState = resolveDateState(filters[key]);
 
       return (
@@ -271,6 +273,7 @@ const DefaultExternalFilters = ({
             dense
             store={storeName}
             field={key}
+            labelCaption={global.t?.t(storeName, 'label', column.label || key)}
             optionKeys={dateOptionKeys}
             colors={{
               accent: resolvedAccentColor,
@@ -338,7 +341,7 @@ const DefaultExternalFilters = ({
   const filterTitle = global.t?.t(storeName, 'label', 'filters');
   const filterFields = compact => filterColumns.map(column => renderFilterField(column, compact));
 
-  if (isCompactView && !forceInline) {
+  if (isCompactView) {
     return (
       <View style={styles.mobileWrap}>
         <TouchableOpacity

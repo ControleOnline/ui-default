@@ -88,6 +88,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
   },
+  validationText: {
+    marginTop: 3,
+    color: '#DC2626',
+    fontSize: 10,
+    fontWeight: '800',
+  },
 });
 
 export default styles;

@@ -20,7 +20,6 @@ import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/util
 import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
-import DefaultExternalFilters from '../filters/DefaultExternalFilters';
 import DefaultSearch from '../filters/DefaultSearch';
 import DefaultForm from '../form/DefaultForm';
 import DefaultInput from '../inputs/DefaultInput';
@@ -28,6 +27,7 @@ import {
   formatSaveValue,
   getColumnKey,
   isEditableColumn,
+  isDateLikeColumn,
   normalizeId,
   normalizeOptionKey,
   normalizeText,
@@ -405,13 +405,6 @@ const normalizeSortText = value =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
-const isDateLikeColumn = column =>
-  column?.inputType === 'date' ||
-  column?.inputType === 'date-range' ||
-  column?.type === 'date' ||
-  column?.type === 'range-date' ||
-  /date/i.test(getColumnKey(column));
-
 const resolveSortComparable = ({ column, row, storeName, columns }) => {
   const fieldName = getColumnKey(column);
   const sortField = getSortField(column);
@@ -504,7 +497,6 @@ const DefaultTable = ({
   rowActionsComponent = null,
   searchProps = null,
   toolbarActions = [],
-  showExternalFilters = false,
   showColumnFiltersButton = true,
   showTotalItemsInFooter = true,
   showTotalItemsInCompactToolbar = false,
@@ -529,11 +521,10 @@ const DefaultTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
-  const [showExternalFiltersPanel, setShowExternalFiltersPanel] = useState(false);
-  const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
   const endReachedLockRef = useRef(false);
   const loadedListStoresRef = useRef(new Set());
@@ -554,6 +545,10 @@ const DefaultTable = ({
         ),
       }),
     [columns, store?.getters?.columns, visibleColumnsStorageKey],
+  );
+  const visibleColumnsSeedSignature = useMemo(
+    () => stableSerialize(visibleColumnsSeed),
+    [visibleColumnsSeed],
   );
   const viewModeSeed = useMemo(
     () =>
@@ -623,14 +618,24 @@ const DefaultTable = ({
     }),
     [actions, storeActions],
   );
+  const setStoreFilters = resolvedActions.setFilters;
   const storeColumns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
+  const storeFiltersSignature = useMemo(
+    () => stableSerialize(storeFilters),
+    [storeFilters],
+  );
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
+  const isFiltersControlled = typeof onFilterChange === 'function';
   const initialFiltersSeed = autoMode
     ? (Object.keys(filters || {}).length > 0 ? filters : storeFilters)
     : (isObject(filters) ? filters : {});
   const [autoFilters, setAutoFilters] = useState(() => initialFiltersSeed);
+  const controlledFiltersSignature = useMemo(
+    () => stableSerialize(isObject(filters) ? filters : {}),
+    [filters],
+  );
   const defaultSortSeed = useMemo(
     () => resolveDefaultSort(columnsForTable),
     [columnsForTable],
@@ -643,6 +648,10 @@ const DefaultTable = ({
         sort: resolveStoredTableSortPreference(visibleColumnsPreferenceKey),
       }),
     [columnsForTable, defaultSortSeed, sort, visibleColumnsPreferenceKey],
+  );
+  const storedSortSeedSignature = useMemo(
+    () => stableSerialize(storedSortSeed),
+    [storedSortSeed],
   );
   const [autoSort, setAutoSort] = useState(() => storedSortSeed);
   const [autoHasLoaded, setAutoHasLoaded] = useState(false);
@@ -799,7 +808,7 @@ const DefaultTable = ({
 
         const column = columnsForTable.find(item => getColumnKey(item) === fieldName);
 
-        if (column?.inputType === 'date-range' || column?.type === 'range-date') {
+        if (isDateLikeColumn(column)) {
           const dateRange = resolveDateRangeQuery(value);
           if (dateRange.after) {
             query[`${fieldName}[after]`] = dateRange.after;
@@ -903,11 +912,11 @@ const DefaultTable = ({
 
   useEffect(() => {
     setVisibleColumns(prev =>
-      stableSerialize(prev) === stableSerialize(visibleColumnsSeed)
+      stableSerialize(prev) === visibleColumnsSeedSignature
         ? prev
         : visibleColumnsSeed
     );
-  }, [visibleColumnsSeed]);
+  }, [visibleColumnsSeedSignature]);
 
   useEffect(() => {
     setViewMode(viewModeSeed);
@@ -917,23 +926,43 @@ const DefaultTable = ({
     if (!autoMode) return;
 
     setAutoSort(prev =>
-      stableSerialize(prev) === stableSerialize(storedSortSeed)
+      stableSerialize(prev) === storedSortSeedSignature
         ? prev
         : storedSortSeed,
     );
-  }, [autoMode, storedSortSeed]);
+  }, [autoMode, storedSortSeedSignature]);
 
   useEffect(() => {
-    if (!autoMode) return;
+    if (!autoMode || isFiltersControlled) return;
 
     setAutoFilters(prev => {
-      if (stableSerialize(prev) === stableSerialize(storeFilters)) {
+      if (stableSerialize(prev) === storeFiltersSignature) {
         return prev;
       }
 
       return storeFilters;
     });
-  }, [autoMode, storeFilters]);
+  }, [autoMode, isFiltersControlled, storeFiltersSignature]);
+
+  useEffect(() => {
+    if (!autoMode || !isFiltersControlled) return;
+
+    const nextFilters = isObject(filters) ? filters : {};
+    setAutoFilters(prev =>
+      stableSerialize(prev) === controlledFiltersSignature
+        ? prev
+        : nextFilters,
+    );
+    if (storeFiltersSignature !== controlledFiltersSignature) {
+      setStoreFilters?.(nextFilters);
+    }
+  }, [
+    autoMode,
+    controlledFiltersSignature,
+    isFiltersControlled,
+    setStoreFilters,
+    storeFiltersSignature,
+  ]);
 
   useEffect(() => {
     if (!autoMode || !isFocused) return;
@@ -963,11 +992,16 @@ const DefaultTable = ({
     () => columnsForTable.filter(column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false),
     [columnsForTable, visibleColumns],
   );
-  const externalFilterColumns = useMemo(
-    () => columnsForTable.filter(column => column?.externalFilter === true),
+  const filterColumns = useMemo(
+    () => columnsForTable.filter(
+      column =>
+        shouldIncludeColumn(column) &&
+        column?.filter !== false &&
+        column?.filters !== false,
+    ),
     [columnsForTable],
   );
-  const hasExternalFilters = showExternalFilters && externalFilterColumns.length > 0;
+  const hasTableFilters = showColumnFiltersButton && filterColumns.length > 0;
 
   const editableColumns = useMemo(
     () => tableColumns.filter(isEditableColumn),
@@ -1015,9 +1049,6 @@ const DefaultTable = ({
     isCompactView && shouldForceCardsOnCompact
       ? (compactViewMode || 'cards')
       : viewMode;
-  useEffect(() => {
-    setShowExternalFiltersPanel(hasExternalFilters && !isCompactView);
-  }, [hasExternalFilters, isCompactView]);
   useEffect(() => {
     if (!shouldForceCardsOnCompact) {
       setCompactViewMode(null);
@@ -1334,12 +1365,13 @@ const DefaultTable = ({
 
     if (autoMode) {
       setAutoFilters(resolvedNextFilters);
-      resolvedActions.setFilters?.(resolvedNextFilters);
+      setStoreFilters?.(resolvedNextFilters);
+      onFilterChange?.(resolvedNextFilters);
       return;
     }
 
     onFilterChange?.(resolvedNextFilters);
-  }, [autoMode, onFilterChange, resolvedActions]);
+  }, [autoMode, onFilterChange, setStoreFilters]);
 
   const updateFilter = useCallback((fieldName, value) => {
     const nextFilters = { ...(resolvedFilters || {}) };
@@ -1472,7 +1504,7 @@ const DefaultTable = ({
     );
   };
 
-  const renderColumnFilter = column => {
+  const renderColumnFilter = (column, style = getColumnStyle(column)) => {
     return (
       <DefaultColumnFilter
         accentColor={resolvedAccentColor}
@@ -1482,8 +1514,73 @@ const DefaultTable = ({
         getOptionsForColumn={resolvedGetOptionsForColumn}
         onChange={updateFilter}
         storeName={storeName}
-        style={getColumnStyle(column)}
+        style={style}
       />
+    );
+  };
+
+  const renderFiltersModal = () => {
+    if (!isFiltersModalOpen || !hasTableFilters) return null;
+
+    return (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setIsFiltersModalOpen(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
+          <View style={[styles.modalCard, styles.filtersModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
+                {global.t?.t(storeName, 'label', 'filters') || 'Filtros'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
+                activeOpacity={0.82}
+                onPress={() => setIsFiltersModalOpen(false)}
+              >
+                <Icon name="x" size={16} color={modalCloseIconColor} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.filtersModalBody} contentContainerStyle={styles.filtersModalList}>
+              {filterColumns.map(column => {
+                const fieldName = getColumnKey(column);
+                const label = formatStoreColumnLabel({
+                  columns: columnsForTable,
+                  fieldName,
+                  fallbackLabel: column?.label || fieldName,
+                  storeName,
+                });
+
+                return (
+                  <View key={fieldName} style={styles.filtersModalField}>
+                    <Text style={[styles.formLabel, { color: modalTextColor }]} numberOfLines={1}>
+                      {label}
+                    </Text>
+                    {renderColumnFilter(column, styles.filtersModalInput)}
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <View style={[styles.modalActions, { borderTopColor: modalBorderColor }]}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: modalBorderColor }]}
+                activeOpacity={0.82}
+                onPress={() => commitFilters({})}
+              >
+                <Text style={[styles.secondaryButtonText, { color: modalTextColor }]}>
+                  {global.t?.t(storeName, 'button', 'clear') || 'Limpar'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: resolvedAccentColor }]}
+                activeOpacity={0.82}
+                onPress={() => setIsFiltersModalOpen(false)}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {global.t?.t(storeName, 'button', 'apply') || 'Aplicar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     );
   };
 
@@ -1872,40 +1969,30 @@ const DefaultTable = ({
   };
 
   const renderTableControls = () => {
-    const shouldRenderExternalFilterToggle = hasExternalFilters && isCompactView;
-    const shouldRenderColumnFilterToggle =
-      showColumnFiltersButton && effectiveViewMode === 'table' && !shouldRenderExternalFilterToggle;
-    const filterToggleActive = shouldRenderExternalFilterToggle
-      ? showExternalFiltersPanel
-      : showColumnFilters;
-    const handleFilterToggle = shouldRenderExternalFilterToggle
-      ? () => setShowExternalFiltersPanel(prev => !prev)
-      : () => setShowColumnFilters(prev => !prev);
-
     return (
     <>
-      {shouldRenderExternalFilterToggle || shouldRenderColumnFilterToggle ? (
+      {hasTableFilters ? (
         <TouchableOpacity
           style={[
             styles.toolbarButton,
             { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-            filterToggleActive
+            isFiltersModalOpen
               ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
               : null,
           ]}
           activeOpacity={0.82}
-          onPress={handleFilterToggle}
+          onPress={() => setIsFiltersModalOpen(true)}
         >
           <Icon
             name="filter"
             size={14}
-            color={filterToggleActive ? tableButtonPressedIconColor : tableButtonIconColor}
+            color={isFiltersModalOpen ? tableButtonPressedIconColor : tableButtonIconColor}
           />
           {activeFilterCount > 0 ? (
             <Text
               style={[
                 styles.toolbarBadgeText,
-                { color: filterToggleActive ? tableButtonPressedIconColor : tableButtonIconColor },
+                { color: isFiltersModalOpen ? tableButtonPressedIconColor : tableButtonIconColor },
               ]}>
               {activeFilterCount}
             </Text>
@@ -2064,18 +2151,7 @@ const DefaultTable = ({
       </View>
 
       {renderSearchModal()}
-
-      {hasExternalFilters && showExternalFiltersPanel ? (
-        <DefaultExternalFilters
-          accentColor={resolvedAccentColor}
-          columns={externalFilterColumns}
-          forceInline={isCompactView}
-          filters={resolvedFilters}
-          getOptionsForColumn={resolvedGetOptionsForColumn}
-          onChangeFilters={commitFilters}
-          storeName={storeName}
-        />
-      ) : null}
+      {renderFiltersModal()}
 
       {effectiveViewMode === 'cards' ? (
         <FlatList
@@ -2144,30 +2220,6 @@ const DefaultTable = ({
                 </View>
               ) : null}
             </View>
-
-            {showColumnFiltersButton && showColumnFilters ? (
-              <View style={[styles.filterRow, tableLayoutStyle, { backgroundColor: tableSurfaceColor, borderBottomColor: tableBorderColor }]}>
-                {tableColumns.map(column => (
-                  <React.Fragment key={getColumnKey(column)}>
-                    {renderColumnFilter(column)}
-                  </React.Fragment>
-                ))}
-                {hasRowActions ? (
-                  <View
-                    style={[
-                      styles.cell,
-                      styles.actionsCell,
-                      {
-                        minWidth: actionsCellWidth,
-                        width: actionsCellWidth,
-                        flexBasis: actionsCellWidth,
-                        maxWidth: actionsCellWidth,
-                      },
-                    ]}
-                  />
-                ) : null}
-              </View>
-            ) : null}
 
             <FlatList
               data={sortedData}

@@ -177,6 +177,24 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
   },
+  filtersModalCard: {
+    width: '100%',
+    maxWidth: 560,
+  },
+  filtersModalBody: {
+    maxHeight: 520,
+  },
+  filtersModalList: {
+    padding: 14,
+    gap: 12,
+  },
+  filtersModalField: {
+    width: '100%',
+    gap: 4,
+  },
+  filtersModalInput: {
+    width: '100%',
+  },
   searchModalBody: {
     padding: 14,
   },

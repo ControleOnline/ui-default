@@ -3,11 +3,13 @@ import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import {
   getColumnKey,
+  isDateLikeColumn,
   isEditableColumn,
   normalizeText,
   resolveCellText,
   resolveEditValue,
 } from './defaultInputUtils';
+import DefaultDateInput from './DefaultDateInput';
 import DefaultSelect from './DefaultSelect';
 import styles from './DefaultInput.styles';
 
@@ -66,6 +68,35 @@ const DefaultInput = ({
         label={label}
         numberOfLines={numberOfLines}
         onBeforeOpen={onBeforeOpen}
+        onCancelEditing={onCancelEditing}
+        onChangeValue={onChangeValue}
+        onSave={onSave}
+        onStartEditing={onStartEditing}
+        readTextStyle={readTextStyle}
+        row={row}
+        saving={saving}
+        showLabel={showLabel}
+        storeName={storeName}
+        value={value}
+        variant={variant}
+      />
+    );
+  }
+
+  if (isDateLikeColumn(column)) {
+    return (
+      <DefaultDateInput
+        accentColor={accentColor}
+        autoFocus={autoFocus}
+        autoSave={autoSave}
+        column={column}
+        columns={columns}
+        containerStyle={containerStyle}
+        displayValue={displayValue}
+        editing={editing}
+        inputStyle={inputStyle}
+        label={label}
+        numberOfLines={numberOfLines}
         onCancelEditing={onCancelEditing}
         onChangeValue={onChangeValue}
         onSave={onSave}

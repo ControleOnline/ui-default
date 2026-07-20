@@ -27,6 +27,17 @@ const DEFAULT_TRANSLATABLE_FIELDS = new Set([
 
 export const getColumnKey = column => column?.key || column?.name || '';
 
+export const isDateColumn = column =>
+  column?.inputType === 'date' ||
+  column?.type === 'date';
+
+export const isDateRangeColumn = column =>
+  column?.inputType === 'date-range' ||
+  column?.type === 'range-date';
+
+export const isDateLikeColumn = column =>
+  isDateColumn(column) || isDateRangeColumn(column);
+
 const normalizeColumnKey = value =>
   normalizeText(value)
     .replace(/[^a-zA-Z0-9]/g, '')
@@ -209,7 +220,7 @@ export const resolveEditValue = (column, row, value) => {
     return normalizeText(column.editFormat(rawValue, column, row, true));
   }
 
-  if ((column?.inputType === 'date' || column?.inputType === 'date-range') && rawValue) {
+  if (isDateLikeColumn(column) && rawValue) {
     return normalizeText(Formatter.formatDateYmdTodmY(rawValue));
   }
 
@@ -224,6 +235,11 @@ export const formatSaveValue = (column, value, row) => {
   if (value && typeof value === 'object') {
     if (value.value) return Number.isNaN(Number(value.value)) ? value.value : Number(value.value);
     if (value['@id']) return value['@id'];
+  }
+
+  if (isDateLikeColumn(column) && value) {
+    const normalizedDate = Formatter.buildAmericanDate(String(value));
+    return normalizedDate || value;
   }
 
   return Number.isNaN(Number(value)) || value === '' ? value : Number(value);
