@@ -13,7 +13,11 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
-import { isDateLikeColumn } from '../inputs/defaultInputUtils';
+import {
+  buildOptionsFromColumn,
+  getColumnKey,
+  isDateLikeColumn,
+} from '../inputs/defaultInputUtils';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
@@ -23,45 +27,6 @@ const DEFAULT_COMPACT_BREAKPOINT = 768;
 const noop = () => {};
 
 const normalizeText = value => String(value || '').trim();
-const DEFAULT_TRANSLATABLE_FIELDS = new Set([
-  'active',
-  'app',
-  'channel',
-  'displaytype',
-  'featured',
-  'frequency',
-  'invoicetype',
-  'installments',
-  'ordertype',
-  'peopletype',
-  'pricecalculation',
-  'productcondition',
-  'realstatus',
-  'status',
-]);
-
-const getColumnKey = column => column?.key || column?.name || '';
-
-const normalizeColumnKey = value =>
-  normalizeText(value)
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toLowerCase();
-
-const shouldTranslateOptionLabel = (column, storeName, rawLabel) => {
-  if (column?.translate === false || !normalizeText(rawLabel) || !normalizeText(storeName)) {
-    return false;
-  }
-
-  if (column?.translate === true || Array.isArray(column?.list)) {
-    return true;
-  }
-
-  return [column?.key, column?.name, column?.label]
-    .map(normalizeColumnKey)
-    .filter(Boolean)
-    .some(candidate => DEFAULT_TRANSLATABLE_FIELDS.has(candidate));
-};
-
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
   column?.show !== false &&
@@ -86,54 +51,6 @@ const isFilledFilterValue = value => {
 
   return normalizeText(value) !== '';
 };
-
-const resolveOptionLabel = (column, option, storeName = '') => {
-  if (!option) return '';
-
-  const translateOptionLabel = rawLabel => {
-    const normalizedLabel = normalizeText(rawLabel);
-    if (!shouldTranslateOptionLabel(column, storeName, normalizedLabel)) {
-      return normalizedLabel;
-    }
-
-    return global.t?.t(storeName, 'label', normalizedLabel) || normalizedLabel;
-  };
-
-  if (typeof column?.formatList === 'function') {
-    const formatted = column.formatList(option, null, column);
-    if (formatted && typeof formatted === 'object') {
-      return translateOptionLabel(formatted.label ?? formatted.value);
-    }
-    if (formatted) return translateOptionLabel(formatted);
-  }
-
-  const rawLabel = normalizeText(
-    option.label ??
-      option[column?.searchParam] ??
-      option[column?.name] ??
-      option.name ??
-      option.status ??
-      option.wallet ??
-      option.paymentType ??
-      option.alias ??
-      option.id,
-  );
-
-  return translateOptionLabel(rawLabel);
-};
-
-const buildColumnOptions = (column, options = [], storeName = '') => [
-  {
-    key: '',
-    label:
-      column?.emptyOptionLabel ||
-      global.t?.t(storeName || 'invoice', 'label', 'select'),
-  },
-  ...(Array.isArray(options) ? options : []).map(option => ({
-    key: normalizeFilterValue(option),
-    label: resolveOptionLabel(column, option, storeName) || '-',
-  })),
-];
 
 const resolveDateState = filterValue => {
   if (!filterValue || typeof filterValue !== 'object') {
@@ -177,7 +94,6 @@ const resolveIcon = column => {
 const DefaultExternalFilters = ({
   accentColor = null,
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
-  columns = [],
   dateOptionKeys = ['all', 'today', 'yesterday', '7d', '30d', 'custom'],
   filters = {},
   getOptionsForColumn = null,
@@ -186,6 +102,7 @@ const DefaultExternalFilters = ({
   storeName = '',
 }) => {
   const { width } = useWindowDimensions();
+  const externalFilterStore = useStore(storeName);
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
@@ -212,9 +129,13 @@ const DefaultExternalFilters = ({
   const tableFilterTextColor = themeColors.tableFilterText;
   const onAccentColor = palette.secondary || palette.text;
   const isCompactView = width > 0 && width <= compactBreakpoint;
+  const resolvedColumns = useMemo(() => {
+    const storeColumns = externalFilterStore?.getters?.columns;
+    return Array.isArray(storeColumns) ? storeColumns : [];
+  }, [externalFilterStore?.getters?.columns]);
   const filterColumns = useMemo(
-    () => columns.filter(shouldIncludeColumn),
-    [columns],
+    () => resolvedColumns.filter(shouldIncludeColumn),
+    [resolvedColumns],
   );
   const activeCount = useMemo(
     () => filterColumns.filter(column => isFilledFilterValue(filters[getColumnKey(column)])).length,
@@ -295,7 +216,17 @@ const DefaultExternalFilters = ({
     }
 
     if (column.list) {
-      const options = buildColumnOptions(column, getOptionsForColumn?.(column) || [], storeName);
+      const options = [
+        {
+          key: '',
+          label:
+            (column?.emptyOptionLabel
+              ? global.t?.t(storeName || 'invoice', 'label', column.emptyOptionLabel) || column.emptyOptionLabel
+              : null) ||
+            global.t?.t(storeName || 'invoice', 'label', 'select'),
+        },
+        ...buildOptionsFromColumn(column, getOptionsForColumn, storeName),
+      ];
       const selectedKey = normalizeFilterValue(filters[key]);
       const selectedLabel =
         options.find(option => option.key === selectedKey)?.label ||
