@@ -17,6 +17,7 @@ const DefaultColumnFilter = ({
   column,
   filters = {},
   onBeforeOpen = null,
+  onSearchChange = null,
   getOptionsForColumn = null,
   onChange = null,
   storeName = '',
@@ -72,10 +73,12 @@ const DefaultColumnFilter = ({
           field={fieldName}
           icon="filter"
           onBeforeOpen={onBeforeOpen}
+          onSearchChange={onSearchChange}
           accentColor={accentColor}
           active={Boolean(selectedKey)}
           label={selected?.label || options[0]?.label || ''}
           options={options}
+          searchable
           selectedKey={selectedKey}
           onSelect={optionKey => {
             onChange?.(fieldName, optionKey);

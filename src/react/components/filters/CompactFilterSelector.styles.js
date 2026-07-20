@@ -92,6 +92,18 @@ const createStyles = (theme, dense = false, windowWidth = 0) => {
       paddingBottom: 10,
       gap: 10,
     },
+    searchInput: {
+      minHeight: 42,
+      borderWidth: 1,
+      borderColor: theme.optionBorderColor,
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: theme.backgroundColor,
+      color: theme.textColor,
+      fontSize: 13,
+      fontWeight: '700',
+    },
     modalOption: {
       minHeight: 50,
       borderWidth: 1,

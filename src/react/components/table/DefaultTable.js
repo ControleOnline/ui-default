@@ -85,7 +85,14 @@ export const resolveColumnListLoadParams = ({
   column,
   currentCompanyId,
   requestParams = {},
+  searchValue = '',
 }) => {
+  /*
+   * @agents
+   * List inputs are store-driven. Keep backend narrowing in column metadata:
+   * listRequestParams scopes the first page and listSearchParam/searchParam
+   * drives autocomplete without hardcoding API filters in screens.
+   */
   const listStoreName = resolveStoreNameFromList(column?.list);
   const companyScopedParams = resolveListLoadParams({
     currentCompanyId,
@@ -104,6 +111,9 @@ export const resolveColumnListLoadParams = ({
   return {
     ...companyScopedParams,
     ...customParams,
+    ...(normalizeText(searchValue)
+      ? {[column?.listSearchParam || column?.searchParam || 'search']: normalizeText(searchValue)}
+      : {}),
   };
 };
 
@@ -686,7 +696,7 @@ const DefaultTable = ({
   }, [currentCompany?.id]);
 
   const loadListOptionsForColumns = useCallback(
-    (targetColumns = []) => {
+    (targetColumns = [], searchValue = '') => {
       const columnsToLoad = (Array.isArray(targetColumns) ? targetColumns : []).filter(
         column => normalizeText(column?.list),
       );
@@ -700,7 +710,7 @@ const DefaultTable = ({
 
       columnsToLoad.forEach(column => {
         const explicitOptions = getOptionsForColumn?.(column);
-        if (Array.isArray(explicitOptions)) {
+        if (!normalizeText(searchValue) && Array.isArray(explicitOptions)) {
           return;
         }
 
@@ -713,6 +723,7 @@ const DefaultTable = ({
           column,
           currentCompanyId: currentCompany?.id,
           requestParams: requestParamsSeed,
+          searchValue,
         });
         const isCompanyScopedList = Object.keys(listLoadParams).length > 0;
 
@@ -722,6 +733,7 @@ const DefaultTable = ({
 
         if (
           !isCompanyScopedList &&
+          !normalizeText(searchValue) &&
           Array.isArray(listStore?.getters?.items) &&
           listStore.getters.items.length > 0
         ) {
@@ -745,7 +757,7 @@ const DefaultTable = ({
             listAction({
               ...listLoadParams,
               __storeMeta: {
-                dedupeKey: `default-table-list-options:${loadKey}`,
+              dedupeKey: `default-table-list-options:${loadKey}`,
                 skipSystemError: true,
               },
             }),
@@ -1492,6 +1504,7 @@ const DefaultTable = ({
           editing={isEditing}
           getOptionsForColumn={resolvedGetOptionsForColumn}
           onBeforeOpen={() => loadListOptionsForColumns([column])}
+          onSearchChange={value => loadListOptionsForColumns([column], value)}
           onCancelEditing={clearEdit}
           onSave={value => saveCell(row, column, value)}
           onStartEditing={() => beginEdit(row, column)}
@@ -1511,6 +1524,7 @@ const DefaultTable = ({
         column={column}
         filters={resolvedFilters}
         onBeforeOpen={column?.list ? () => loadListOptionsForColumns([column]) : null}
+        onSearchChange={column?.list ? value => loadListOptionsForColumns([column], value) : null}
         getOptionsForColumn={resolvedGetOptionsForColumn}
         onChange={updateFilter}
         storeName={storeName}
@@ -1666,6 +1680,7 @@ const DefaultTable = ({
             label={options.label}
             numberOfLines={options.numberOfLines}
             onBeforeOpen={() => loadListOptionsForColumns([column])}
+            onSearchChange={value => loadListOptionsForColumns([column], value)}
             onCancelEditing={clearEdit}
             onSave={value => saveCell(row, column, value)}
             onStartEditing={() => beginEdit(row, column)}
@@ -1910,6 +1925,7 @@ const DefaultTable = ({
               getOptionsForColumn={resolvedGetOptionsForColumn}
               mode={formMode}
               onBeforeOpen={column => loadListOptionsForColumns([column])}
+              onSearchChange={(column, value) => loadListOptionsForColumns([column], value)}
               onCancel={closeEditModal}
               onSaved={(savedItem, originalRow) => {
                 onSaved?.(savedItem, originalRow);

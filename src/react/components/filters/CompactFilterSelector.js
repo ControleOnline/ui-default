@@ -3,6 +3,7 @@ import {
   Modal,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   useWindowDimensions,
@@ -90,8 +91,10 @@ const CompactFilterSelector = ({
   labelCaption = '',
   onClose = null,
   onBeforeOpen = null,
+  onSearchChange = null,
   onSelect = null,
   options = [],
+  searchable = false,
   selectedKey = '',
   field = '',
   store = '',
@@ -99,6 +102,7 @@ const CompactFilterSelector = ({
   title = '',
 }) => {
   const [visible, setVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const { width: windowWidth } = useWindowDimensions();
   const resolvedTheme = useMemo(
     () => buildTheme({ accentColor, themeColors }),
@@ -118,6 +122,7 @@ const CompactFilterSelector = ({
 
   const closeModal = useCallback(() => {
     setVisible(false);
+    setSearchText('');
     onClose?.();
   }, [onClose]);
 
@@ -144,6 +149,27 @@ const CompactFilterSelector = ({
 
     setVisible(true);
   }, [disabled, onBeforeOpen]);
+
+  /*
+   * @agents
+   * List filters must keep the column/store contract in the default component:
+   * open loads the initial page, typing delegates autocomplete to the caller
+   * that knows the column list store/action.
+   */
+  const handleSearchChange = useCallback(value => {
+    setSearchText(value);
+    onSearchChange?.(value);
+  }, [onSearchChange]);
+
+  const filteredOptions = useMemo(() => {
+    const normalizedSearch = normalizeText(searchText).toLowerCase();
+    if (!searchable || onSearchChange || !normalizedSearch) return options;
+
+    return options.filter(option =>
+      normalizeText(option?.label).toLowerCase().includes(normalizedSearch) ||
+      normalizeText(option?.key).toLowerCase().includes(normalizedSearch),
+    );
+  }, [onSearchChange, options, searchable, searchText]);
 
   const handleSelect = useCallback(optionKey => {
     const shouldClose = onSelect?.(optionKey, {
@@ -234,7 +260,16 @@ const CompactFilterSelector = ({
                   contentContainerStyle={styles.modalContent}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {options.map(option => {
+                  {searchable ? (
+                    <TextInput
+                      style={styles.searchInput}
+                      value={searchText}
+                      placeholder={global.t?.t(resolveStoreName(store), 'input', 'search')}
+                      onChangeText={handleSearchChange}
+                    />
+                  ) : null}
+
+                  {filteredOptions.map(option => {
                     const isSelected = option.key === selectedKey;
 
                     return (

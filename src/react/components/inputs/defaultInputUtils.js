@@ -125,7 +125,8 @@ export const resolveOptionLabel = (column, option, storeName = '') => {
   return translateOptionLabel(rawLabel);
 };
 
-export const resolveStoreNameFromList = list => normalizeText(list).split('/')[0] || '';
+export const resolveStoreNameFromList = list =>
+  typeof list === 'string' ? normalizeText(list).split('/')[0] || '' : '';
 
 const filterItemsByListRequestParams = (items = [], column = null) => {
   const requestParams =
@@ -179,6 +180,10 @@ export const buildOptionsFromColumn = (column, getOptionsForColumn = null, store
   const explicitOptions = getOptionsForColumn?.(column);
   if (Array.isArray(explicitOptions) && explicitOptions.length > 0) {
     return mapOptions(column, explicitOptions, storeName);
+  }
+
+  if (Array.isArray(column?.list)) {
+    return mapOptions(column, column.list, storeName);
   }
 
   const listStoreName = resolveStoreNameFromList(column?.list);

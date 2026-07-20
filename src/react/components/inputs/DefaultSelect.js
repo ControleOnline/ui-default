@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -35,6 +35,7 @@ const DefaultSelect = ({
   onCancelEditing = null,
   onChangeValue = null,
   onSave = null,
+  onSearchChange = null,
   onStartEditing = null,
   readTextStyle = null,
   row = {},
@@ -62,12 +63,17 @@ const DefaultSelect = ({
   const isForm = variant === 'form';
   const filteredOptions = useMemo(() => {
     const query = normalizeText(searchText).toLowerCase();
-    if (!query) return options;
+    if (!query || onSearchChange) return options;
     return options.filter(option =>
       normalizeText(option.label).toLowerCase().includes(query) ||
       normalizeText(option.key).toLowerCase().includes(query),
     );
   }, [options, searchText]);
+
+  const handleSearchChange = useCallback(value => {
+    setSearchText(value);
+    onSearchChange?.(value);
+  }, [onSearchChange]);
 
   const close = () => {
     setIsOpen(false);
@@ -159,7 +165,7 @@ const DefaultSelect = ({
                 style={[inputStyles.input, inputStyles.formInput]}
                 value={searchText}
                 placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search')}
-                onChangeText={setSearchText}
+                onChangeText={handleSearchChange}
               />
             </View>
 

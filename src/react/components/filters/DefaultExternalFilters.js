@@ -51,6 +51,7 @@ const resolveColumnListLoadParams = ({
   column,
   currentCompanyId,
   requestParams = {},
+  searchValue = '',
 }) => {
   const listStoreName = resolveStoreNameFromList(column?.list);
   const resolvedCustomParams = typeof column?.listRequestParams === 'function'
@@ -66,6 +67,9 @@ const resolveColumnListLoadParams = ({
   return {
     ...resolveListLoadParams({currentCompanyId, listStoreName}),
     ...customParams,
+    ...(normalizeText(searchValue)
+      ? {[column?.listSearchParam || column?.searchParam || 'search']: normalizeText(searchValue)}
+      : {}),
   };
 };
 
@@ -226,9 +230,9 @@ const DefaultExternalFilters = ({
     loadedListStoresRef.current.clear();
   }, [currentCompany?.id]);
 
-  const loadListOptionsForColumn = useCallback(column => {
+  const loadListOptionsForColumn = useCallback((column, searchValue = '') => {
     const explicitOptions = getOptionsForColumn?.(column);
-    if (Array.isArray(explicitOptions) && explicitOptions.length > 0) {
+    if (!normalizeText(searchValue) && Array.isArray(explicitOptions) && explicitOptions.length > 0) {
       return Promise.resolve([]);
     }
 
@@ -246,10 +250,12 @@ const DefaultExternalFilters = ({
       column,
       currentCompanyId: currentCompany?.id,
       requestParams,
+      searchValue,
     });
     const hasScopedParams = Object.keys(listLoadParams).length > 0;
 
     if (
+      !normalizeText(searchValue) &&
       !hasScopedParams &&
       Array.isArray(listStore?.getters?.items) &&
       listStore.getters.items.length > 0
@@ -329,6 +335,7 @@ const DefaultExternalFilters = ({
     }
 
     if (column.list) {
+      const listStoreName = resolveStoreNameFromList(column?.list);
       const options = [
         {
           key: '',
@@ -356,8 +363,10 @@ const DefaultExternalFilters = ({
             dense
             store={storeName}
             field={key}
-            onBeforeOpen={() => loadListOptionsForColumn(column)}
+            onBeforeOpen={listStoreName ? () => loadListOptionsForColumn(column) : null}
+            onSearchChange={listStoreName ? value => loadListOptionsForColumn(column, value) : null}
             options={options}
+            searchable
             selectedKey={selectedKey}
             onSelect={optionKey => {
               updateFilter(key, optionKey);
