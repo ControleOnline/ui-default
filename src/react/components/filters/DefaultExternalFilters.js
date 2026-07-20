@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -10,13 +10,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { useStore } from '@store';
+import { getAllStores, useStore } from '@store';
 import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
 import {
   buildOptionsFromColumn,
   getColumnKey,
   isDateLikeColumn,
+  resolveStoreNameFromList,
 } from '../inputs/defaultInputUtils';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
@@ -27,6 +28,61 @@ const DEFAULT_COMPACT_BREAKPOINT = 768;
 const noop = () => {};
 
 const normalizeText = value => String(value || '').trim();
+const resolveListActionName = list =>
+  normalizeText(list).split('/')[1] || 'getItems';
+
+const COMPANY_SCOPED_LIST_STORES = new Set([
+  'categories',
+  'paymentType',
+  'wallet',
+]);
+
+const resolveListLoadParams = ({currentCompanyId, listStoreName}) => {
+  if (!currentCompanyId || !COMPANY_SCOPED_LIST_STORES.has(listStoreName)) {
+    return {};
+  }
+
+  return listStoreName === 'categories'
+    ? {company: currentCompanyId}
+    : {people: currentCompanyId};
+};
+
+const resolveColumnListLoadParams = ({
+  column,
+  currentCompanyId,
+  requestParams = {},
+}) => {
+  const listStoreName = resolveStoreNameFromList(column?.list);
+  const resolvedCustomParams = typeof column?.listRequestParams === 'function'
+    ? column.listRequestParams({currentCompanyId, requestParams})
+    : column?.listRequestParams;
+  const customParams =
+    resolvedCustomParams &&
+    typeof resolvedCustomParams === 'object' &&
+    !Array.isArray(resolvedCustomParams)
+      ? resolvedCustomParams
+      : {};
+
+  return {
+    ...resolveListLoadParams({currentCompanyId, listStoreName}),
+    ...customParams,
+  };
+};
+
+const stableSerialize = value => {
+  if (value === null || value === undefined) return 'null';
+  if (Array.isArray(value)) return `[${value.map(item => stableSerialize(item)).join(',')}]`;
+  if (value instanceof Date) return JSON.stringify(value.toISOString());
+  if (typeof value === 'object') {
+    return `{${Object.keys(value)
+      .sort()
+      .map(key => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
+      .join(',')}}`;
+  }
+
+  return JSON.stringify(value);
+};
+
 const shouldIncludeColumn = column =>
   Boolean(getColumnKey(column)) &&
   column?.show !== false &&
@@ -99,6 +155,7 @@ const DefaultExternalFilters = ({
   getOptionsForColumn = null,
   onActiveCountChange = null,
   onChangeFilters = null,
+  requestParams = {},
   storeName = '',
 }) => {
   const { width } = useWindowDimensions();
@@ -106,6 +163,7 @@ const DefaultExternalFilters = ({
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const loadedListStoresRef = useRef(new Set());
   const { currentCompany } = peopleStore.getters || {};
   const { colors: themeColors } = themeStore.getters;
   const themeTokens = useMemo(
@@ -163,6 +221,61 @@ const DefaultExternalFilters = ({
   useEffect(() => {
     if (!isCompactView) setIsFiltersModalOpen(false);
   }, [isCompactView]);
+
+  useEffect(() => {
+    loadedListStoresRef.current.clear();
+  }, [currentCompany?.id]);
+
+  const loadListOptionsForColumn = useCallback(column => {
+    const explicitOptions = getOptionsForColumn?.(column);
+    if (Array.isArray(explicitOptions) && explicitOptions.length > 0) {
+      return Promise.resolve([]);
+    }
+
+    const listStoreName = resolveStoreNameFromList(column?.list);
+    const actionName = resolveListActionName(column?.list);
+    const stores = getAllStores?.() || {};
+    const listStore = stores?.[listStoreName];
+    const listAction = listStore?.actions?.[actionName];
+
+    if (!listStoreName || typeof listAction !== 'function') {
+      return Promise.resolve([]);
+    }
+
+    const listLoadParams = resolveColumnListLoadParams({
+      column,
+      currentCompanyId: currentCompany?.id,
+      requestParams,
+    });
+    const hasScopedParams = Object.keys(listLoadParams).length > 0;
+
+    if (
+      !hasScopedParams &&
+      Array.isArray(listStore?.getters?.items) &&
+      listStore.getters.items.length > 0
+    ) {
+      return Promise.resolve(listStore.getters.items);
+    }
+
+    const loadKey = `${getColumnKey(column)}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
+    if (loadedListStoresRef.current.has(loadKey)) {
+      return Promise.resolve(listStore?.getters?.items || []);
+    }
+
+    loadedListStoresRef.current.add(loadKey);
+    return Promise.resolve(
+      listAction({
+        ...listLoadParams,
+        __storeMeta: {
+          dedupeKey: `default-external-filter-list-options:${loadKey}`,
+          skipSystemError: true,
+        },
+      }),
+    ).catch(error => {
+      loadedListStoresRef.current.delete(loadKey);
+      throw error;
+    });
+  }, [currentCompany?.id, getOptionsForColumn, requestParams]);
 
   if (filterColumns.length === 0) return null;
 
@@ -243,6 +356,7 @@ const DefaultExternalFilters = ({
             dense
             store={storeName}
             field={key}
+            onBeforeOpen={() => loadListOptionsForColumn(column)}
             options={options}
             selectedKey={selectedKey}
             onSelect={optionKey => {
