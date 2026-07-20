@@ -9,7 +9,7 @@ let consoleErrorSpy = null;
 let mockStores = {};
 let mockWindowDimensions = {width: 480, height: 800};
 let mockCapturedColumnFilterProps = [];
-let capturedDefaultInputProps = [];
+let mockCapturedDefaultInputProps = [];
 
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
@@ -66,26 +66,31 @@ jest.mock('react-native', () => {
 });
 
 jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => props => {
+  const React = require('react');
   mockCapturedColumnFilterProps.push(props);
   return React.createElement('DefaultColumnFilter', props);
 });
 
-jest.mock('../../../../react/components/filters/DefaultSearch', () => props =>
-  React.createElement('DefaultSearch', props),
-);
+jest.mock('../../../../react/components/filters/DefaultSearch', () => props => {
+  const React = require('react');
+  return React.createElement('DefaultSearch', props);
+});
 
-jest.mock('../../../../react/components/form/DefaultForm', () => () =>
-  React.createElement('DefaultForm'),
-);
+jest.mock('../../../../react/components/form/DefaultForm', () => () => {
+  const React = require('react');
+  return React.createElement('DefaultForm');
+});
 
 jest.mock('../../../../react/components/inputs/DefaultInput', () => props => {
-  capturedDefaultInputProps.push(props);
+  const React = require('react');
+  mockCapturedDefaultInputProps.push(props);
   return React.createElement('DefaultInput', props);
 });
 
-jest.mock('@controleonline/ui-common/src/react/components/StateStore', () => props =>
-  React.createElement('StateStore', props, props.children),
-);
+jest.mock('@controleonline/ui-common/src/react/components/StateStore', () => props => {
+  const React = require('react');
+  return React.createElement('StateStore', props, props.children);
+});
 
 const {
   default: DefaultTable,
@@ -125,7 +130,7 @@ describe('DefaultTable', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockWindowDimensions = {width: 480, height: 800};
     mockCapturedColumnFilterProps = [];
-    capturedDefaultInputProps = [];
+    mockCapturedDefaultInputProps = [];
 
     mockStores = {
       people: {
@@ -395,7 +400,7 @@ describe('DefaultTable', () => {
     const findRow = () => tree.root
       .findAllByType('TouchableOpacity')
       .find(node => node.props?.activeOpacity === 0.84);
-    const latestInput = () => capturedDefaultInputProps[capturedDefaultInputProps.length - 1];
+    const latestInput = () => mockCapturedDefaultInputProps[mockCapturedDefaultInputProps.length - 1];
 
     renderer.act(() => {
       findRow().props.onPress();
@@ -455,7 +460,7 @@ describe('DefaultTable', () => {
       );
     });
 
-    const latestInput = () => capturedDefaultInputProps[capturedDefaultInputProps.length - 1];
+    const latestInput = () => mockCapturedDefaultInputProps[mockCapturedDefaultInputProps.length - 1];
 
     renderer.act(() => {
       latestInput().onStartEditing();
@@ -543,10 +548,10 @@ describe('DefaultTable', () => {
       );
     });
 
-    expect(capturedDefaultInputProps.length).toBeGreaterThan(0);
+    expect(mockCapturedDefaultInputProps.length).toBeGreaterThan(0);
 
     await renderer.act(async () => {
-      await capturedDefaultInputProps[0].onSave({
+      await mockCapturedDefaultInputProps[0].onSave({
         value: '2',
         label: 'Departamento',
         object: {id: 2, name: 'Departamento'},
