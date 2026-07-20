@@ -16,18 +16,6 @@ const normalizeStoreNames = (store, stores) => {
   return resolvedStoreNames.filter(name => typeof name === 'string' && name.trim()).map(name => name.trim());
 };
 
-const pickThemeColor = (colors, keys, fallback) => {
-  for (const key of keys) {
-    const value = colors?.[key];
-
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return fallback;
-};
-
 const DefaultErrors = ({
   store = null,
   stores = [],
@@ -47,6 +35,21 @@ const DefaultErrors = ({
 }) => {
   const themeStore = useStore('theme');
   const themeColors = themeStore?.getters?.colors || {};
+  const palette = useMemo(
+    () => ({
+      buttonBackground: themeColors.buttonBackground,
+      buttonBorder: themeColors.buttonBorder,
+      buttonText: themeColors.buttonText,
+      inputErrorBorder: themeColors.inputErrorBorder,
+      inputErrorText: themeColors.inputErrorText,
+      modalBackground: themeColors.modalBackground,
+      modalBorder: themeColors.modalBorder,
+      modalCloseIcon: themeColors.modalCloseIcon,
+      modalOverlay: themeColors.modalOverlay,
+      modalText: themeColors.modalText,
+    }),
+    [themeColors],
+  );
   const allStores = typeof useStores === 'function' ? useStores(state => state) : null;
   const storeNames = useMemo(() => normalizeStoreNames(store, stores), [store, stores]);
   const watchedStoreEntries = useMemo(() => {
@@ -93,37 +96,15 @@ const DefaultErrors = ({
   const [dismissedSignatures, setDismissedSignatures] = useState(() => new Set());
   const timerRef = useRef(null);
   const textAlign = align === 'left' ? 'left' : 'center';
-  const accentColor = pickThemeColor(
-    themeColors,
-    ['inputErrorBorder', 'textDanger', 'modalBorder', 'primary'],
-    '#DC2626',
-  );
-  const backgroundColor = pickThemeColor(
-    themeColors,
-    ['inputErrorBackground', 'modalBackground', 'surface', 'background'],
-    '#FFFFFF',
-  );
-  const overlayColor = pickThemeColor(
-    themeColors,
-    ['modalOverlay', 'overlayBackground'],
-    'rgba(15, 23, 42, 0.55)',
-  );
-  const titleColor = pickThemeColor(
-    themeColors,
-    ['inputErrorText', 'textDanger', 'modalHeaderText', 'text'],
-    '#B91C1C',
-  );
-  const messageColor = pickThemeColor(
-    themeColors,
-    ['modalText', 'textSecondary', 'text'],
-    '#334155',
-  );
-  const closeColor = pickThemeColor(
-    themeColors,
-    ['modalCloseIcon', 'textDanger', 'primary'],
-    accentColor,
-  );
-  const retryAccentColor = pickThemeColor(themeColors, ['primary'], accentColor);
+  const accentColor = palette.inputErrorBorder;
+  const backgroundColor = palette.modalBackground;
+  const overlayColor = palette.modalOverlay;
+  const titleColor = palette.inputErrorText;
+  const messageColor = palette.modalText;
+  const closeColor = palette.modalCloseIcon;
+  const retryBackgroundColor = palette.buttonBackground;
+  const retryBorderColor = palette.buttonBorder;
+  const retryTextColor = palette.buttonText;
 
   const clearStoreErrors = useCallback(() => {
     watchedStoreEntries.forEach(entry => {
@@ -296,8 +277,8 @@ const DefaultErrors = ({
                       alignSelf: textAlign === 'left' ? 'flex-start' : 'center',
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: retryAccentColor,
-                      backgroundColor: `${retryAccentColor}14`,
+                      borderColor: retryBorderColor,
+                      backgroundColor: retryBackgroundColor,
                       marginTop: 4,
                       paddingHorizontal: 12,
                       paddingVertical: 8,
@@ -308,7 +289,7 @@ const DefaultErrors = ({
                   <Text
                     style={[
                       {
-                        color: retryAccentColor,
+                        color: retryTextColor,
                         fontSize: 12,
                         fontWeight: '800',
                       },
@@ -330,7 +311,8 @@ const DefaultErrors = ({
               style={[
                 {
                   alignItems: 'center',
-                  borderColor: accentColor,
+                  backgroundColor,
+                  borderColor: palette.modalBorder,
                   borderRadius: 999,
                   borderWidth: 1,
                   height: 28,
