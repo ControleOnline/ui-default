@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultInput from '../inputs/DefaultInput';
 import {
@@ -10,7 +11,7 @@ import {
   normalizeText,
   resolveEditValue,
 } from '../inputs/defaultInputUtils';
-import styles from './DefaultForm.styles';
+import { createStyles } from './DefaultForm.styles';
 
 const hasValue = value => {
   if (value === null || value === undefined) return false;
@@ -54,7 +55,6 @@ const buildDraft = (columns, row) =>
   }, {});
 
 const DefaultForm = ({
-  accentColor = '#2563EB',
   actions = {},
   columns = [],
   getOptionsForColumn = null,
@@ -65,6 +65,23 @@ const DefaultForm = ({
   row = {},
   storeName = '',
 }) => {
+  const themeStore = useStore('theme');
+  const { colors: themeColors } = themeStore.getters;
+  const palette = useMemo(
+    () => ({
+      buttonBackground: themeColors.buttonBackground,
+      buttonBackgroundSecondary: themeColors.buttonBackgroundSecondary,
+      buttonBorderSecondary: themeColors.buttonBorderSecondary,
+      buttonDisabledBackground: themeColors.buttonDisabledBackground,
+      buttonDisabledText: themeColors.buttonDisabledText,
+      buttonText: themeColors.buttonText,
+      buttonTextSecondary: themeColors.buttonTextSecondary,
+      dividerBorder: themeColors.dividerBorder,
+      textSecondary: themeColors.textSecondary,
+    }),
+    [themeColors],
+  );
+  const styles = useMemo(() => createStyles(palette), [palette]);
   const formColumns = useMemo(
     () => columns.filter(column => shouldIncludeColumn(column, row, mode)),
     [columns, mode, row],
@@ -143,7 +160,7 @@ const DefaultForm = ({
               return (
                 <View key={fieldName} style={styles.formField}>
                   <DefaultInput
-                    accentColor={accentColor}
+                    accentColor={themeColors.buttonBackground}
                     autoFocus={false}
                     autoSave={false}
                     column={column}
@@ -181,14 +198,14 @@ const DefaultForm = ({
         <TouchableOpacity
           style={[
             styles.primaryButton,
-            { backgroundColor: accentColor },
+            { backgroundColor: palette.buttonBackground },
             isSaving ? styles.primaryButtonDisabled : null,
           ]}
           activeOpacity={0.86}
           disabled={isSaving}
           onPress={save}
         >
-          <Text style={styles.primaryButtonText}>
+          <Text style={[styles.primaryButtonText, isSaving ? styles.primaryButtonTextDisabled : null]}>
             {isSaving ? 'Salvando' : global.t?.t(storeName, 'button', 'save') || 'Salvar'}
           </Text>
         </TouchableOpacity>
