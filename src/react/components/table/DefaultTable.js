@@ -1203,6 +1203,13 @@ const DefaultTable = ({
     ((width > 0 && width <= COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH) ||
       (tableContainerWidth > 0 &&
         tableContainerWidth <= COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH));
+  const searchAccessibilityLabel =
+    searchProps?.accessibilityLabel ||
+    searchProps?.placeholder ||
+    global.t?.t(storeName, 'input', searchKey) ||
+    global.t?.t(storeName, 'placeholder', searchKey) ||
+    global.t?.t(storeName, 'label', 'search') ||
+    'Buscar';
   const resolvedTotalItemsText =
     normalizeText(totalItemsText) !== ''
       ? totalItemsText
@@ -2260,7 +2267,8 @@ const DefaultTable = ({
                 styles.toolbarSearchButton,
                 { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
               ]}
-              accessibilityLabel={global.t?.t(storeName, 'label', 'search')}
+              accessibilityLabel={searchAccessibilityLabel}
+              accessibilityRole="button"
               activeOpacity={0.82}
               onPress={() => setIsSearchModalOpen(true)}
             >

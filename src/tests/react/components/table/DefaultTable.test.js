@@ -237,10 +237,35 @@ describe('DefaultTable', () => {
       .findAllByType('TouchableOpacity')
       .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'search'));
 
+    expect(searchButton.props.accessibilityRole).toBe('button');
+    expect(searchButton.props.accessibilityLabel).toBe('Buscar pedidos');
+
     renderer.act(() => searchButton.props.onPress());
 
     expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(1);
     expect(tree.root.findByType('DefaultSearch').props.autoFocus).toBe(true);
+  });
+
+  it('gives collapsed search a stable accessible name without a placeholder', () => {
+    mockWindowDimensions = {width: 375, height: 667};
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome'}],
+          data: [],
+          searchProps: {},
+        }),
+      );
+    });
+
+    const searchButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'search'));
+
+    expect(searchButton.props.accessibilityRole).toBe('button');
+    expect(searchButton.props.accessibilityLabel).toBe('Buscar');
   });
 
   it('keeps the financial compact toolbar aligned when the total is already in the footer', () => {
