@@ -20,14 +20,12 @@ const normalizePreferenceSegment = value =>
 export const resolveDefaultTablePreferenceScope = ({
   route = null,
   storeName = '',
-  preferenceKey = '',
 } = {}) => {
   const routeName =
     normalizePreferenceSegment(globalThis?.location?.pathname) ||
     normalizePreferenceSegment(route?.name) ||
     normalizePreferenceSegment(route?.key) ||
     'unknown-route';
-  const customSegment = normalizePreferenceSegment(preferenceKey);
 
   /*
    * @agents DefaultTable preferences are saved as [store][route].
@@ -35,7 +33,7 @@ export const resolveDefaultTablePreferenceScope = ({
    * and column visibility must never be keyed only by store or only by route.
    */
   return {
-    routeKey: [routeName, customSegment].filter(Boolean).join(':'),
+    routeKey: routeName,
     storeKey: normalizePreferenceSegment(storeName) || 'unknown-store',
   };
 };

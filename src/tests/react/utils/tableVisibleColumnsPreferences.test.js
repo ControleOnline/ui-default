@@ -92,6 +92,23 @@ describe('tableVisibleColumnsPreferences', () => {
     delete global.location;
   });
 
+  it('keeps the preference scope limited to store and route', () => {
+    global.location = {pathname: '/product-showcases-page'};
+
+    expect(
+      resolveDefaultTablePreferenceScope({
+        preferenceKey: 'product_showcase_items',
+        route: {name: 'ProductShowcasesPage'},
+        storeName: 'product_showcase_items',
+      }),
+    ).toEqual({
+      routeKey: 'product-showcases-page',
+      storeKey: 'product_showcase_items',
+    });
+
+    delete global.location;
+  });
+
   it('sanitizes stored filters against filterable columns and search key', () => {
     expect(
       sanitizeTableFiltersPreference({

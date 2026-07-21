@@ -362,6 +362,76 @@ describe('DefaultTable', () => {
     });
   });
 
+  it('hydrates and persists controlled filters under default-table[store][route]', () => {
+    const onFilterChange = jest.fn();
+    const setFilters = jest.fn();
+    global.location = {pathname: '/product-showcases-page'};
+    global.localStorage.setItem(
+      DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
+        product_showcase_items: {
+          'product-showcases-page': {
+            filters: {
+              integration: 'pos',
+            },
+          },
+        },
+      }),
+    );
+    mockStores.product_showcase_items = {
+      actions: {
+        setFilters,
+      },
+      getters: {
+        columns: [
+          {key: 'integration', label: 'Integration', externalFilter: true},
+          {key: 'price', label: 'Price'},
+        ],
+        filters: {},
+      },
+    };
+
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          filters: {},
+          onFilterChange,
+          storeName: 'product_showcase_items',
+        }),
+      );
+    });
+
+    expect(onFilterChange).toHaveBeenCalledWith({integration: 'pos'});
+
+    renderer.act(() => {
+      tree.update(
+        React.createElement(DefaultTable, {
+          filters: {integration: 'ifood'},
+          onFilterChange,
+          storeName: 'product_showcase_items',
+        }),
+      );
+    });
+
+    expect(
+      JSON.parse(
+        global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
+      ),
+    ).toEqual({
+      product_showcase_items: {
+        'product-showcases-page': {
+          filters: {
+            integration: 'ifood',
+          },
+        },
+      },
+    });
+
+    delete global.location;
+  });
+
   it('preserves the compact toolbar total when the footer total is disabled', () => {
     mockWindowDimensions = {width: 375, height: 667};
     let tree;

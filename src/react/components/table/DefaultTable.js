@@ -1030,6 +1030,24 @@ const DefaultTable = ({
     if (!autoMode || !isFiltersControlled) return;
 
     const nextFilters = isObject(filters) ? filters : {};
+    const shouldApplyStoredFilters =
+      hasStoredFiltersPreference &&
+      !hasAppliedStoredFiltersRef.current &&
+      Object.keys(nextFilters).length === 0;
+
+    if (shouldApplyStoredFilters) {
+      hasAppliedStoredFiltersRef.current = true;
+      setAutoFilters(prev =>
+        stableSerialize(prev) === storedFiltersSeedSignature
+          ? prev
+          : storedFiltersSeed,
+      );
+      setStoreFilters?.(storedFiltersSeed);
+      onFilterChange?.(storedFiltersSeed);
+      return;
+    }
+
+    hasAppliedStoredFiltersRef.current = true;
     setAutoFilters(prev =>
       stableSerialize(prev) === controlledFiltersSignature
         ? prev
@@ -1038,12 +1056,28 @@ const DefaultTable = ({
     if (storeFiltersSignature !== controlledFiltersSignature) {
       setStoreFilters?.(nextFilters);
     }
+
+    persistTableFiltersPreference(
+      tablePreferenceScope,
+      sanitizeTableFiltersPreference({
+        columns: columnsForTable,
+        filters: nextFilters,
+        searchKey,
+      }),
+    );
   }, [
     autoMode,
+    columnsForTable,
     controlledFiltersSignature,
+    hasStoredFiltersPreference,
     isFiltersControlled,
+    onFilterChange,
+    searchKey,
     setStoreFilters,
     storeFiltersSignature,
+    storedFiltersSeed,
+    storedFiltersSeedSignature,
+    tablePreferenceScope,
   ]);
 
   useEffect(() => {
