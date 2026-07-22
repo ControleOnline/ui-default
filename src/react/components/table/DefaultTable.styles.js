@@ -533,7 +533,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexShrink: 1,
     borderRadius: 999,
-    backgroundColor: '#EFF6FF',
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
