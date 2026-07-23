@@ -120,6 +120,7 @@ const {
 const {
   DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
 } = require('../../../../react/utils/tableVisibleColumnsPreferences');
+const reactNavigation = require('@react-navigation/native');
 
 describe('resolveColumnListLoadParams', () => {
   it('uses company for category stores and people for financial owner stores', () => {
@@ -156,6 +157,7 @@ describe('DefaultTable', () => {
     mockCapturedColumnFilterProps = [];
     mockCapturedDefaultInputProps = [];
     global.localStorage = createLocalStorageMock();
+    reactNavigation.useIsFocused.mockImplementation(() => false);
 
     mockStores = {
       people: {
@@ -385,6 +387,55 @@ describe('DefaultTable', () => {
         },
       },
     });
+  });
+
+  it('hydrates the saved sort using a stable preference key on auto tables', async () => {
+    const getItems = jest.fn(() => Promise.resolve([]));
+    reactNavigation.useIsFocused.mockImplementation(() => true);
+    global.localStorage.setItem(
+      DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
+        orders: {
+          'order-history-page': {
+            sort: {
+              direction: 'desc',
+              field: 'status',
+            },
+          },
+        },
+      }),
+    );
+    mockStores.orders = {
+      actions: {
+        getItems,
+      },
+      getters: {
+        columns: [
+          {key: 'status', label: 'Status', sortable: true},
+          {key: 'price', label: 'Preco'},
+        ],
+        filters: {},
+        items: [],
+      },
+    };
+
+    await renderer.act(async () => {
+      renderer.create(
+        React.createElement(DefaultTable, {
+          storeName: 'orders',
+          visibleColumnsPreferenceKey: 'order-history-page',
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(getItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'order[status]': 'desc',
+        itemsPerPage: 50,
+        page: 1,
+      }),
+    );
   });
 
   it('hydrates and persists controlled filters under default-table[store][route]', () => {

@@ -18,10 +18,12 @@ const normalizePreferenceSegment = value =>
     .replace(/-+/g, '-');
 
 export const resolveDefaultTablePreferenceScope = ({
+  preferenceKey = '',
   route = null,
   storeName = '',
 } = {}) => {
   const routeName =
+    normalizePreferenceSegment(preferenceKey) ||
     normalizePreferenceSegment(globalThis?.location?.pathname) ||
     normalizePreferenceSegment(route?.name) ||
     normalizePreferenceSegment(route?.key) ||

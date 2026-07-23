@@ -92,7 +92,7 @@ describe('tableVisibleColumnsPreferences', () => {
     delete global.location;
   });
 
-  it('keeps the preference scope limited to store and route', () => {
+  it('uses an explicit preference key before the route pathname', () => {
     global.location = {pathname: '/product-showcases-page'};
 
     expect(
@@ -102,7 +102,7 @@ describe('tableVisibleColumnsPreferences', () => {
         storeName: 'product_showcase_items',
       }),
     ).toEqual({
-      routeKey: 'product-showcases-page',
+      routeKey: 'product_showcase_items',
       storeKey: 'product_showcase_items',
     });
 
