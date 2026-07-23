@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
-  Modal,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -14,14 +13,20 @@ import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores, useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
-import StateStore from '@controleonline/ui-common/src/react/components/StateStore';
 import { getDateRange } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
 import { colors } from '@controleonline/../../src/styles/colors';
+import DefaultColumnMenu from './DefaultColumnMenu';
+import DefaultEditModal from './DefaultEditModal';
+import DefaultFiltersModal from './DefaultFiltersModal';
+import DefaultSearchModal from './DefaultSearchModal';
+import DefaultTableEmptyState from './DefaultTableEmptyState';
+import DefaultTableControls from './DefaultTableControls';
+import DefaultTableLoadingOverlay from './DefaultTableLoadingOverlay';
+import DefaultToolbarAction from './DefaultToolbarAction';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultSearch from '../filters/DefaultSearch';
-import DefaultForm from '../form/DefaultForm';
 import DefaultInput from '../inputs/DefaultInput';
 import {
   formatSaveValue,
@@ -190,33 +195,6 @@ const normalizeCollectionItems = response => {
   if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
 
   return [];
-};
-
-const formatDebugValue = value => {
-  if (value === undefined) return '';
-  if (typeof value === 'string') return value;
-
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch (error) {
-    return normalizeText(value);
-  }
-};
-
-const copyTextToClipboard = async text => {
-  const normalizedText = normalizeText(text);
-  if (!normalizedText) return false;
-
-  if (
-    typeof navigator !== 'undefined' &&
-    navigator.clipboard &&
-    typeof navigator.clipboard.writeText === 'function'
-  ) {
-    await navigator.clipboard.writeText(normalizedText);
-    return true;
-  }
-
-  return false;
 };
 
 const resolveHasMore = ({ hasMore, dataLength, totalItems }) => {
@@ -576,7 +554,6 @@ const DefaultTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
-  const [isDebugModalOpen, setIsDebugModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
@@ -665,8 +642,40 @@ const DefaultTable = ({
   const tableFooterBackgroundColor = themeColors.tableFooterBackground;
   const tableFooterBorderColor = themeColors.tableFooterBorder;
   const tableFooterTextColor = themeColors.tableFooterText;
+  const modalColors = useMemo(() => ({
+    backgroundColor: modalBackgroundColor,
+    borderColor: modalBorderColor,
+    closeIconColor: modalCloseIconColor,
+    headerTextColor: modalHeaderTextColor,
+    overlayColor: modalOverlayColor,
+    textColor: modalTextColor,
+  }), [
+    modalBackgroundColor,
+    modalBorderColor,
+    modalCloseIconColor,
+    modalHeaderTextColor,
+    modalOverlayColor,
+    modalTextColor,
+  ]);
+  const tableButtonColors = useMemo(() => ({
+    backgroundColor: tableButtonBackgroundColor,
+    borderColor: tableButtonBorderColor,
+    iconColor: tableButtonIconColor,
+    pressedBackgroundColor: tableButtonPressedBackgroundColor,
+    pressedBorderColor: tableButtonPressedBorderColor,
+    pressedIconColor: tableButtonPressedIconColor,
+    textColor: tableButtonTextColor,
+  }), [
+    tableButtonBackgroundColor,
+    tableButtonBorderColor,
+    tableButtonIconColor,
+    tableButtonPressedBackgroundColor,
+    tableButtonPressedBorderColor,
+    tableButtonPressedIconColor,
+    tableButtonTextColor,
+  ]);
   const isFocused = useIsFocused();
-  const {showError, showSuccess} = useMessage() || {};
+  const {showError} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
   const searchKey = searchProps?.searchKey || 'search';
   const storeActions = store?.actions || {};
@@ -1241,18 +1250,7 @@ const DefaultTable = ({
     global.t?.t(storeName, 'placeholder', searchKey) ||
     global.t?.t(storeName, 'label', 'search') ||
     'Buscar';
-  const storeDebug = store?.getters?.debug;
-  const resolvedDebug = isObject(storeDebug) ? storeDebug : {};
-  const debugQuery = normalizeText(resolvedDebug?.query);
-  const debugFilledQuery = normalizeText(
-    resolvedDebug?.filledQuery || resolvedDebug?.interpolatedQuery,
-  );
-  const hasDebugQuery = debugQuery !== '';
-  const debugParameters = useMemo(() => {
-    if (isObject(resolvedDebug?.parameters)) {
-      return resolvedDebug.parameters;
-    }
-
+  const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
       return buildRequestQuery(autoPageRef.current || 1, false);
     }
@@ -1262,25 +1260,7 @@ const DefaultTable = ({
       requestParams: requestParamsSeed,
       sort: resolvedSort || null,
     };
-  }, [autoMode, buildRequestQuery, requestParamsSeed, resolvedDebug, resolvedFilters, resolvedSort]);
-  const debugParametersText = useMemo(
-    () => formatDebugValue(debugParameters),
-    [debugParameters],
-  );
-  const debugCopyText = useMemo(
-    () =>
-      [
-        'Query:',
-        debugQuery,
-        '',
-        'Parameters:',
-        debugParametersText,
-        '',
-        'Filled query:',
-        debugFilledQuery,
-      ].join('\n'),
-    [debugFilledQuery, debugParametersText, debugQuery],
-  );
+  }, [autoMode, buildRequestQuery, requestParamsSeed, resolvedFilters, resolvedSort]);
   const resolvedTotalItemsText =
     normalizeText(totalItemsText) !== ''
       ? totalItemsText
@@ -1670,23 +1650,6 @@ const DefaultTable = ({
     if (nextWidth > 0) setTableContainerWidth(nextWidth);
   }, []);
 
-  const requestCopyDebugText = useCallback(
-    text =>
-      copyTextToClipboard(text)
-        .then(copied => {
-          if (copied) {
-            showSuccess?.('Copiado');
-            return;
-          }
-
-          showError?.('Nao foi possivel copiar automaticamente.');
-        })
-        .catch(() => {
-          showError?.('Nao foi possivel copiar automaticamente.');
-        }),
-    [showError, showSuccess],
-  );
-
   const renderEditableCell = (row, column) => {
     const fieldName = getColumnKey(column);
     const cellKey = `${row?.id || row?.['@id']}:${fieldName}`;
@@ -1738,109 +1701,44 @@ const DefaultTable = ({
   };
 
   const renderFiltersModal = () => {
-    if (!isFiltersModalOpen || !hasTableFilters) return null;
-
     return (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setIsFiltersModalOpen(false)}>
-        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
-          <View style={[styles.modalCard, styles.filtersModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
-                {global.t?.t(storeName, 'label', 'filters') || 'Filtros'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
-                activeOpacity={0.82}
-                onPress={() => setIsFiltersModalOpen(false)}
-              >
-                <Icon name="x" size={16} color={modalCloseIconColor} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.filtersModalBody} contentContainerStyle={styles.filtersModalList}>
-              {filterColumns.map(column => {
-                const fieldName = getColumnKey(column);
-                const label = formatStoreColumnLabel({
-                  columns: columnsForTable,
-                  fieldName,
-                  fallbackLabel: column?.label || fieldName,
-                  storeName,
-                });
+      <DefaultFiltersModal
+        applyLabel={global.t?.t(storeName, 'button', 'apply') || 'Aplicar'}
+        clearLabel={global.t?.t(storeName, 'button', 'clear') || 'Limpar'}
+        columns={filterColumns}
+        getColumnLabel={column => {
+          const fieldName = getColumnKey(column);
 
-                return (
-                  <View key={fieldName} style={styles.filtersModalField}>
-                    <Text style={[styles.formLabel, { color: modalTextColor }]} numberOfLines={1}>
-                      {label}
-                    </Text>
-                    {renderColumnFilter(column, styles.filtersModalInput)}
-                  </View>
-                );
-              })}
-            </ScrollView>
-            <View style={[styles.modalActions, { borderTopColor: modalBorderColor }]}>
-              <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: modalBorderColor }]}
-                activeOpacity={0.82}
-                onPress={() => commitFilters({})}
-              >
-                <Text style={[styles.secondaryButtonText, { color: modalTextColor }]}>
-                  {global.t?.t(storeName, 'button', 'clear') || 'Limpar'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: resolvedAccentColor }]}
-                activeOpacity={0.82}
-                onPress={() => setIsFiltersModalOpen(false)}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {global.t?.t(storeName, 'button', 'apply') || 'Aplicar'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+          return formatStoreColumnLabel({
+            columns: columnsForTable,
+            fieldName,
+            fallbackLabel: column?.label || fieldName,
+            storeName,
+          });
+        }}
+        modalColors={modalColors}
+        onApply={() => setIsFiltersModalOpen(false)}
+        onClear={() => commitFilters({})}
+        onClose={() => setIsFiltersModalOpen(false)}
+        renderColumnFilter={renderColumnFilter}
+        resolvedAccentColor={resolvedAccentColor}
+        title={global.t?.t(storeName, 'label', 'filters') || 'Filtros'}
+        visible={isFiltersModalOpen && hasTableFilters}
+      />
     );
   };
 
   const renderToolbarAction = action => {
     if (!action || action.hidden) return null;
 
-    const isActive = action.active === true;
-    const hasLabel = normalizeText(action.label) !== '';
-    const actionColor = action.color || tableActionTextColor;
-
     return (
-      <TouchableOpacity
+      <DefaultToolbarAction
         key={action.key || action.icon || action.label}
-        accessibilityRole="button"
-        accessibilityLabel={action.accessibilityLabel || action.label || action.key || action.icon}
-        style={[
-          styles.toolbarButton,
-          { backgroundColor: tableActionBackgroundColor, borderColor: tableActionBorderColor },
-          action.style,
-        ]}
-        activeOpacity={0.82}
-        disabled={action.disabled === true}
-        onPress={action.onPress}
-      >
-        {action.icon ? (
-          <Icon
-            name={action.icon}
-            size={action.iconSize || 14}
-            color={actionColor}
-          />
-        ) : null}
-        {hasLabel ? (
-          <Text style={[styles.toolbarActionLabel, { color: actionColor }, action.labelStyle]} numberOfLines={1}>
-            {action.label}
-          </Text>
-        ) : null}
-        {action.badge !== undefined && action.badge !== null ? (
-          <Text style={[styles.toolbarBadgeText, { color: action.badgeColor || tableActionTextColor }]}>
-            {action.badge}
-          </Text>
-        ) : null}
-      </TouchableOpacity>
+        action={action}
+        tableActionBackgroundColor={tableActionBackgroundColor}
+        tableActionBorderColor={tableActionBorderColor}
+        tableActionTextColor={tableActionTextColor}
+      />
     );
   };
 
@@ -2011,32 +1909,24 @@ const DefaultTable = ({
 
   const renderEmptyState = isTable => {
     return (
-      <View style={[styles.emptyBox, isTable ? tableLayoutStyle : null]}>
-        {resolvedIsLoading ? (
-          <StateStore compact loading={emptyStateLabel} />
-        ) : (
-          <Text style={[styles.emptyText, { color: tableMutedColor }]}>{emptyStateLabel}</Text>
-        )}
-      </View>
+      <DefaultTableEmptyState
+        emptyStateLabel={emptyStateLabel}
+        isLoading={resolvedIsLoading}
+        isTable={isTable}
+        tableLayoutStyle={tableLayoutStyle}
+        tableMutedColor={tableMutedColor}
+      />
     );
   };
 
   const renderLoadingOverlay = () => {
-    if (!resolvedIsLoading || sortedData.length === 0) {
-      return null;
-    }
-
     return (
-      <View pointerEvents="none" style={styles.loadingOverlay}>
-        <View
-          style={[
-            styles.loadingOverlayCard,
-            { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor },
-          ]}
-        >
-          <StateStore compact loading="Carregando mais registros..." />
-        </View>
-      </View>
+      <DefaultTableLoadingOverlay
+        isLoading={resolvedIsLoading}
+        itemCount={sortedData.length}
+        tableBorderColor={tableBorderColor}
+        tableSurfaceColor={tableSurfaceColor}
+      />
     );
   };
 
@@ -2106,307 +1996,88 @@ const DefaultTable = ({
     const isCreate = formMode === 'create';
 
     return (
-      <Modal visible={Boolean(editingRow)} transparent animationType="fade" onRequestClose={closeEditModal}>
-        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
-          <View style={[styles.modalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]}>
-                {isCreate
-                  ? global.t?.t(storeName, 'button', 'add') || 'Adicionar'
-                  : global.t?.t(storeName, 'button', 'edit') || 'Editar'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
-                onPress={closeEditModal}>
-                <Icon name="x" size={18} color={modalCloseIconColor} />
-              </TouchableOpacity>
-            </View>
-
-            <DefaultForm
-              accentColor={resolvedAccentColor}
-              actions={resolvedActions}
-              columns={isCreate ? columnsForTable : editableColumns}
-              getOptionsForColumn={resolvedGetOptionsForColumn}
-              mode={formMode}
-              onBeforeOpen={column => loadListOptionsForColumns([column])}
-              onSearchChange={(column, value) => loadListOptionsForColumns([column], value)}
-              onCancel={closeEditModal}
-              onSaved={(savedItem, originalRow) => {
-                onSaved?.(savedItem, originalRow);
-                closeEditModal();
-              }}
-              row={editingRow || {}}
-              storeName={storeName}
-            />
-          </View>
-        </View>
-      </Modal>
+      <DefaultEditModal
+        accentColor={resolvedAccentColor}
+        actions={resolvedActions}
+        columns={isCreate ? columnsForTable : editableColumns}
+        editingRow={editingRow}
+        formMode={formMode}
+        getOptionsForColumn={resolvedGetOptionsForColumn}
+        modalColors={modalColors}
+        onBeforeOpen={column => loadListOptionsForColumns([column])}
+        onClose={closeEditModal}
+        onSearchChange={(column, value) => loadListOptionsForColumns([column], value)}
+        onSaved={(savedItem, originalRow) => {
+          onSaved?.(savedItem, originalRow);
+          closeEditModal();
+        }}
+        storeName={storeName}
+        title={
+          isCreate
+            ? global.t?.t(storeName, 'button', 'add') || 'Adicionar'
+            : global.t?.t(storeName, 'button', 'edit') || 'Editar'
+        }
+      />
     );
   };
 
   const renderColumnMenuModal = () => {
-    if (!isColumnMenuOpen) return null;
-
     return (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setIsColumnMenuOpen(false)}>
-        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
-          <View style={[styles.modalCard, styles.columnMenuModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
-                Colunas
-              </Text>
-              <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
-                activeOpacity={0.82}
-                onPress={() => setIsColumnMenuOpen(false)}
-              >
-                <Icon name="x" size={16} color={modalCloseIconColor} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.columnMenuModalBody} contentContainerStyle={styles.columnMenuModalList}>
-              {availableColumns.map(column => {
-                const fieldName = getColumnKey(column);
-                const label = formatStoreColumnLabel({
-                  columns: columnsForTable,
-                  fieldName,
-                  fallbackLabel: column?.label || fieldName,
-                  storeName,
-                });
-                const checked = visibleColumns[fieldName] !== false;
-
-                return (
-                  <TouchableOpacity key={fieldName} style={styles.columnMenuItem} activeOpacity={0.82} onPress={() => toggleColumn(column)}>
-                    <Icon name={checked ? 'check-square' : 'square'} size={16} color={checked ? checkboxSelectedMarkColor : checkboxBorderColor} />
-                    <Text style={[styles.columnMenuText, { color: modalTextColor }]} numberOfLines={1}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
-
-  const renderDebugModal = () => {
-    if (!isDebugModalOpen || !hasDebugQuery) return null;
-
-    return (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setIsDebugModalOpen(false)}>
-        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
-          <View style={[styles.modalCard, styles.debugModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
-                Debug query
-              </Text>
-              <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
-                activeOpacity={0.82}
-                onPress={() => setIsDebugModalOpen(false)}
-              >
-                <Icon name="x" size={16} color={modalCloseIconColor} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.debugModalBody} contentContainerStyle={styles.debugModalContent}>
-              <View style={styles.debugSectionHeader}>
-                <Text style={[styles.debugSectionTitle, { color: modalTextColor }]}>Query</Text>
-                <TouchableOpacity
-                  style={[styles.debugCopyButton, { borderColor: modalBorderColor }]}
-                  activeOpacity={0.82}
-                  onPress={() => requestCopyDebugText(debugQuery)}
-                >
-                  <Icon name="copy" size={13} color={modalTextColor} />
-                  <Text style={[styles.debugCopyButtonText, { color: modalTextColor }]}>Copiar</Text>
-                </TouchableOpacity>
-              </View>
-              <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
-                {debugQuery}
-              </Text>
-
-              <View style={styles.debugSectionHeader}>
-                <Text style={[styles.debugSectionTitle, { color: modalTextColor }]}>Parametros</Text>
-                <TouchableOpacity
-                  style={[styles.debugCopyButton, { borderColor: modalBorderColor }]}
-                  activeOpacity={0.82}
-                  onPress={() => requestCopyDebugText(debugParametersText)}
-                >
-                  <Icon name="copy" size={13} color={modalTextColor} />
-                  <Text style={[styles.debugCopyButtonText, { color: modalTextColor }]}>Copiar</Text>
-                </TouchableOpacity>
-              </View>
-              <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
-                {debugParametersText}
-              </Text>
-
-              <View style={styles.debugSectionHeader}>
-                <Text style={[styles.debugSectionTitle, { color: modalTextColor }]}>Query preenchida</Text>
-                <TouchableOpacity
-                  style={[styles.debugCopyButton, { borderColor: modalBorderColor }]}
-                  activeOpacity={0.82}
-                  onPress={() => requestCopyDebugText(debugFilledQuery)}
-                >
-                  <Icon name="copy" size={13} color={modalTextColor} />
-                  <Text style={[styles.debugCopyButtonText, { color: modalTextColor }]}>Copiar</Text>
-                </TouchableOpacity>
-              </View>
-              <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
-                {debugFilledQuery}
-              </Text>
-            </ScrollView>
-
-            <View style={[styles.modalActions, { borderTopColor: modalBorderColor }]}>
-              <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: modalBorderColor }]}
-                activeOpacity={0.82}
-                onPress={() => requestCopyDebugText(debugCopyText)}
-              >
-                <Text style={[styles.secondaryButtonText, { color: modalTextColor }]}>Copiar tudo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: resolvedAccentColor }]}
-                activeOpacity={0.82}
-                onPress={() => setIsDebugModalOpen(false)}
-              >
-                <Text style={styles.primaryButtonText}>Fechar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <DefaultColumnMenu
+        availableColumns={availableColumns}
+        checkboxBorderColor={checkboxBorderColor}
+        checkboxSelectedMarkColor={checkboxSelectedMarkColor}
+        columns={columnsForTable}
+        modalColors={modalColors}
+        onClose={() => setIsColumnMenuOpen(false)}
+        onToggleColumn={toggleColumn}
+        storeName={storeName}
+        visible={isColumnMenuOpen}
+        visibleColumns={visibleColumns}
+      />
     );
   };
 
   const renderTableControls = () => {
     return (
-    <>
-      {hasDebugQuery ? (
-        <TouchableOpacity
-          accessibilityLabel="Debug query"
-          accessibilityRole="button"
-          style={[
-            styles.toolbarButton,
-            { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-            isDebugModalOpen
-              ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
-              : null,
-          ]}
-          activeOpacity={0.82}
-          onPress={() => setIsDebugModalOpen(true)}
-        >
-          <Icon
-            name="code"
-            size={14}
-            color={isDebugModalOpen ? tableButtonPressedIconColor : tableButtonIconColor}
-          />
-        </TouchableOpacity>
-      ) : null}
-      {hasTableFilters ? (
-        <TouchableOpacity
-          style={[
-            styles.toolbarButton,
-            { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-            isFiltersModalOpen
-              ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
-              : null,
-          ]}
-          activeOpacity={0.82}
-          onPress={() => setIsFiltersModalOpen(true)}
-        >
-          <Icon
-            name="filter"
-            size={14}
-            color={isFiltersModalOpen ? tableButtonPressedIconColor : tableButtonIconColor}
-          />
-          {activeFilterCount > 0 ? (
-            <Text
-              style={[
-                styles.toolbarBadgeText,
-                { color: isFiltersModalOpen ? tableButtonPressedIconColor : tableButtonIconColor },
-              ]}>
-              {activeFilterCount}
-            </Text>
-          ) : null}
-        </TouchableOpacity>
-      ) : null}
-      <TouchableOpacity
-        style={[
-          styles.toolbarButton,
-          { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-          effectiveViewMode !== 'table'
-            ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
-            : null,
-        ]}
-        activeOpacity={0.82}
-        onPress={toggleViewMode}
-      >
-        <Icon
-          name={effectiveViewMode === 'table' ? 'list' : 'grid'}
-          size={14}
-          color={effectiveViewMode !== 'table' ? tableButtonPressedIconColor : tableButtonIconColor}
-        />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.toolbarButton, { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor }]}
-        activeOpacity={0.82}
-        onPress={() => setIsColumnMenuOpen(prev => !prev)}>
-        <Icon name="columns" size={14} color={tableButtonTextColor} />
-      </TouchableOpacity>
-      {shouldRenderAddButton ? (
-        <TouchableOpacity
-          style={[
-            styles.toolbarButton,
-            styles.toolbarAddButton,
-            { backgroundColor: tableButtonBackgroundColor, borderColor: tableButtonBackgroundColor },
-          ]}
-          activeOpacity={0.85}
-          onPress={openAddForm}
-        >
-          <Icon name="plus" size={16} color={tableButtonTextColor} />
-        </TouchableOpacity>
-      ) : null}
-    </>
+      <DefaultTableControls
+        activeFilterCount={activeFilterCount}
+        debugFallbackParameters={debugFallbackParameters}
+        effectiveViewMode={effectiveViewMode}
+        hasTableFilters={hasTableFilters}
+        isColumnMenuOpen={isColumnMenuOpen}
+        isFiltersModalOpen={isFiltersModalOpen}
+        modalColors={modalColors}
+        onAdd={openAddForm}
+        onOpenFilters={() => setIsFiltersModalOpen(true)}
+        onToggleColumnMenu={() => setIsColumnMenuOpen(prev => !prev)}
+        onToggleViewMode={toggleViewMode}
+        resolvedAccentColor={resolvedAccentColor}
+        shouldRenderAddButton={shouldRenderAddButton}
+        storeName={storeName}
+        tableButtonColors={tableButtonColors}
+      />
     );
   };
 
   const renderSearchModal = () => {
-    if (!isSearchModalOpen || !searchProps) return null;
-
     return (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setIsSearchModalOpen(false)}>
-        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
-          <View style={[styles.modalCard, styles.searchModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
-              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
-                {global.t?.t(storeName, 'label', 'search')}
-              </Text>
-              <TouchableOpacity
-                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
-                activeOpacity={0.82}
-                onPress={() => setIsSearchModalOpen(false)}
-              >
-                <Icon name="x" size={16} color={modalCloseIconColor} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.searchModalBody}>
-              <DefaultSearch
-                autoFocus
-                accentColor={resolvedAccentColor}
-                storeName={storeName}
-                {...searchProps}
-                filters={autoMode ? resolvedFilters : searchProps?.filters}
-                onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
-                onSearch={value => {
-                  searchProps?.onSearch?.(value);
-                  setIsSearchModalOpen(false);
-                }}
-                value={autoMode ? resolvedSearchValue : searchProps?.value}
-                style={[styles.searchModalInput, searchProps?.style]}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <DefaultSearchModal
+        accentColor={resolvedAccentColor}
+        filters={autoMode ? resolvedFilters : searchProps?.filters}
+        modalColors={modalColors}
+        onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSearch={value => {
+          searchProps?.onSearch?.(value);
+          setIsSearchModalOpen(false);
+        }}
+        searchProps={searchProps}
+        storeName={storeName}
+        title={global.t?.t(storeName, 'label', 'search')}
+        value={autoMode ? resolvedSearchValue : searchProps?.value}
+        visible={isSearchModalOpen}
+      />
     );
   };
 
@@ -2482,7 +2153,6 @@ const DefaultTable = ({
       </View>
 
       {renderSearchModal()}
-      {renderDebugModal()}
       {renderFiltersModal()}
 
       {effectiveViewMode === 'cards' ? (
