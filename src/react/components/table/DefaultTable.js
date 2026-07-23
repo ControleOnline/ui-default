@@ -1244,6 +1244,7 @@ const DefaultTable = ({
   const storeDebug = store?.getters?.debug;
   const resolvedDebug = isObject(storeDebug) ? storeDebug : {};
   const debugQuery = normalizeText(resolvedDebug?.query);
+  const debugFilledQuery = normalizeText(resolvedDebug?.filledQuery);
   const hasDebugQuery = debugQuery !== '';
   const debugParameters = useMemo(() => {
     if (isObject(resolvedDebug?.parameters)) {
@@ -1272,8 +1273,11 @@ const DefaultTable = ({
         '',
         'Parameters:',
         debugParametersText,
+        '',
+        'Filled query:',
+        debugFilledQuery,
       ].join('\n'),
-    [debugParametersText, debugQuery],
+    [debugFilledQuery, debugParametersText, debugQuery],
   );
   const resolvedTotalItemsText =
     normalizeText(totalItemsText) !== ''
@@ -2231,6 +2235,21 @@ const DefaultTable = ({
               </View>
               <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
                 {debugParametersText}
+              </Text>
+
+              <View style={styles.debugSectionHeader}>
+                <Text style={[styles.debugSectionTitle, { color: modalTextColor }]}>Query preenchida</Text>
+                <TouchableOpacity
+                  style={[styles.debugCopyButton, { borderColor: modalBorderColor }]}
+                  activeOpacity={0.82}
+                  onPress={() => requestCopyDebugText(debugFilledQuery)}
+                >
+                  <Icon name="copy" size={13} color={modalTextColor} />
+                  <Text style={[styles.debugCopyButtonText, { color: modalTextColor }]}>Copiar</Text>
+                </TouchableOpacity>
+              </View>
+              <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
+                {debugFilledQuery || debugQuery}
               </Text>
             </ScrollView>
 

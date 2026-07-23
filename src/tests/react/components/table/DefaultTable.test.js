@@ -745,6 +745,7 @@ describe('DefaultTable', () => {
       getters: {
         columns: [{key: 'id', label: 'ID'}],
         debug: {
+          filledQuery: "SELECT * FROM orders WHERE provider_id = '2'",
           query: 'SELECT * FROM orders WHERE provider_id = 2',
         },
         filters: {
@@ -776,6 +777,8 @@ describe('DefaultTable', () => {
     const textValues = tree.root.findAllByType('Text').map(node => node.props.children);
     expect(textValues).toContain('Debug query');
     expect(textValues).toContain('SELECT * FROM orders WHERE provider_id = 2');
+    expect(textValues).toContain('Query preenchida');
+    expect(textValues).toContain("SELECT * FROM orders WHERE provider_id = '2'");
     expect(textValues.some(value => String(value).includes('"provider": "/people/2"'))).toBe(true);
   });
 
