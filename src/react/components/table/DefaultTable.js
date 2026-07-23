@@ -634,6 +634,9 @@ const DefaultTable = ({
   const tableFilterBackgroundColor = themeColors.tableFilterBackground;
   const tableFilterBorderColor = themeColors.tableFilterBorder;
   const tableFilterTextColor = themeColors.tableFilterText;
+  const tableFooterBackgroundColor = themeColors.tableFooterBackground;
+  const tableFooterBorderColor = themeColors.tableFooterBorder;
+  const tableFooterTextColor = themeColors.tableFooterText;
   const isFocused = useIsFocused();
   const {showError} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
@@ -2382,20 +2385,18 @@ const DefaultTable = ({
           React.createElement(footerComponent, footerProps)
         )
       ) : shouldRenderFooterBar ? (
-        <View style={[styles.footerBar, { backgroundColor: tableSurfaceColor, borderTopColor: tableBorderColor }]}>
+        <View style={[styles.footerBar, { backgroundColor: tableFooterBackgroundColor, borderTopColor: tableFooterBorderColor }]}>
           {summaryEntries.length > 0 ? (
             <View style={styles.footerSummaryList}>
               {summaryEntries.map(entry => (
                 <View key={entry.key} style={styles.footerSummaryItem}>
-                  <Text style={[styles.footerSummaryLabel, { color: tableMutedColor }]} numberOfLines={1}>
+                  <Text style={[styles.footerSummaryLabel, { color: tableFooterTextColor }]} numberOfLines={1}>
                     {entry.label}
                   </Text>
                   <Text
                     style={[
                       styles.footerSummaryValue,
-                      entry.path?.[0] === 'sum' || isMoneySummaryPath(entry.path)
-                        ? { color: resolvedAccentColor }
-                        : { color: tableTextColor },
+                      { color: tableFooterTextColor },
                     ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
