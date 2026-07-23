@@ -745,7 +745,7 @@ describe('DefaultTable', () => {
       getters: {
         columns: [{key: 'id', label: 'ID'}],
         debug: {
-          filledQuery: "SELECT * FROM orders WHERE provider_id = '2'",
+          interpolatedQuery: "SELECT * FROM orders WHERE provider_id = '2'",
           query: 'SELECT * FROM orders WHERE provider_id = 2',
         },
         filters: {

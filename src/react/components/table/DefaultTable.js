@@ -1244,7 +1244,9 @@ const DefaultTable = ({
   const storeDebug = store?.getters?.debug;
   const resolvedDebug = isObject(storeDebug) ? storeDebug : {};
   const debugQuery = normalizeText(resolvedDebug?.query);
-  const debugFilledQuery = normalizeText(resolvedDebug?.filledQuery);
+  const debugFilledQuery = normalizeText(
+    resolvedDebug?.filledQuery || resolvedDebug?.interpolatedQuery,
+  );
   const hasDebugQuery = debugQuery !== '';
   const debugParameters = useMemo(() => {
     if (isObject(resolvedDebug?.parameters)) {
@@ -2249,7 +2251,7 @@ const DefaultTable = ({
                 </TouchableOpacity>
               </View>
               <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
-                {debugFilledQuery || debugQuery}
+                {debugFilledQuery}
               </Text>
             </ScrollView>
 
