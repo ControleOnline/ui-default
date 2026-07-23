@@ -148,6 +148,7 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
   commit(types.SET_ISLOADING, true);
   commit(types.SET_ERROR, null);
   commit(types.SET_SUMMARY, {});
+  commit(types.SET_DEBUG, {});
 
   db = new localDB(getters);
 
@@ -189,6 +190,7 @@ export const getOnlineItems = ({commit, getters}, params = {}) => {
     if (getters.items != null) commit(types.SET_ITEMS, []);
     commit(types.SET_TOTALITEMS, 0);
     commit(types.SET_SUMMARY, {});
+    commit(types.SET_DEBUG, {});
   }
   return api
     .fetch(getters.resourceEndpoint, {params: queryParams})
@@ -207,6 +209,7 @@ export const getOnlineItems = ({commit, getters}, params = {}) => {
       commit(types.SET_ITEMS, nextItems);
       commit(types.SET_TOTALITEMS, resolveCollectionTotalItems(data, nextItems));
       commit(types.SET_SUMMARY, data['summary'] || data?.['hydra:summary'] || {});
+      commit(types.SET_DEBUG, data?.debug || {});
       commit(types.SET_LAST_COMPLETED_REQUEST, {
         completedAt: Date.now(),
         requestKey,

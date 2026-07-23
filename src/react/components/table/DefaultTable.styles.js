@@ -181,6 +181,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 560,
   },
+  debugModalCard: {
+    width: '100%',
+    maxWidth: 760,
+  },
   filtersModalBody: {
     maxHeight: 520,
   },
@@ -204,6 +208,53 @@ const styles = StyleSheet.create({
   },
   columnMenuModalList: {
     paddingVertical: 6,
+  },
+  debugModalBody: {
+    maxHeight: 560,
+  },
+  debugModalContent: {
+    padding: 14,
+    gap: 12,
+  },
+  debugSectionHeader: {
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  debugSectionTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  debugCopyButton: {
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  debugCopyButtonText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  debugCodeBlock: {
+    minHeight: 92,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: '#F8FAFC',
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'monospace',
+    }),
   },
   scroll: {
     flex: 1,

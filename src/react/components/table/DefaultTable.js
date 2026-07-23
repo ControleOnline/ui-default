@@ -192,6 +192,33 @@ const normalizeCollectionItems = response => {
   return [];
 };
 
+const formatDebugValue = value => {
+  if (value === undefined) return '';
+  if (typeof value === 'string') return value;
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (error) {
+    return normalizeText(value);
+  }
+};
+
+const copyTextToClipboard = async text => {
+  const normalizedText = normalizeText(text);
+  if (!normalizedText) return false;
+
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === 'function'
+  ) {
+    await navigator.clipboard.writeText(normalizedText);
+    return true;
+  }
+
+  return false;
+};
+
 const resolveHasMore = ({ hasMore, dataLength, totalItems }) => {
   if (hasMore !== null && hasMore !== undefined) {
     return hasMore;
@@ -549,6 +576,7 @@ const DefaultTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [isDebugModalOpen, setIsDebugModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
@@ -638,7 +666,7 @@ const DefaultTable = ({
   const tableFooterBorderColor = themeColors.tableFooterBorder;
   const tableFooterTextColor = themeColors.tableFooterText;
   const isFocused = useIsFocused();
-  const {showError} = useMessage() || {};
+  const {showError, showSuccess} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
   const searchKey = searchProps?.searchKey || 'search';
   const storeActions = store?.actions || {};
@@ -1213,6 +1241,40 @@ const DefaultTable = ({
     global.t?.t(storeName, 'placeholder', searchKey) ||
     global.t?.t(storeName, 'label', 'search') ||
     'Buscar';
+  const storeDebug = store?.getters?.debug;
+  const resolvedDebug = isObject(storeDebug) ? storeDebug : {};
+  const debugQuery = normalizeText(resolvedDebug?.query);
+  const hasDebugQuery = debugQuery !== '';
+  const debugParameters = useMemo(() => {
+    if (isObject(resolvedDebug?.parameters)) {
+      return resolvedDebug.parameters;
+    }
+
+    if (autoMode) {
+      return buildRequestQuery(autoPageRef.current || 1, false);
+    }
+
+    return {
+      filters: resolvedFilters || {},
+      requestParams: requestParamsSeed,
+      sort: resolvedSort || null,
+    };
+  }, [autoMode, buildRequestQuery, requestParamsSeed, resolvedDebug, resolvedFilters, resolvedSort]);
+  const debugParametersText = useMemo(
+    () => formatDebugValue(debugParameters),
+    [debugParameters],
+  );
+  const debugCopyText = useMemo(
+    () =>
+      [
+        'Query:',
+        debugQuery,
+        '',
+        'Parameters:',
+        debugParametersText,
+      ].join('\n'),
+    [debugParametersText, debugQuery],
+  );
   const resolvedTotalItemsText =
     normalizeText(totalItemsText) !== ''
       ? totalItemsText
@@ -1601,6 +1663,23 @@ const DefaultTable = ({
     const nextWidth = Math.floor(event?.nativeEvent?.layout?.width || 0);
     if (nextWidth > 0) setTableContainerWidth(nextWidth);
   }, []);
+
+  const requestCopyDebugText = useCallback(
+    text =>
+      copyTextToClipboard(text)
+        .then(copied => {
+          if (copied) {
+            showSuccess?.('Copiado');
+            return;
+          }
+
+          showError?.('Nao foi possivel copiar automaticamente.');
+        })
+        .catch(() => {
+          showError?.('Nao foi possivel copiar automaticamente.');
+        }),
+    [showError, showSuccess],
+  );
 
   const renderEditableCell = (row, column) => {
     const fieldName = getColumnKey(column);
@@ -2103,9 +2182,104 @@ const DefaultTable = ({
     );
   };
 
+  const renderDebugModal = () => {
+    if (!isDebugModalOpen || !hasDebugQuery) return null;
+
+    return (
+      <Modal visible transparent animationType="fade" onRequestClose={() => setIsDebugModalOpen(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: modalOverlayColor }]}>
+          <View style={[styles.modalCard, styles.debugModalCard, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: modalBorderColor }]}>
+              <Text style={[styles.modalTitle, { color: modalHeaderTextColor }]} numberOfLines={1}>
+                Debug query
+              </Text>
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { borderColor: modalBorderColor, backgroundColor: modalBackgroundColor }]}
+                activeOpacity={0.82}
+                onPress={() => setIsDebugModalOpen(false)}
+              >
+                <Icon name="x" size={16} color={modalCloseIconColor} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.debugModalBody} contentContainerStyle={styles.debugModalContent}>
+              <View style={styles.debugSectionHeader}>
+                <Text style={[styles.debugSectionTitle, { color: modalTextColor }]}>Query</Text>
+                <TouchableOpacity
+                  style={[styles.debugCopyButton, { borderColor: modalBorderColor }]}
+                  activeOpacity={0.82}
+                  onPress={() => requestCopyDebugText(debugQuery)}
+                >
+                  <Icon name="copy" size={13} color={modalTextColor} />
+                  <Text style={[styles.debugCopyButtonText, { color: modalTextColor }]}>Copiar</Text>
+                </TouchableOpacity>
+              </View>
+              <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
+                {debugQuery}
+              </Text>
+
+              <View style={styles.debugSectionHeader}>
+                <Text style={[styles.debugSectionTitle, { color: modalTextColor }]}>Parametros</Text>
+                <TouchableOpacity
+                  style={[styles.debugCopyButton, { borderColor: modalBorderColor }]}
+                  activeOpacity={0.82}
+                  onPress={() => requestCopyDebugText(debugParametersText)}
+                >
+                  <Icon name="copy" size={13} color={modalTextColor} />
+                  <Text style={[styles.debugCopyButtonText, { color: modalTextColor }]}>Copiar</Text>
+                </TouchableOpacity>
+              </View>
+              <Text selectable style={[styles.debugCodeBlock, { color: modalTextColor, borderColor: modalBorderColor }]}>
+                {debugParametersText}
+              </Text>
+            </ScrollView>
+
+            <View style={[styles.modalActions, { borderTopColor: modalBorderColor }]}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: modalBorderColor }]}
+                activeOpacity={0.82}
+                onPress={() => requestCopyDebugText(debugCopyText)}
+              >
+                <Text style={[styles.secondaryButtonText, { color: modalTextColor }]}>Copiar tudo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: resolvedAccentColor }]}
+                activeOpacity={0.82}
+                onPress={() => setIsDebugModalOpen(false)}
+              >
+                <Text style={styles.primaryButtonText}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   const renderTableControls = () => {
     return (
     <>
+      {hasDebugQuery ? (
+        <TouchableOpacity
+          accessibilityLabel="Debug query"
+          accessibilityRole="button"
+          style={[
+            styles.toolbarButton,
+            { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
+            isDebugModalOpen
+              ? { backgroundColor: tableButtonPressedBackgroundColor, borderColor: tableButtonPressedBorderColor }
+              : null,
+          ]}
+          activeOpacity={0.82}
+          onPress={() => setIsDebugModalOpen(true)}
+        >
+          <Icon
+            name="code"
+            size={14}
+            color={isDebugModalOpen ? tableButtonPressedIconColor : tableButtonIconColor}
+          />
+        </TouchableOpacity>
+      ) : null}
       {hasTableFilters ? (
         <TouchableOpacity
           style={[
@@ -2287,6 +2461,7 @@ const DefaultTable = ({
       </View>
 
       {renderSearchModal()}
+      {renderDebugModal()}
       {renderFiltersModal()}
 
       {effectiveViewMode === 'cards' ? (

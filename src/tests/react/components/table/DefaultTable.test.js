@@ -738,6 +738,47 @@ describe('DefaultTable', () => {
     expect(footer.props.resolvedTotalItemsText).toBe('7 pedidos');
   });
 
+  it('opens a debug query modal when the store exposes debug.query', () => {
+    mockWindowDimensions = {width: 1024, height: 800};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'id', label: 'ID'}],
+        debug: {
+          query: 'SELECT * FROM orders WHERE provider_id = 2',
+        },
+        filters: {
+          provider: '/people/2',
+        },
+        items: [],
+      },
+    };
+
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          requestParams: {itemsPerPage: 50},
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    const debugButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.props.accessibilityLabel === 'Debug query');
+
+    expect(debugButton).toBeTruthy();
+
+    renderer.act(() => debugButton.props.onPress());
+
+    const textValues = tree.root.findAllByType('Text').map(node => node.props.children);
+    expect(textValues).toContain('Debug query');
+    expect(textValues).toContain('SELECT * FROM orders WHERE provider_id = 2');
+    expect(textValues.some(value => String(value).includes('"provider": "/people/2"'))).toBe(true);
+  });
+
   it('uses store actions when no explicit table actions are passed', async () => {
     const save = jest.fn(() => Promise.resolve({
       id: 1,

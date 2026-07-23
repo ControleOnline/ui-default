@@ -37,6 +37,11 @@ export default {
     return 'summary';
   },
 
+  [types.SET_DEBUG](state, debug) {
+    state.debug = debug || {};
+    return 'debug';
+  },
+
   [types.SET_ITEMS](state, items) {
     state.items = items;
     return 'items';

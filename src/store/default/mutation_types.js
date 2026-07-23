@@ -3,6 +3,7 @@ export const SET_ISLOADING = 'SET_ISLOADING';
 export const SET_ISSAVING = 'SET_ISSAVING';
 export const SET_TOTALITEMS = 'SET_TOTALITEMS';
 export const SET_SUMMARY = 'SET_SUMMARY';
+export const SET_DEBUG = 'SET_DEBUG';
 export const SET_ITEMS = 'SET_ITEMS';
 export const SET_ITEM = 'SET_ITEM';
 export const SET_COLUMNS = 'SET_COLUMNS';
