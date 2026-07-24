@@ -19,6 +19,7 @@ const {
   splitStoreActionPayload,
   buildStoreErrorCommitOptions,
   get,
+  save,
 } = require('../../../store/default/actions')
 
 describe('default store action controls', () => {
@@ -108,5 +109,63 @@ describe('default store action controls', () => {
       name: 'Pedido atualizado',
     })
     expect(commit).toHaveBeenCalledWith(types.SET_ISLOADING, false)
+  })
+
+  it('merges saved list object patches into the visible collection without sending them to the API', async () => {
+    api.fetch.mockResolvedValue({
+      '@id': '/invoices/332',
+      id: 332,
+      status: '/statuses/33',
+    })
+
+    const commit = jest.fn()
+    const getters = {
+      resourceEndpoint: 'invoices',
+      items: [
+        {
+          '@id': '/invoices/332',
+          id: 332,
+          status: {
+            id: 1,
+            status: 'Aberto',
+          },
+        },
+      ],
+    }
+
+    await save(
+      {commit, getters},
+      {
+        id: '332',
+        status: '/statuses/33',
+        [STORE_ACTION_META_KEY]: {
+          savedItemPatch: {
+            status: {
+              id: 33,
+              status: 'Pago',
+              context: 'invoice',
+            },
+          },
+        },
+      },
+    )
+
+    expect(api.fetch).toHaveBeenCalledWith('invoices/332', {
+      method: 'PUT',
+      body: {
+        status: '/statuses/33',
+      },
+    })
+    expect(commit).toHaveBeenCalledWith(types.SET_ITEMS, [
+      {
+        '@id': '/invoices/332',
+        id: 332,
+        status: {
+          id: 33,
+          status: 'Pago',
+          context: 'invoice',
+        },
+      },
+    ])
   })
 })

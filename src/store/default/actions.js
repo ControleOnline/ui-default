@@ -54,6 +54,30 @@ const resolveCollectionTotalItems = (response, items) =>
 const normalizeCollectionItemId = item =>
   normalizeText(item?.['@id'] || item?.id || '').replace(/\D+/g, '')
 
+const normalizeSavedItemPatch = (data, patch) => {
+  if (!isPlainObject(patch)) {
+    return {}
+  }
+
+  return Object.entries(patch).reduce((normalizedPatch, [key, value]) => {
+    const incomingValue = data?.[key]
+    normalizedPatch[key] = isPlainObject(incomingValue) ? incomingValue : value
+
+    return normalizedPatch
+  }, {})
+}
+
+const mergeSavedItem = ({currentItem, data, storeMeta}) => {
+  const incomingItem = isPlainObject(data) ? {...data} : {}
+  delete incomingItem['@context']
+
+  return {
+    ...(isPlainObject(currentItem) ? currentItem : {}),
+    ...incomingItem,
+    ...normalizeSavedItemPatch(incomingItem, storeMeta.savedItemPatch),
+  }
+}
+
 const appendCollectionItems = (currentItems, nextItems) => {
   const mergedItems = Array.isArray(currentItems) ? [...currentItems] : []
   const incomingItems = Array.isArray(nextItems) ? nextItems : []
@@ -293,15 +317,22 @@ export const save = ({commit, getters}, params) => {
     .fetch(getters.resourceEndpoint + (id ? '/' + id : ''), options)
     .then(data => {
       commit(types.SET_ERROR, null);
-      delete data['@context'];
       let items = getters.items ? [...getters.items] : [];
       if (id) {
         const index = items.findIndex(i => {
-          return i['@id'].replace(/\D/g, '') === id;
+          return normalizeCollectionItemId(i) === id;
         });
-        if (index >= 0) items[index] = data;
-        else items.push(data);
-      } else items.push(data);
+        const nextItem = mergeSavedItem({
+          currentItem: index >= 0 ? items[index] : null,
+          data,
+          storeMeta,
+        });
+
+        if (index >= 0) items[index] = nextItem;
+        else items.push(nextItem);
+      } else {
+        items.push(mergeSavedItem({currentItem: null, data, storeMeta}));
+      }
       commit(types.SET_ITEMS, items);
       return data;
     })

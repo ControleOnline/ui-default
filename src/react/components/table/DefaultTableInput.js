@@ -1,16 +1,55 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { useStore } from '@store';
+import { getAllStores, useStore } from '@store';
 import DefaultInput from '../inputs/DefaultInput';
 import {
   formatSaveValue,
   getColumnKey,
   isEditableColumn,
+  normalizeText,
   normalizeId,
+  resolveStoreNameFromList,
 } from '../inputs/defaultInputUtils';
-import { getColumnStyle } from './DefaultTable.utils';
+import {
+  getColumnStyle,
+  resolveColumnListLoadParams,
+  resolveListActionName,
+  stableSerialize,
+} from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
+
+const STORE_ACTION_META_KEY = '__storeMeta';
+
+const isPlainObject = value =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const buildSavedItemPatch = (column, fieldName, value) => {
+  if (!column?.list || !fieldName || !isPlainObject(value)) {
+    return {};
+  }
+
+  if (isPlainObject(value.object)) {
+    return {
+      [fieldName]: value.object,
+    };
+  }
+
+  if (value.value == null && value.label == null) {
+    return {};
+  }
+
+  const labelField = column?.listSearchParam || column?.searchParam || fieldName;
+
+  return {
+    [fieldName]: {
+      id: value.value,
+      value: value.value,
+      label: value.label,
+      [labelField]: value.label,
+    },
+  };
+};
 
 const DefaultTableInput = ({
   column: columnProp = null,
@@ -21,13 +60,60 @@ const DefaultTableInput = ({
   variant = 'cell',
 }) => {
   const store = useStore(storeName);
+  const peopleStore = useStore('people');
   const configs = store?.getters?.configs || {};
+  const loadedListStoresRef = useRef(new Set());
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const hasRowPress = false;
   const { resolvedAccentColor } = useDefaultTableTheme();
   const column = columnProp || columns.find(item => getColumnKey(item) === fieldName);
+  const currentCompanyId = peopleStore?.getters?.currentCompany?.id;
+
+  const loadListOptionsForColumn = useCallback((searchValue = '') => {
+    const listStoreName = resolveStoreNameFromList(column?.list);
+    const actionName = resolveListActionName(column?.list);
+    const stores = getAllStores?.() || {};
+    const listStore = stores?.[listStoreName];
+    const listAction = listStore?.actions?.[actionName];
+
+    if (!listStoreName || typeof listAction !== 'function') {
+      return Promise.resolve([]);
+    }
+
+    const listLoadParams = resolveColumnListLoadParams({
+      column,
+      currentCompanyId,
+      requestParams: configs.requestParams || {},
+      searchValue,
+    });
+    const loadKey = `${getColumnKey(column)}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
+
+    if (
+      !normalizeText(searchValue) &&
+      loadedListStoresRef.current.has(loadKey)
+    ) {
+      return Promise.resolve(listStore?.getters?.items || []);
+    }
+
+    if (!normalizeText(searchValue)) {
+      loadedListStoresRef.current.add(loadKey);
+    }
+
+    return Promise.resolve(
+      listAction({
+        ...listLoadParams,
+        __storeMeta: {
+          dedupeKey: `default-table-cell-list-options:${loadKey}`,
+          skipSystemError: true,
+        },
+      }),
+    ).catch(error => {
+      loadedListStoresRef.current.delete(loadKey);
+      throw error;
+    });
+  }, [column, configs.requestParams, currentCompanyId]);
 
   if (!column) return null;
 
@@ -44,6 +130,7 @@ const DefaultTableInput = ({
       inputStyle={options.inputStyle}
       label={options.label}
       numberOfLines={options.numberOfLines}
+      onBeforeOpen={column?.list ? () => loadListOptionsForColumn() : null}
       onCancelEditing={() => setIsEditing(false)}
       onSave={value => {
         if (typeof store?.actions?.save !== 'function') {
@@ -52,10 +139,21 @@ const DefaultTableInput = ({
         }
 
         setIsSaving(true);
+        const savedItemPatch = buildSavedItemPatch(column, resolvedFieldName, value);
+        const storeMeta =
+          Object.keys(savedItemPatch).length > 0
+            ? {
+                [STORE_ACTION_META_KEY]: {
+                  savedItemPatch,
+                },
+              }
+            : {};
+
         return Promise.resolve(
           store.actions.save({
             id: normalizeId(row?.['@id'] || row?.id),
             [resolvedFieldName]: formatSaveValue(column, value, row),
+            ...storeMeta,
           }),
         )
           .then(savedItem => {
@@ -67,6 +165,7 @@ const DefaultTableInput = ({
           setIsEditing(false);
         });
       }}
+      onSearchChange={column?.list ? value => loadListOptionsForColumn(value) : null}
       onStartEditing={() => setIsEditing(true)}
       readTextStyle={options.readTextStyle || options.textStyle}
       row={row}

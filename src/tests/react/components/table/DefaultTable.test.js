@@ -121,6 +121,8 @@ const {
   DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
 } = require('../../../../react/utils/tableVisibleColumnsPreferences');
 const reactNavigation = require('@react-navigation/native');
+const {getAllStores} = require('@store');
+const STORE_ACTION_META_KEY = '__storeMeta';
 
 describe('resolveColumnListLoadParams', () => {
   it('uses company for category stores and people for financial owner stores', () => {
@@ -156,6 +158,7 @@ describe('DefaultTable', () => {
     mockWindowDimensions = {width: 480, height: 800};
     mockCapturedColumnFilterProps = [];
     mockCapturedDefaultInputProps = [];
+    getAllStores.mockImplementation(() => ({}));
     global.localStorage = createLocalStorageMock();
     global.t = {
       t: jest.fn((store, type, key) => {
@@ -848,6 +851,83 @@ describe('DefaultTable', () => {
     expect(textValues.some(value => String(value).includes('"provider": "/people/2"'))).toBe(true);
   });
 
+  it('loads remote list options before opening an editable table cell select', async () => {
+    const getItems = jest.fn(() => Promise.resolve([
+      {id: 33, status: 'Pago', context: 'invoice'},
+    ]));
+    mockStores.people.getters.currentCompany = {
+      id: 21,
+      theme: {
+        colors: {},
+      },
+    };
+    mockStores.status = {
+      actions: {
+        getItems,
+      },
+      getters: {
+        items: [],
+      },
+    };
+    mockStores.invoice = {
+      actions: {},
+      getters: {
+        columns: [],
+      },
+    };
+    getAllStores.mockImplementation(() => mockStores);
+
+    await renderer.act(async () => {
+      renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [
+            {
+              key: 'status',
+              label: 'Situação',
+              list: 'status/getItems',
+              listRequestParams: {
+                context: 'invoice',
+              },
+              searchParam: 'status',
+            },
+          ],
+          data: [{
+            id: 1,
+            status: {id: 1, status: 'Paga'},
+          }],
+          showColumnFiltersButton: false,
+          showRowActions: false,
+          storeName: 'invoice',
+        }),
+      );
+    });
+
+    expect(mockCapturedDefaultInputProps.length).toBeGreaterThan(0);
+
+    await renderer.act(async () => {
+      await mockCapturedDefaultInputProps[0].onBeforeOpen();
+    });
+
+    expect(getItems).toHaveBeenCalledWith({
+      context: 'invoice',
+      __storeMeta: expect.objectContaining({
+        skipSystemError: true,
+      }),
+    });
+
+    await renderer.act(async () => {
+      await mockCapturedDefaultInputProps[0].onSearchChange('pag');
+    });
+
+    expect(getItems).toHaveBeenLastCalledWith({
+      context: 'invoice',
+      status: 'pag',
+      __storeMeta: expect.objectContaining({
+        skipSystemError: true,
+      }),
+    });
+  });
+
   it('uses store actions when no explicit table actions are passed', async () => {
     const save = jest.fn(() => Promise.resolve({
       id: 1,
@@ -903,6 +983,14 @@ describe('DefaultTable', () => {
     expect(save).toHaveBeenCalledWith({
       id: '1',
       jobTitle: '/categories/2',
+      [STORE_ACTION_META_KEY]: {
+        savedItemPatch: {
+          jobTitle: {
+            id: 2,
+            name: 'Departamento',
+          },
+        },
+      },
     });
   });
 });
