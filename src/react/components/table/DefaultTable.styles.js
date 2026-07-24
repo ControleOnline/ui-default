@@ -313,6 +313,29 @@ const styles = StyleSheet.create({
     flexBasis: 76,
     flexGrow: 0.62,
   },
+  stickyIdentityCell: {
+    zIndex: 5,
+    ...Platform.select({
+      web: {
+        position: 'sticky',
+        left: 0,
+      },
+      default: {},
+    }),
+  },
+  stickyActionsCell: {
+    zIndex: 5,
+    ...Platform.select({
+      web: {
+        position: 'sticky',
+        right: 0,
+      },
+      default: {},
+    }),
+  },
+  stickyHeaderCell: {
+    zIndex: 8,
+  },
   moneyCell: {
     minWidth: 132,
     flexBasis: 132,

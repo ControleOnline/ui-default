@@ -128,7 +128,7 @@ const DefaultTableInput = ({
 
   return (
     <View
-      style={[getColumnStyle(column), isEditing ? styles.editingCell : null]}
+      style={[getColumnStyle(column), options.cellStyle, isEditing ? styles.editingCell : null]}
       pointerEvents={shouldDelegatePress ? 'none' : 'auto'}
     >
       {input}

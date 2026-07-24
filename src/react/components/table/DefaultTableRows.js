@@ -86,6 +86,7 @@ const DefaultTableRows = ({ storeName }) => {
           <React.Fragment key={getColumnKey(column)}>
             <DefaultTableInput
               column={column}
+              options={column?.isIdentity ? { cellStyle: { backgroundColor: rowBackgroundColor } } : {}}
               row={row}
               storeName={storeName}
               variant="cell"
@@ -97,7 +98,14 @@ const DefaultTableRows = ({ storeName }) => {
             style={[
               styles.cell,
               styles.actionsCell,
-              { minWidth: actionsCellWidth, width: actionsCellWidth, flexBasis: actionsCellWidth, maxWidth: actionsCellWidth },
+              styles.stickyActionsCell,
+              {
+                minWidth: actionsCellWidth,
+                width: actionsCellWidth,
+                flexBasis: actionsCellWidth,
+                maxWidth: actionsCellWidth,
+                backgroundColor: rowBackgroundColor,
+              },
             ]}
           >
             <View style={styles.rowActionsGroup}>
@@ -146,7 +154,10 @@ const DefaultTableRows = ({ storeName }) => {
               return (
                 <TouchableOpacity
                   key={fieldName}
-                  style={getColumnStyle(column)}
+                  style={[
+                    getColumnStyle(column),
+                    column?.isIdentity ? [styles.stickyHeaderCell, { backgroundColor: tableHeaderColor }] : null,
+                  ]}
                   activeOpacity={isSortableColumn(column) ? 0.8 : 1}
                   onPress={() => configs.requestSort?.(column)}
                 >
@@ -167,11 +178,14 @@ const DefaultTableRows = ({ storeName }) => {
                 style={[
                   styles.cell,
                   styles.actionsCell,
+                  styles.stickyActionsCell,
+                  styles.stickyHeaderCell,
                   {
                     minWidth: actionsCellWidth,
                     width: actionsCellWidth,
                     flexBasis: actionsCellWidth,
                     maxWidth: actionsCellWidth,
+                    backgroundColor: tableHeaderColor,
                   },
                 ]}
               >
@@ -187,7 +201,13 @@ const DefaultTableRows = ({ storeName }) => {
                 const fieldName = getColumnKey(column);
 
                 return (
-                  <View key={`${fieldName}-filter`} style={getColumnStyle(column)}>
+                  <View
+                    key={`${fieldName}-filter`}
+                    style={[
+                      getColumnStyle(column),
+                      column?.isIdentity ? { backgroundColor: tableHeaderColor } : null,
+                    ]}
+                  >
                     {column?.filter !== false && column?.filters !== false ? (
                       <DefaultColumnFilter
                         column={column}
@@ -204,11 +224,13 @@ const DefaultTableRows = ({ storeName }) => {
                   style={[
                     styles.cell,
                     styles.actionsCell,
+                    styles.stickyActionsCell,
                     {
                       minWidth: actionsCellWidth,
                       width: actionsCellWidth,
                       flexBasis: actionsCellWidth,
                       maxWidth: actionsCellWidth,
+                      backgroundColor: tableHeaderColor,
                     },
                   ]}
                 />

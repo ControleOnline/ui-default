@@ -126,6 +126,20 @@ const reactNavigation = require('@react-navigation/native');
 const {getAllStores} = require('@store');
 const STORE_ACTION_META_KEY = '__storeMeta';
 
+const flattenStyle = style => {
+  if (Array.isArray(style)) {
+    return style.reduce(
+      (acc, item) => ({
+        ...acc,
+        ...flattenStyle(item),
+      }),
+      {},
+    );
+  }
+
+  return style && typeof style === 'object' ? style : {};
+};
+
 describe('resolveColumnListLoadParams', () => {
   it('uses company for category stores and people for financial owner stores', () => {
     expect(resolveColumnListLoadParams({
@@ -278,6 +292,44 @@ describe('DefaultTable', () => {
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
     expect(iconNames).toEqual(expect.arrayContaining(['grid', 'columns']));
+  });
+
+  it('pins identity and action columns on table view', () => {
+    mockWindowDimensions = {width: 1200, height: 800};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [
+          {key: 'id', label: 'ID', isIdentity: true},
+          {key: 'name', label: 'Nome'},
+        ],
+        items: [{id: 1, name: 'Pedido'}],
+        visibleColumns: {},
+      },
+    };
+    const rowActionsComponent = () => React.createElement('row-actions');
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          rowActionsComponent,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    const renderedStyles = [
+      ...tree.root.findAllByType('View'),
+      ...tree.root.findAllByType('TouchableOpacity'),
+    ].map(node => flattenStyle(node.props.style));
+
+    expect(renderedStyles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({position: 'sticky', left: 0}),
+        expect.objectContaining({position: 'sticky', right: 0}),
+      ]),
+    );
   });
 
   it('keeps the complete search aligned in the toolbar when there is enough room', () => {

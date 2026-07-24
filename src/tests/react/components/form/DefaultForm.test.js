@@ -72,7 +72,7 @@ describe('DefaultForm', () => {
     const inputBeforeTyping = capturedInputs[capturedInputs.length - 1];
 
     await renderer.act(async () => {
-      inputBeforeTyping.props.onChangeValue('Cliente desistiu');
+      inputBeforeTyping.onChangeValue('Cliente desistiu');
     });
 
     const inputAfterTyping = capturedInputs[capturedInputs.length - 1];
