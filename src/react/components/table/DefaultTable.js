@@ -104,7 +104,7 @@ const DefaultTable = ({
     [route?.key, route?.name, storeName, visibleColumnsPreferenceKey],
   );
   const storedViewMode = useMemo(
-    () => resolveStoredTableViewModePreference(tablePreferenceScope, initialViewMode),
+    () => resolveStoredTableViewModePreference(tablePreferenceScope, null),
     [initialViewMode, tablePreferenceScope],
   );
   const resolvedActions = useMemo(
@@ -179,9 +179,9 @@ const DefaultTable = ({
     };
   }, [autoMode, buildRequestQuery, currentPage, requestParamsSeed, resolvedSort, storeFilters]);
   const effectiveViewMode =
-    isCompactView && forceCardsOnCompact !== false
-      ? (currentConfigs.viewMode || storedViewMode || 'cards')
-      : (currentConfigs.viewMode || storedViewMode || initialViewMode);
+    currentConfigs.viewMode ||
+    storedViewMode ||
+    (isCompactView && forceCardsOnCompact !== false ? 'cards' : initialViewMode);
   const tableFiltersVisible = Boolean(currentConfigs.tableFiltersVisible);
   const defaultTableConfigs = useMemo(
     () => ({

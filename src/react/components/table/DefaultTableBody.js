@@ -11,9 +11,12 @@ const DefaultTableBody = ({ storeName }) => {
   const configs = store?.getters?.configs || {};
   const compactBreakpoint = Number(configs.compactBreakpoint || DEFAULT_COMPACT_BREAKPOINT);
   const isCompactView = width > 0 && width <= compactBreakpoint;
-  const effectiveViewMode = isCompactView && configs.forceCardsOnCompact !== false
-    ? 'cards'
-    : configs.viewMode || configs.initialViewMode || 'table';
+  const effectiveViewMode =
+    configs.effectiveViewMode ||
+    configs.viewMode ||
+    (isCompactView && configs.forceCardsOnCompact !== false ? 'cards' : null) ||
+    configs.initialViewMode ||
+    'table';
 
   return effectiveViewMode === 'cards'
     ? <DefaultTableCards storeName={storeName} />

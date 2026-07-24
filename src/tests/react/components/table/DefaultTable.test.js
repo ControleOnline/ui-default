@@ -294,6 +294,53 @@ describe('DefaultTable', () => {
     expect(iconNames).toEqual(expect.arrayContaining(['grid', 'columns']));
   });
 
+  it('respects the compact grid/list toggle in the table body', () => {
+    mockWindowDimensions = {width: 480, height: 800};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome'}],
+        items: [{id: 1, name: 'Pedido'}],
+        visibleColumns: {},
+      },
+    };
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          data: [{id: 1, name: 'Pedido'}],
+          showColumnFiltersButton: false,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    expect(
+      tree.root.findAllByType('ScrollView').some(node => node.props.horizontal === true),
+    ).toBe(false);
+
+    const toggleViewButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'grid'));
+
+    renderer.act(() => {
+      toggleViewButton.props.onPress();
+      tree.update(
+        React.createElement(DefaultTable, {
+          data: [{id: 1, name: 'Pedido'}],
+          showColumnFiltersButton: false,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    expect(
+      tree.root.findAllByType('ScrollView').some(node => node.props.horizontal === true),
+    ).toBe(true);
+    expect(tree.root.findAllByType('icon').map(node => node.props.name)).toContain('list');
+  });
+
   it('pins identity and action columns on table view', () => {
     mockWindowDimensions = {width: 1200, height: 800};
     mockStores.orders = {
