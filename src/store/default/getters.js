@@ -7,6 +7,7 @@ export const debug = state => state.debug || {};
 export const items = state => state.items;
 export const item = state => state.item;
 export const columns = state => state.columns;
+export const configs = state => state.configs || {};
 export const filters = state => state.filters;
 export const resourceEndpoint = state => state.resourceEndpoint;
 export const selected = state => state.selected;

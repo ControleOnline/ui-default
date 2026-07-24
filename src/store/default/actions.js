@@ -389,6 +389,10 @@ export const setColumns = ({commit, getters}, columns) => {
   commit(types.SET_COLUMNS, columns);
 };
 
+export const setConfigs = ({commit, getters}, configs) => {
+  commit(types.SET_CONFIGS, configs);
+};
+
 export const setResourceEndpoint = (
   {commit, getters},
   resourceEndpoint = null,

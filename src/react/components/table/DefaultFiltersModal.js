@@ -4,20 +4,13 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
-import { getColumnKey } from '../inputs/defaultInputUtils';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
+import { getColumnKey, normalizeText } from '../inputs/defaultInputUtils';
 import styles from './DefaultTable.styles';
 import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
   const store = useStore(storeName);
-  const {
-    getOptionsForColumn,
-    loadListOptionsForColumns,
-    onChange,
-    onClear,
-  } = getDefaultTableRuntime(storeName).filters || {};
   const columns = (Array.isArray(store?.getters?.columns) ? store.getters.columns : []).filter(
     column =>
       shouldIncludeColumn(column) &&
@@ -25,6 +18,19 @@ const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
       column?.filters !== false,
   );
   const filters = store?.getters?.filters || {};
+  const updateFilter = (fieldName, value) => {
+    const nextFilters = { ...(filters || {}) };
+    const isEmpty =
+      value === null ||
+      value === undefined ||
+      normalizeText(value) === '' ||
+      (Array.isArray(value) && value.length === 0);
+
+    if (isEmpty) delete nextFilters[fieldName];
+    else nextFilters[fieldName] = value;
+
+    store?.actions?.setFilters?.(nextFilters);
+  };
   const applyLabel = global.t?.t(storeName, 'button', 'apply');
   const clearLabel = global.t?.t(storeName, 'button', 'clear');
   const title = global.t?.t(storeName, 'label', 'filters');
@@ -74,10 +80,7 @@ const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
                   <DefaultColumnFilter
                     column={column}
                     filters={filters}
-                    getOptionsForColumn={getOptionsForColumn}
-                    onBeforeOpen={column?.list ? () => loadListOptionsForColumns?.([column]) : null}
-                    onChange={onChange}
-                    onSearchChange={column?.list ? value => loadListOptionsForColumns?.([column], value) : null}
+                    onChange={updateFilter}
                     storeName={storeName}
                     style={styles.filtersModalInput}
                   />
@@ -89,7 +92,7 @@ const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor }]}
               activeOpacity={0.82}
-              onPress={onClear}
+              onPress={() => store?.actions?.setFilters?.({})}
             >
               <Text style={[styles.secondaryButtonText, { color: textColor }]}>
                 {clearLabel}

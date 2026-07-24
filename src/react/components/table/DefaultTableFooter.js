@@ -3,7 +3,6 @@ import { Text, View } from 'react-native';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey, normalizeText } from '../inputs/defaultInputUtils';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import {
   flattenSummaryEntries,
   formatSummaryValue,
@@ -16,14 +15,13 @@ import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultTableFooter = ({ storeName }) => {
   const store = useStore(storeName);
-  const {
-    columns = [],
-    footerComponent = null,
-    isCompactView = false,
-    showTotalItemsInCompactToolbar = false,
-    showTotalItemsInFooter = true,
-    tableColumns = [],
-  } = getDefaultTableRuntime(storeName).footer || {};
+  const configs = store?.getters?.configs || {};
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const footerComponent = configs.footerComponent || null;
+  const isCompactView = false;
+  const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
+  const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
+  const tableColumns = columns;
   const { themeColors } = useDefaultTableTheme();
   const tableFooterBackgroundColor = themeColors.tableFooterBackground;
   const tableFooterBorderColor = themeColors.tableFooterBorder;

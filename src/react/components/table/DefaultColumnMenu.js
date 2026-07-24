@@ -4,18 +4,14 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
 import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
   const store = useStore(storeName);
-  const {
-    onToggleColumn,
-    visibleColumns = {},
-  } = getDefaultTableRuntime(storeName).columns || {};
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const visibleColumns = store?.getters?.visibleColumns || {};
   const availableColumns = columns.filter(column => shouldIncludeColumn(column));
   const {
     checkboxBorderColor: resolvedCheckboxBorderColor,
@@ -65,7 +61,12 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
                   key={fieldName}
                   style={styles.columnMenuItem}
                   activeOpacity={0.82}
-                  onPress={() => onToggleColumn(column)}
+                  onPress={() =>
+                    store?.actions?.setVisibleColumns?.({
+                      ...visibleColumns,
+                      [fieldName]: visibleColumns[fieldName] === false,
+                    })
+                  }
                 >
                   <Icon
                     name={checked ? 'check-square' : 'square'}

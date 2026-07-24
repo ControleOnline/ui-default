@@ -79,6 +79,10 @@ export default {
     state.columns = columns;
     return 'columns';
   },
+  [types.SET_CONFIGS](state, configs) {
+    state.configs = configs || {};
+    return 'configs';
+  },
   [types.SET_OFFLINE](state, offline) {
     state.offline = offline;
     return 'offline';

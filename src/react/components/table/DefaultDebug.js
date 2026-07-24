@@ -4,7 +4,6 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import { normalizeText } from '../inputs/defaultInputUtils';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
@@ -70,9 +69,9 @@ const DefaultDebug = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
   const { showError, showSuccess } = useMessage();
   const { modalColors, resolvedAccentColor, tableButtonColors } = useDefaultTableTheme();
-  const { debugFallbackParameters: fallbackParameters = null } = getDefaultTableRuntime(storeName);
 
   const resolvedDebug = isObject(store?.getters?.debug) ? store.getters.debug : {};
   const debugQuery = normalizeText(resolvedDebug?.query);
@@ -82,7 +81,7 @@ const DefaultDebug = ({
   const hasDebugQuery = debugQuery !== '';
   const debugParameters = isObject(resolvedDebug?.parameters)
     ? resolvedDebug.parameters
-    : fallbackParameters;
+    : configs.debugFallbackParameters || null;
   const debugParametersText = useMemo(
     () => formatDebugValue(debugParameters),
     [debugParameters],

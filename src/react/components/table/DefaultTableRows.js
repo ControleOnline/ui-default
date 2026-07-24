@@ -1,107 +1,73 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
 import DefaultTableLoadingOverlay from './DefaultTableLoadingOverlay';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import {
   END_REACHED_THRESHOLD,
   getColumnStyle,
   getRowKey,
   getSortField,
   isSortableColumn,
+  shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultTableRows = ({ storeName }) => {
-  const {
-    actionsCellWidth = 0,
-    columns = [],
-    emptyStateLabel = '',
-    hasCustomRowActions = false,
-    hasEditAction = false,
-    hasRowActions = false,
-    isLoading = false,
-    onEditRow,
-    onEndReached,
-    onMomentumScrollBegin,
-    onRequestRowPress,
-    onRequestSort,
-    onScrollBeginDrag,
-    resolvedFilters = {},
-    resolvedSort = null,
-    rowActionsComponent = null,
-    rowStyle = null,
-    sortedData = [],
-    tableBorderColor,
-    tableColumns = [],
-    tableEvenColor,
-    tableHeaderColor,
-    tableLayoutStyle,
-    tableMutedColor,
-    tableOddColor,
-    tableSurfaceColor,
-    tableTextColor,
-  } = getDefaultTableRuntime(storeName).body || {};
-
-  const resolveRowStyle = useCallback(
-    (row, index) => {
-      if (typeof rowStyle === 'function') {
-        return rowStyle(row, index);
-      }
-
-      return rowStyle;
-    },
-    [rowStyle],
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
+  const { palette, resolvedAccentColor, themeTokens } = useDefaultTableTheme();
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const visibleColumns = store?.getters?.visibleColumns || {};
+  const tableColumns = columns.filter(
+    column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false,
   );
-
-  const renderRowActions = row => {
-    const RowActionsComponent = rowActionsComponent;
-    const customRowActions = hasCustomRowActions ? (
-      <RowActionsComponent
-        openEdit={() => onEditRow?.(row)}
-        openRow={typeof onRequestRowPress === 'function' ? () => onRequestRowPress(row) : null}
-        row={row}
-      />
-    ) : null;
-    const editButton = hasEditAction ? (
-      <TouchableOpacity
-        style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-        activeOpacity={0.82}
-        onPress={() => onEditRow?.(row)}
-      >
-        <Icon name="edit-2" size={14} color={tableMutedColor} />
-      </TouchableOpacity>
-    ) : null;
-
-    return {
-      customRowActions,
-      editButton,
-    };
-  };
+  const sortedData = Array.isArray(configs.sortedData)
+    ? configs.sortedData
+    : Array.isArray(store?.getters?.items)
+      ? store.getters.items
+      : [];
+  const resolvedFilters = store?.getters?.filters || {};
+  const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
+  const emptyStateLabel = isLoading
+    ? global.t?.t(storeName, 'label', 'loading')
+    : global.t?.t(storeName, 'label', 'empty');
+  const tableBorderColor = palette.border;
+  const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
+  const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
+  const tableMutedColor = palette.textSecondary;
+  const tableOddColor = themeTokens.listItemOddRow || themeTokens['bg-odd-light'] || palette.background;
+  const tableSurfaceColor = palette.background;
+  const tableTextColor = palette.text;
+  const rowStyle = configs.rowStyle;
+  const hasRowPress = typeof configs.onRowPress === 'function';
+  const hasCustomRowActions = typeof configs.rowActionsComponent === 'function';
+  const hasEditAction = typeof configs.onEditRow === 'function';
+  const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
+  const actionsCellWidth = hasRowActions ? 96 : 0;
 
   const renderTableItem = ({ item: row, index }) => {
-    const hasRowPress = typeof onRequestRowPress === 'function';
     const RowComponent = hasRowPress ? TouchableOpacity : View;
-    const rowStyleValue = resolveRowStyle(row, index);
+    const rowStyleValue = typeof rowStyle === 'function' ? rowStyle(row, index) : rowStyle;
     const rowPressProps = hasRowPress
       ? {
         activeOpacity: 0.84,
-        onPress: () => onRequestRowPress(row),
+        onPress: () => configs.onRowPress(row),
       }
       : {};
     const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;
-    const { customRowActions, editButton } = renderRowActions(row);
+    const RowActionsComponent = configs.rowActionsComponent;
 
     return (
       <RowComponent
         key={getRowKey(row)}
         style={[
           styles.row,
-          tableLayoutStyle,
           { backgroundColor: rowBackgroundColor, borderBottomColor: tableBorderColor },
           rowStyleValue,
         ]}
@@ -126,8 +92,22 @@ const DefaultTableRows = ({ storeName }) => {
             ]}
           >
             <View style={styles.rowActionsGroup}>
-              {customRowActions}
-              {editButton}
+              {hasCustomRowActions ? (
+                <RowActionsComponent
+                  openEdit={() => configs.onEditRow?.(row)}
+                  openRow={hasRowPress ? () => configs.onRowPress(row) : null}
+                  row={row}
+                />
+              ) : null}
+              {hasEditAction ? (
+                <TouchableOpacity
+                  style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                  activeOpacity={0.82}
+                  onPress={() => configs.onEditRow?.(row)}
+                >
+                  <Icon name="edit-2" size={14} color={tableMutedColor} />
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -138,8 +118,8 @@ const DefaultTableRows = ({ storeName }) => {
   return (
     <>
       <ScrollView horizontal style={styles.scroll}>
-        <View style={[styles.content, tableLayoutStyle]}>
-          <View style={[styles.headerRow, tableLayoutStyle, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
+        <View style={styles.content}>
+          <View style={[styles.headerRow, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
             {tableColumns.map(column => {
               const fieldName = getColumnKey(column);
               const label = formatStoreColumnLabel({
@@ -155,12 +135,12 @@ const DefaultTableRows = ({ storeName }) => {
                   key={fieldName}
                   style={getColumnStyle(column)}
                   activeOpacity={isSortableColumn(column) ? 0.8 : 1}
-                  onPress={() => onRequestSort?.(column)}
+                  onPress={() => configs.requestSort?.(column)}
                 >
                   <View style={styles.sortableHeader}>
                     <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
-                    {isSortableColumn(column) && resolvedSort?.field === sortFieldName ? (
-                      <Icon name={resolvedSort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
+                    {isSortableColumn(column) && configs.resolvedSort?.field === sortFieldName ? (
+                      <Icon name={configs.resolvedSort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
                     ) : isSortableColumn(column) ? (
                       <Icon name="chevrons-up" size={12} color={tableBorderColor} />
                     ) : null}
@@ -200,15 +180,14 @@ const DefaultTableRows = ({ storeName }) => {
                 emptyStateLabel={emptyStateLabel}
                 isLoading={isLoading}
                 isTable
-                tableLayoutStyle={tableLayoutStyle}
                 tableMutedColor={tableMutedColor}
               />
             )}
             ListFooterComponent={null}
             nestedScrollEnabled
-            onMomentumScrollBegin={onMomentumScrollBegin || undefined}
-            onScrollBeginDrag={onScrollBeginDrag || undefined}
-            onEndReached={onEndReached}
+            onMomentumScrollBegin={configs.onMomentumScrollBegin || undefined}
+            onScrollBeginDrag={configs.onScrollBeginDrag || undefined}
+            onEndReached={configs.onEndReached}
             onEndReachedThreshold={END_REACHED_THRESHOLD}
             showsVerticalScrollIndicator={false}
           />

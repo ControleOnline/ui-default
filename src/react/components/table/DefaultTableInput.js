@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
+import { useStore } from '@store';
 import DefaultInput from '../inputs/DefaultInput';
-import { getColumnKey, isEditableColumn } from '../inputs/defaultInputUtils';
+import {
+  formatSaveValue,
+  getColumnKey,
+  isEditableColumn,
+  normalizeId,
+} from '../inputs/defaultInputUtils';
 import { getColumnStyle } from './DefaultTable.utils';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
@@ -15,26 +20,18 @@ const DefaultTableInput = ({
   storeName = '',
   variant = 'cell',
 }) => {
-  const {
-    columns = [],
-    getOptionsForColumn,
-    hasRowPress = false,
-    loadListOptionsForColumns,
-    onCancelEditing,
-    onSaveCell,
-    onStartEditing,
-  } = getDefaultTableRuntime(storeName).input || {};
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const hasRowPress = false;
   const { resolvedAccentColor } = useDefaultTableTheme();
   const column = columnProp || columns.find(item => getColumnKey(item) === fieldName);
 
   if (!column) return null;
 
   const resolvedFieldName = getColumnKey(column);
-  const cellKey = `${row?.id || row?.['@id']}:${resolvedFieldName}`;
-  const editingCell = getDefaultTableRuntime(storeName).input?.editingCell;
-  const savingCell = getDefaultTableRuntime(storeName).input?.savingCell;
-  const isEditing = editingCell === cellKey;
-  const isSaving = savingCell === cellKey;
   const input = (
     <DefaultInput
       accentColor={options.accentColor || resolvedAccentColor}
@@ -43,15 +40,34 @@ const DefaultTableInput = ({
       containerStyle={options.containerStyle}
       displayValue={options.displayValue}
       editing={isEditing}
-      getOptionsForColumn={getOptionsForColumn}
+      getOptionsForColumn={configs.getOptionsForColumn}
       inputStyle={options.inputStyle}
       label={options.label}
       numberOfLines={options.numberOfLines}
-      onBeforeOpen={() => loadListOptionsForColumns?.([column])}
-      onCancelEditing={onCancelEditing}
-      onSave={value => onSaveCell?.(row, column, value)}
-      onSearchChange={value => loadListOptionsForColumns?.([column], value)}
-      onStartEditing={() => onStartEditing?.(row, column)}
+      onCancelEditing={() => setIsEditing(false)}
+      onSave={value => {
+        if (typeof store?.actions?.save !== 'function') {
+          setIsEditing(false);
+          return Promise.resolve(null);
+        }
+
+        setIsSaving(true);
+        return Promise.resolve(
+          store.actions.save({
+            id: normalizeId(row?.['@id'] || row?.id),
+            [resolvedFieldName]: formatSaveValue(column, value, row),
+          }),
+        )
+          .then(savedItem => {
+            configs.onSaved?.(savedItem, row);
+            return savedItem;
+          })
+          .finally(() => {
+          setIsSaving(false);
+          setIsEditing(false);
+        });
+      }}
+      onStartEditing={() => setIsEditing(true)}
       readTextStyle={options.readTextStyle || options.textStyle}
       row={row}
       saving={isSaving}

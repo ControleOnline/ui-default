@@ -1,118 +1,83 @@
-import React, { useCallback } from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import React from 'react';
+import { FlatList, Text, View } from 'react-native';
+import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
-import { getColumnKey } from '../inputs/defaultInputUtils';
+import { getColumnKey, resolveCellText } from '../inputs/defaultInputUtils';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
-import { END_REACHED_THRESHOLD, getRowKey } from './DefaultTable.utils';
+import { END_REACHED_THRESHOLD, getRowKey, shouldIncludeColumn } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultTableCards = ({ storeName }) => {
-  const {
-    columns = [],
-    emptyStateLabel = '',
-    hasCustomRowActions = false,
-    hasEditAction = false,
-    hasRowActions = false,
-    isLoading = false,
-    onEditRow,
-    onEndReached,
-    onMomentumScrollBegin,
-    onRequestRowPress,
-    onScrollBeginDrag,
-    renderCard,
-    rowActionsComponent = null,
-    rowStyle = null,
-    sortedData = [],
-    tableBorderColor,
-    tableColumns = [],
-    tableMutedColor,
-    tableSurfaceColor,
-    tableTextColor,
-  } = getDefaultTableRuntime(storeName).body || {};
-
-  const resolveRowStyle = useCallback(
-    (row, index) => {
-      if (typeof rowStyle === 'function') {
-        return rowStyle(row, index);
-      }
-
-      return rowStyle;
-    },
-    [rowStyle],
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
+  const { palette } = useDefaultTableTheme();
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const visibleColumns = store?.getters?.visibleColumns || {};
+  const tableColumns = columns.filter(
+    column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false,
   );
+  const sortedData = Array.isArray(configs.sortedData)
+    ? configs.sortedData
+    : Array.isArray(store?.getters?.items)
+      ? store.getters.items
+      : [];
+  const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
+  const emptyStateLabel = isLoading
+    ? global.t?.t(storeName, 'label', 'loading')
+    : global.t?.t(storeName, 'label', 'empty');
+  const tableBorderColor = palette.border;
+  const tableMutedColor = palette.textSecondary;
+  const tableSurfaceColor = palette.background;
+  const tableTextColor = palette.text;
 
-  const buildRowHelpers = useCallback(
-    row => {
-      const openEdit = () => onEditRow?.(row);
-      const openRow = typeof onRequestRowPress === 'function' ? () => onRequestRowPress(row) : null;
-      const renderField = (fieldName, options = {}) => (
-        <DefaultTableInput
-          fieldName={fieldName}
-          options={options}
-          row={row}
-          storeName={storeName}
-          variant="card"
-        />
-      );
-      const renderValue = (fieldName, fallback = '-') => {
-        const column = columns.find(item => getColumnKey(item) === fieldName);
-        if (!column) return fallback;
+  const renderCardItem = (row, index = 0) => {
+    const rowStyleValue = typeof configs.rowStyle === 'function'
+      ? configs.rowStyle(row, index)
+      : configs.rowStyle;
+    const renderField = (fieldName, options = {}) => (
+      <DefaultTableInput
+        fieldName={fieldName}
+        options={options}
+        row={row}
+        storeName={storeName}
+        variant="card"
+      />
+    );
+    const renderValue = (fieldName, fallback = '-') => {
+      const column = columns.find(item => getColumnKey(item) === fieldName);
+      if (!column) return fallback;
 
-        return getDefaultTableRuntime(storeName).body?.renderValue?.(row, column, fallback) ?? fallback;
-      };
-
-      return {
-        openEdit,
-        openRow,
-        renderField,
-        renderValue,
-      };
-    },
-    [columns, onEditRow, onRequestRowPress, storeName],
-  );
-
-  const renderRowActions = row => {
-    const RowActionsComponent = rowActionsComponent;
+      return resolveCellText({ column, columns, row, storeName }) || fallback;
+    };
+    const RowActionsComponent = configs.rowActionsComponent;
+    const hasRowPress = typeof configs.onRowPress === 'function';
+    const hasCustomRowActions = typeof RowActionsComponent === 'function';
+    const hasEditAction = typeof configs.onEditRow === 'function';
+    const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
     const customRowActions = hasCustomRowActions ? (
       <RowActionsComponent
-        openEdit={() => onEditRow?.(row)}
-        openRow={typeof onRequestRowPress === 'function' ? () => onRequestRowPress(row) : null}
+        openEdit={() => configs.onEditRow?.(row)}
+        openRow={hasRowPress ? () => configs.onRowPress(row) : null}
         row={row}
       />
     ) : null;
     const editButton = hasEditAction ? (
-      <TouchableOpacity
-        style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-        activeOpacity={0.82}
-        onPress={() => onEditRow?.(row)}
-      >
-        <Icon name="edit-2" size={14} color={tableMutedColor} />
-      </TouchableOpacity>
+      <Text onPress={() => configs.onEditRow?.(row)}>
+        {global.t?.t(storeName, 'button', 'edit')}
+      </Text>
     ) : null;
 
-    return {
-      customRowActions,
-      editButton,
-    };
-  };
-
-  const renderCardItem = (row, index = 0) => {
-    const helpers = buildRowHelpers(row);
-    const rowStyleValue = resolveRowStyle(row, index);
-    const { customRowActions, editButton } = renderRowActions(row);
-
-    if (typeof renderCard === 'function') {
+    if (typeof configs.renderCard === 'function') {
       return (
         <View key={row?.['@id'] || row?.id} style={[styles.cardItem, rowStyleValue]}>
-          {renderCard({
+          {configs.renderCard({
             item: row,
-            openEdit: helpers.openEdit,
-            openRow: helpers.openRow,
-            renderField: helpers.renderField,
-            renderValue: helpers.renderValue,
+            openEdit: () => configs.onEditRow?.(row),
+            openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+            renderField,
+            renderValue,
             row,
           })}
           {hasRowActions ? (
@@ -147,10 +112,10 @@ const DefaultTableCards = ({ storeName }) => {
                   storeName,
                 })}
               </Text>
-              {helpers.renderField(fieldName, {
-                readTextStyle: [styles.defaultCardValue, { color: tableTextColor }],
-                numberOfLines: 1,
-              })}
+              {renderField(fieldName, {
+                  readTextStyle: [styles.defaultCardValue, { color: tableTextColor }],
+                  numberOfLines: 1,
+                })}
             </View>
           );
         })}
@@ -182,9 +147,9 @@ const DefaultTableCards = ({ storeName }) => {
       )}
       ListFooterComponent={null}
       nestedScrollEnabled
-      onMomentumScrollBegin={onMomentumScrollBegin || undefined}
-      onScrollBeginDrag={onScrollBeginDrag || undefined}
-      onEndReached={onEndReached}
+      onMomentumScrollBegin={configs.onMomentumScrollBegin || undefined}
+      onScrollBeginDrag={configs.onScrollBeginDrag || undefined}
+      onEndReached={configs.onEndReached}
       onEndReachedThreshold={END_REACHED_THRESHOLD}
       showsVerticalScrollIndicator={false}
     />

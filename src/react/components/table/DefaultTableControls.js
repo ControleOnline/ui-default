@@ -1,23 +1,33 @@
 import React from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
 import DefaultColumnMenu from './DefaultColumnMenu';
 import DefaultDebug from './DefaultDebug';
 import DefaultFiltersModal from './DefaultFiltersModal';
 import DefaultModalButton from './DefaultModalButton';
 import styles from './DefaultTable.styles';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
+import { normalizeText } from '../inputs/defaultInputUtils';
+import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultTableControls = ({ storeName }) => {
-  const {
-    activeFilterCount = 0,
-    effectiveViewMode = 'table',
-    hasTableFilters = false,
-    onAdd,
-    onToggleViewMode,
-    shouldRenderAddButton = false,
-  } = getDefaultTableRuntime(storeName);
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
+  const effectiveViewMode = configs.viewMode || configs.initialViewMode || 'table';
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const filters = store?.getters?.filters || {};
+  const hasTableFilters = columns.some(
+    column =>
+      shouldIncludeColumn(column) &&
+      column?.filter !== false &&
+      column?.filters !== false,
+  );
+  const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
+  const addConfig = store?.getters?.add;
+  const shouldRenderAddButton =
+    (addConfig === true || configs.add === true) &&
+    (typeof configs.onAdd === 'function' || typeof store?.actions?.save === 'function');
   const { tableButtonColors } = useDefaultTableTheme();
   const {
     backgroundColor,
@@ -84,7 +94,12 @@ const DefaultTableControls = ({ storeName }) => {
           effectiveViewMode !== 'table' ? pressedStyle : null,
         ]}
         activeOpacity={0.82}
-        onPress={onToggleViewMode}
+        onPress={() =>
+          store?.actions?.setConfigs?.({
+            ...configs,
+            viewMode: effectiveViewMode === 'table' ? 'cards' : 'table',
+          })
+        }
       >
         <Icon
           name={effectiveViewMode === 'table' ? 'list' : 'grid'}
@@ -122,7 +137,7 @@ const DefaultTableControls = ({ storeName }) => {
             { backgroundColor: backgroundColor, borderColor: backgroundColor },
           ]}
           activeOpacity={0.85}
-          onPress={onAdd}
+          onPress={() => configs.onAdd?.()}
         >
           <Icon name="plus" size={16} color={textColor} />
         </TouchableOpacity>

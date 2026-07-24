@@ -11,13 +11,11 @@ import DefaultTableBody from './DefaultTableBody';
 import DefaultEditModal from './DefaultEditModal';
 import DefaultTableFooter from './DefaultTableFooter';
 import DefaultTableToolbar from './DefaultTableToolbar';
-import { setDefaultTableRuntime } from './DefaultTable.runtime';
 import useDefaultTableTheme from './useDefaultTableTheme';
 import {
   formatSaveValue,
   getColumnKey,
   isEditableColumn,
-  isDateLikeColumn,
   normalizeId,
   normalizeOptionKey,
   normalizeText,
@@ -29,36 +27,30 @@ import {
   ACTIONS_CELL_WIDTH,
   DEFAULT_COMPACT_BREAKPOINT,
   getColumnMinWidth,
-  getSortField,
   isObject,
-  isSortableColumn,
-  normalizeSortText,
   normalizeCollectionItems,
   resolveListActionName,
   resolveColumnListLoadParams,
-  resolveDateRangeQuery,
-  resolveDefaultSort,
-  resolveFilterQueryValue,
-  resolveHasMore,
-  resolveSortComparable,
-  sanitizeStoredSortPreference,
   shouldIncludeColumn,
   stableSerialize,
 } from './DefaultTable.utils';
 import {
   persistTableFiltersPreference,
-  persistTableSortPreference,
   persistTableViewModePreference,
   persistVisibleColumnsPreference,
   resolveDefaultTablePreferenceScope,
   resolveStoredTableFiltersPreference,
-  resolveStoredTableSortPreference,
   resolveStoredTableViewModePreference,
   resolveStoredVisibleColumnsPreference,
   sanitizeTableFiltersPreference,
   sanitizeVisibleColumnsPreference,
 } from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultTable.styles';
+import { useDefaultTablePagination } from './useDefaultTablePagination';
+import {
+  useDefaultTableSortedData,
+  useDefaultTableSortState,
+} from './useDefaultTableSorting';
 
 export { resolveColumnListLoadParams } from './DefaultTable.utils';
 
@@ -124,14 +116,7 @@ const DefaultTable = ({
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
-  const endReachedLockRef = useRef(false);
   const loadedListStoresRef = useRef(new Set());
-  const previousPaginationStateRef = useRef({
-    dataLength: Array.isArray(data) ? data.length : 0,
-    filtersKey: JSON.stringify(filters || {}),
-    sortDirection: sort?.direction,
-    sortField: sort?.field,
-  });
   const visibleColumnsSeed = useMemo(
     () =>
       sanitizeVisibleColumnsPreference({
@@ -192,78 +177,47 @@ const DefaultTable = ({
     }),
     [actions, storeActions],
   );
-  const setStoreFilters = resolvedActions.setFilters;
   const storeColumns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
+  useEffect(() => {
+    if (storeColumns.length > 0 || !Array.isArray(columns) || columns.length === 0) {
+      return;
+    }
+
+    if (typeof resolvedActions.setColumns === 'function') {
+      resolvedActions.setColumns(columns);
+      return;
+    }
+
+    if (store?.getters) {
+      store.getters.columns = columns;
+    }
+  }, [columns, resolvedActions, store, storeColumns.length]);
+  useEffect(() => {
+    if (data === undefined || !Array.isArray(data)) {
+      return;
+    }
+
+    if (typeof resolvedActions.setItems === 'function') {
+      resolvedActions.setItems(data);
+      return;
+    }
+
+    if (store?.getters) {
+      store.getters.items = data;
+    }
+  }, [data, resolvedActions, store]);
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
-  const storeFiltersSignature = useMemo(
-    () => stableSerialize(storeFilters),
-    [storeFilters],
-  );
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
-  const isFiltersControlled = typeof onFilterChange === 'function';
-  const storedFiltersPreference = useMemo(
-    () => resolveStoredTableFiltersPreference(tablePreferenceScope),
-    [tablePreferenceScope],
-  );
-  const hasStoredFiltersPreference = isObject(storedFiltersPreference);
-  const storedFiltersSeed = useMemo(
-    () =>
-      sanitizeTableFiltersPreference({
-        columns: columnsForTable,
-        filters: storedFiltersPreference,
-      }),
-    [columnsForTable, storedFiltersPreference],
-  );
-  const storedFiltersSeedSignature = useMemo(
-    () => stableSerialize(storedFiltersSeed),
-    [storedFiltersSeed],
-  );
-  const initialFiltersSeed = autoMode
-    ? (
-      Object.keys(filters || {}).length > 0
-        ? filters
-        : hasStoredFiltersPreference
-          ? storedFiltersSeed
-          : storeFilters
-    )
-    : (isObject(filters) ? filters : {});
-  const [autoFilters, setAutoFilters] = useState(() => initialFiltersSeed);
-  const controlledFiltersSignature = useMemo(
-    () => stableSerialize(isObject(filters) ? filters : {}),
-    [filters],
-  );
-  const defaultSortSeed = useMemo(
-    () => resolveDefaultSort(columnsForTable),
-    [columnsForTable],
-  );
-  const storedSortSeed = useMemo(
-    () =>
-      sanitizeStoredSortPreference({
-        columns: columnsForTable,
-        fallbackSort: sort || defaultSortSeed || null,
-        sort: resolveStoredTableSortPreference(tablePreferenceScope),
-      }),
-    [columnsForTable, defaultSortSeed, sort, tablePreferenceScope],
-  );
-  const storedSortSeedSignature = useMemo(
-    () => stableSerialize(storedSortSeed),
-    [storedSortSeed],
-  );
-  const [autoSort, setAutoSort] = useState(() => storedSortSeed);
-  const [autoHasLoaded, setAutoHasLoaded] = useState(false);
-  const [autoLoading, setAutoLoading] = useState(false);
-  const [autoLoadingMore, setAutoLoadingMore] = useState(false);
-  const [autoLastPageCount, setAutoLastPageCount] = useState(0);
-  const autoRequestIdRef = useRef(0);
-  const autoLoadedQueryKeyRef = useRef('');
-  const autoErroredQueryKeyRef = useRef('');
-  const autoPageRef = useRef(0);
-  const hasAppliedStoredFiltersRef = useRef(false);
-  const pageSizeNumber = Number(requestParamsSeed.itemsPerPage || pageSize || 50) || 50;
   const hasCustomRowActions = typeof rowActionsComponent === 'function';
-  const resolvedSort = autoMode ? autoSort : sort;
-  const resolvedFilters = autoMode ? autoFilters : (filters || {});
+  const resolvedFilters = storeFilters;
+  const { requestSort, resolvedSort } = useDefaultTableSortState({
+    autoMode,
+    columnsForTable,
+    onSortChange,
+    sort,
+    tablePreferenceScope,
+  });
   const resolvedGetOptionsForColumn = useCallback(
     column => {
       const explicitOptions = getOptionsForColumn?.(column);
@@ -379,119 +333,6 @@ const DefaultTable = ({
     [currentCompanyId, getOptionsForColumn, requestParamsSeed],
   );
 
-  const buildRequestQuery = useCallback(
-    (page, append = false) => {
-      const query = {
-        ...requestParamsSeed,
-        itemsPerPage: pageSizeNumber,
-        page,
-      };
-
-      if (autoSort?.field && autoSort?.direction) {
-        query[`order[${autoSort.field}]`] = autoSort.direction;
-      }
-
-      Object.entries(autoFilters || {}).forEach(([fieldName, value]) => {
-        if (!fieldName) return;
-
-        const column = columnsForTable.find(item => getColumnKey(item) === fieldName);
-
-        if (isDateLikeColumn(column)) {
-          const dateRange = resolveDateRangeQuery(value);
-          if (dateRange.after) {
-            query[`${fieldName}[after]`] = dateRange.after;
-          }
-          if (dateRange.before) {
-            query[`${fieldName}[before]`] = dateRange.before;
-          }
-          return;
-        }
-
-        const normalizedValue = resolveFilterQueryValue(value);
-        if (Array.isArray(normalizedValue)) {
-          if (normalizedValue.length > 0) {
-            query[fieldName] = normalizedValue;
-          }
-          return;
-        }
-
-        if (normalizedValue !== '') {
-          query[fieldName] = normalizedValue;
-        }
-      });
-
-      if (append) {
-        query.append = true;
-      }
-
-      return query;
-    },
-    [autoFilters, autoSort?.direction, autoSort?.field, columnsForTable, pageSizeNumber, requestParamsSeed],
-  );
-  const autoQuerySignature = useMemo(
-    () =>
-      stableSerialize({
-        filters: autoFilters,
-        pageSize: pageSizeNumber,
-        requestParams: requestParamsSeed,
-        sort: autoSort,
-      }),
-    [autoFilters, autoSort, pageSizeNumber, requestParamsSeed],
-  );
-
-  const loadAutoPage = useCallback(
-    (page, { append = false } = {}) => {
-      if (!autoMode || typeof resolvedActions.getItems !== 'function') {
-        return Promise.resolve([]);
-      }
-
-      const requestId = autoRequestIdRef.current + 1;
-      autoRequestIdRef.current = requestId;
-
-      if (append) {
-        setAutoLoadingMore(true);
-      } else {
-        setAutoLoading(true);
-        setAutoHasLoaded(false);
-        setAutoLastPageCount(0);
-        autoPageRef.current = 0;
-      }
-
-      const query = buildRequestQuery(page, append);
-
-      return Promise.resolve(resolvedActions.getItems(query))
-        .then(response => {
-          if (autoRequestIdRef.current !== requestId) {
-            return response;
-          }
-
-          const pageItems = normalizeCollectionItems(response);
-          autoPageRef.current = page;
-          autoLoadedQueryKeyRef.current = autoQuerySignature;
-          autoErroredQueryKeyRef.current = '';
-          setAutoHasLoaded(true);
-          setAutoLastPageCount(pageItems.length);
-          return pageItems;
-        })
-        .catch(error => {
-          if (autoRequestIdRef.current === requestId) {
-            autoErroredQueryKeyRef.current = autoQuerySignature;
-            showError?.(error?.message || 'Nao foi possivel carregar os registros.');
-          }
-
-          return [];
-        })
-        .finally(() => {
-          if (autoRequestIdRef.current === requestId) {
-            setAutoLoading(false);
-            setAutoLoadingMore(false);
-            endReachedLockRef.current = false;
-          }
-        });
-    },
-    [autoMode, autoQuerySignature, buildRequestQuery, resolvedActions, showError],
-  );
-
   useEffect(() => {
     setVisibleColumns(prev =>
       stableSerialize(prev) === visibleColumnsSeedSignature
@@ -504,130 +345,31 @@ const DefaultTable = ({
     setViewMode(viewModeSeed);
   }, [viewModeSeed]);
 
-  useEffect(() => {
-    if (!autoMode) return;
-
-    setAutoSort(prev =>
-      stableSerialize(prev) === storedSortSeedSignature
-        ? prev
-        : storedSortSeed,
-    );
-  }, [autoMode, storedSortSeedSignature]);
-
-  useEffect(() => {
-    if (!autoMode || isFiltersControlled) return;
-
-    if (hasStoredFiltersPreference && !hasAppliedStoredFiltersRef.current) {
-      hasAppliedStoredFiltersRef.current = true;
-      setAutoFilters(prev =>
-        stableSerialize(prev) === storedFiltersSeedSignature
-          ? prev
-          : storedFiltersSeed,
-      );
-
-      if (storeFiltersSignature !== storedFiltersSeedSignature) {
-        setStoreFilters?.(storedFiltersSeed);
-      }
-      return;
-    }
-
-    setAutoFilters(prev => {
-      if (stableSerialize(prev) === storeFiltersSignature) {
-        return prev;
-      }
-
-      return storeFilters;
-    });
-  }, [
-    autoMode,
-    hasStoredFiltersPreference,
-    isFiltersControlled,
-    setStoreFilters,
-    storeFilters,
-    storeFiltersSignature,
-    storedFiltersSeed,
-    storedFiltersSeedSignature,
-  ]);
-
-  useEffect(() => {
-    hasAppliedStoredFiltersRef.current = false;
-  }, [tablePreferenceSignature]);
-
-  useEffect(() => {
-    if (!autoMode || !isFiltersControlled) return;
-
-    const nextFilters = isObject(filters) ? filters : {};
-    const shouldApplyStoredFilters =
-      hasStoredFiltersPreference &&
-      !hasAppliedStoredFiltersRef.current &&
-      Object.keys(nextFilters).length === 0;
-
-    if (shouldApplyStoredFilters) {
-      hasAppliedStoredFiltersRef.current = true;
-      setAutoFilters(prev =>
-        stableSerialize(prev) === storedFiltersSeedSignature
-          ? prev
-          : storedFiltersSeed,
-      );
-      setStoreFilters?.(storedFiltersSeed);
-      onFilterChange?.(storedFiltersSeed);
-      return;
-    }
-
-    hasAppliedStoredFiltersRef.current = true;
-    setAutoFilters(prev =>
-      stableSerialize(prev) === controlledFiltersSignature
-        ? prev
-        : nextFilters,
-    );
-    if (storeFiltersSignature !== controlledFiltersSignature) {
-      setStoreFilters?.(nextFilters);
-    }
-
-    persistTableFiltersPreference(
-      tablePreferenceScope,
-      sanitizeTableFiltersPreference({
-        columns: columnsForTable,
-        filters: nextFilters,
-      }),
-    );
-  }, [
+  const resolvedTotalItems = store?.getters?.totalItems;
+  const {
+    buildRequestQuery,
+    currentPage,
+    handleEndReached,
+    resolvedData,
+    resolvedIsLoading,
+  } = useDefaultTablePagination({
     autoMode,
     columnsForTable,
-    controlledFiltersSignature,
-    hasStoredFiltersPreference,
-    isFiltersControlled,
-    onFilterChange,
-    setStoreFilters,
-    storeFiltersSignature,
-    storedFiltersSeed,
-    storedFiltersSeedSignature,
-    tablePreferenceScope,
-  ]);
-
-  useEffect(() => {
-    if (!autoMode || !isFocused) return;
-    if (typeof resolvedActions.getItems !== 'function') return;
-    if (
-      autoLoading ||
-      autoLoadingMore ||
-      autoLoadedQueryKeyRef.current === autoQuerySignature ||
-      autoErroredQueryKeyRef.current === autoQuerySignature
-    ) {
-      return;
-    }
-
-    endReachedLockRef.current = false;
-    loadAutoPage(1, { append: false });
-  }, [
-    autoLoading,
-    autoLoadingMore,
-    autoMode,
-    autoQuerySignature,
+    data,
+    filters: resolvedFilters,
+    hasMore,
     isFocused,
-    loadAutoPage,
+    isLoading,
+    onEndReached,
+    pageSize,
+    requestParams: requestParamsSeed,
     resolvedActions,
-  ]);
+    resolvedSort,
+    resolvedTotalItems,
+    showError,
+    store,
+    storeName,
+  });
 
   const tableColumns = useMemo(
     () => columnsForTable.filter(column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false),
@@ -664,10 +406,6 @@ const DefaultTable = ({
   const shouldRenderAddButton =
     hasAddInstruction &&
     (typeof onAdd === 'function' || typeof resolvedActions.save === 'function');
-  const resolvedIsLoading = autoMode ? (autoLoading || autoLoadingMore) : Boolean(isLoading);
-  const resolvedData = autoMode
-    ? (autoHasLoaded && Array.isArray(store?.getters?.items) ? store.getters.items : [])
-    : (Array.isArray(data) ? data : []);
   const tableMinimumWidth = useMemo(
     () =>
       tableColumns.reduce(
@@ -706,10 +444,9 @@ const DefaultTable = ({
   const emptyStateLabel = resolvedIsLoading
     ? global.t?.t(storeName, 'label', 'loading')
     : global.t?.t(storeName, 'label', 'empty');
-  const resolvedTotalItems = store?.getters?.totalItems;
   const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
-      return buildRequestQuery(autoPageRef.current || 1, false);
+      return buildRequestQuery(currentPage || 1, false);
     }
 
     return {
@@ -717,77 +454,13 @@ const DefaultTable = ({
       requestParams: requestParamsSeed,
       sort: resolvedSort || null,
     };
-  }, [autoMode, buildRequestQuery, requestParamsSeed, resolvedFilters, resolvedSort]);
-  const sortedData = useMemo(() => {
-    const items = Array.isArray(resolvedData) ? [...resolvedData] : [];
-    const sortField = resolvedSort?.field;
-    const sortDirection = resolvedSort?.direction === 'desc' ? 'desc' : 'asc';
-    const sortColumn = tableColumns.find(column => getSortField(column) === sortField);
-
-    if (!sortField || !sortColumn) return items;
-
-    return items.sort((left, right) => {
-      const leftValue = resolveSortComparable({
-        column: sortColumn,
-        columns: tableColumns,
-        row: left,
-        storeName,
-      });
-      const rightValue = resolveSortComparable({
-        column: sortColumn,
-        columns: tableColumns,
-        row: right,
-        storeName,
-      });
-
-      const comparison =
-        typeof leftValue === 'number' && typeof rightValue === 'number'
-          ? leftValue - rightValue
-          : normalizeSortText(leftValue).localeCompare(normalizeSortText(rightValue));
-
-      return sortDirection === 'desc' ? comparison * -1 : comparison;
-    });
-  }, [resolvedData, resolvedSort?.direction, resolvedSort?.field, storeName, tableColumns]);
-
-  const resolvedHasMore = useMemo(
-    () => {
-      if (autoMode) {
-        if (Number.isFinite(Number(resolvedTotalItems)) && Number(resolvedTotalItems) > 0) {
-          return sortedData.length < Number(resolvedTotalItems);
-        }
-
-        return autoLastPageCount >= pageSizeNumber && sortedData.length > 0;
-      }
-
-      return resolveHasMore({
-        hasMore,
-        dataLength: sortedData.length,
-        totalItems: resolvedTotalItems,
-      });
-    },
-    [autoLastPageCount, autoMode, hasMore, pageSizeNumber, resolvedTotalItems, sortedData.length],
-  );
-
-  useEffect(() => {
-    const nextPaginationState = {
-      dataLength: sortedData.length,
-      filtersKey: stableSerialize(resolvedFilters || {}),
-      sortDirection: resolvedSort?.direction,
-      sortField: resolvedSort?.field,
-    };
-
-    const previousPaginationState = previousPaginationStateRef.current;
-    const didPaginationStateChange =
-      previousPaginationState.dataLength !== nextPaginationState.dataLength ||
-      previousPaginationState.filtersKey !== nextPaginationState.filtersKey ||
-      previousPaginationState.sortDirection !== nextPaginationState.sortDirection ||
-      previousPaginationState.sortField !== nextPaginationState.sortField;
-
-    if (didPaginationStateChange) {
-      endReachedLockRef.current = false;
-      previousPaginationStateRef.current = nextPaginationState;
-    }
-  }, [resolvedFilters, resolvedSort?.direction, resolvedSort?.field, sortedData]);
+  }, [autoMode, buildRequestQuery, currentPage, requestParamsSeed, resolvedFilters, resolvedSort]);
+  const sortedData = useDefaultTableSortedData({
+    resolvedData,
+    resolvedSort,
+    storeName,
+    tableColumns,
+  });
 
   useEffect(() => {
     if (typeof onDataLoaded !== 'function') {
@@ -854,35 +527,6 @@ const DefaultTable = ({
     onRowPress(row);
   }, [editingCell, onRowPress, savingCell]);
 
-  const requestSort = useCallback(column => {
-    if (!isSortableColumn(column)) return;
-
-    const fieldName = getSortField(column);
-    const nextDirection =
-      resolvedSort?.field === fieldName && resolvedSort?.direction === 'asc'
-        ? 'desc'
-        : 'asc';
-    const nextSort = {
-      direction: nextDirection,
-      field: fieldName,
-    };
-
-    persistTableSortPreference(tablePreferenceScope, nextSort);
-
-    if (autoMode) {
-      setAutoSort(nextSort);
-      return;
-    }
-
-    onSortChange?.(nextSort);
-  }, [
-    autoMode,
-    onSortChange,
-    resolvedSort?.direction,
-    resolvedSort?.field,
-    tablePreferenceScope,
-  ]);
-
   const openEditModal = useCallback(row => {
     if (typeof onEditRow === 'function') {
       onEditRow(row);
@@ -909,45 +553,6 @@ const DefaultTable = ({
     setEditingRow(null);
     setFormMode('edit');
   }, []);
-
-  const commitFilters = useCallback(nextFilters => {
-    const resolvedNextFilters = isObject(nextFilters) ? nextFilters : {};
-    const persistedFilters = sanitizeTableFiltersPreference({
-      columns: columnsForTable,
-      filters: resolvedNextFilters,
-    });
-
-    persistTableFiltersPreference(tablePreferenceScope, persistedFilters);
-
-    if (autoMode) {
-      setAutoFilters(resolvedNextFilters);
-      setStoreFilters?.(resolvedNextFilters);
-      onFilterChange?.(resolvedNextFilters);
-      return;
-    }
-
-    onFilterChange?.(resolvedNextFilters);
-  }, [
-    autoMode,
-    columnsForTable,
-    onFilterChange,
-    setStoreFilters,
-    tablePreferenceScope,
-  ]);
-
-  const updateFilter = useCallback((fieldName, value) => {
-    const nextFilters = { ...(resolvedFilters || {}) };
-    const isEmpty =
-      value === null ||
-      value === undefined ||
-      normalizeText(value) === '' ||
-      (Array.isArray(value) && value.length === 0);
-
-    if (isEmpty) delete nextFilters[fieldName];
-    else nextFilters[fieldName] = value;
-
-    commitFilters(nextFilters);
-  }, [commitFilters, resolvedFilters]);
 
   const toggleColumn = useCallback(column => {
     const fieldName = getColumnKey(column);
@@ -1002,129 +607,95 @@ const DefaultTable = ({
     viewMode,
   ]);
 
-  const handleEndReached = useCallback(() => {
-    if (
-      !resolvedHasMore ||
-      resolvedIsLoading ||
-      endReachedLockRef.current === true
-    ) {
-      return;
-    }
-
-    endReachedLockRef.current = true;
-
-    if (autoMode) {
-      const nextPage = autoPageRef.current + 1;
-      loadAutoPage(nextPage, { append: true });
-      return;
-    }
-
-    if (typeof onEndReached === 'function') {
-      onEndReached();
-    }
-  }, [autoMode, loadAutoPage, onEndReached, resolvedHasMore, resolvedIsLoading]);
-
   const handleLayout = useCallback(event => {
     const nextWidth = Math.floor(event?.nativeEvent?.layout?.width || 0);
     if (nextWidth > 0) setTableContainerWidth(nextWidth);
   }, []);
 
-  setDefaultTableRuntime(storeName, {
-    activeFilterCount,
-    body: {
-      actionsCellWidth,
-      columns: columnsForTable,
+  const defaultTableConfigs = useMemo(
+    () => ({
+      add,
+      compactBreakpoint,
+      debugFallbackParameters,
       effectiveViewMode,
-      emptyStateLabel,
-      hasCustomRowActions,
-      hasEditAction,
-      hasRowActions,
-      isLoading: resolvedIsLoading,
-      onEditRow: openEditModal,
+      footerComponent,
+      forceCardsOnCompact,
+      getOptionsForColumn,
+      initialViewMode,
+      onAdd,
+      onDataLoaded,
+      onEditRow,
       onEndReached: handleEndReached,
       onMomentumScrollBegin,
-      onRequestRowPress: typeof onRowPress === 'function' ? requestRowPress : null,
-      onRequestSort: requestSort,
+      onRowPress,
+      onSaved,
       onScrollBeginDrag,
       renderCard,
-      renderValue: (row, column, fallback = '-') =>
-        resolveCellText({ column, columns: columnsForTable, row, storeName }) || fallback,
-      resolvedFilters,
+      requestSort,
       resolvedSort,
       rowActionsComponent,
       rowStyle,
+      showRowActions,
+      showTotalItemsInCompactToolbar,
+      showTotalItemsInFooter,
       sortedData,
-      tableBorderColor,
-      tableColumns,
-      tableEvenColor,
-      tableHeaderColor,
-      tableLayoutStyle,
-      tableMutedColor,
-      tableOddColor,
-      tableSurfaceColor,
-      tableTextColor,
-    },
-    debugFallbackParameters,
-    effectiveViewMode,
-    editModal: {
-      actions: resolvedActions,
-      columns: formMode === 'create' ? columnsForTable : editableColumns,
-      editingRow,
-      formMode,
-      getOptionsForColumn: resolvedGetOptionsForColumn,
-      onBeforeOpen: column => loadListOptionsForColumns([column]),
-      onClose: closeEditModal,
-      onSearchChange: (column, value) => loadListOptionsForColumns([column], value),
-      onSaved: (savedItem, originalRow) => {
-        onSaved?.(savedItem, originalRow);
-        closeEditModal();
-      },
-      title: formMode === 'create'
-        ? global.t?.t(storeName, 'button', 'add')
-        : global.t?.t(storeName, 'button', 'edit'),
-    },
-    columns: {
-      onToggleColumn: toggleColumn,
-      visibleColumns,
-    },
-    filters: {
-      getOptionsForColumn: resolvedGetOptionsForColumn,
-      loadListOptionsForColumns,
-      onChange: updateFilter,
-      onClear: () => commitFilters({}),
-    },
-    footer: {
-      columns: columnsForTable,
-      footerComponent,
-      isCompactView,
-      showTotalItemsInCompactToolbar,
-      showTotalItemsInFooter,
-      tableColumns,
-    },
-    input: {
-      columns: columnsForTable,
-      editingCell,
-      getOptionsForColumn: resolvedGetOptionsForColumn,
-      hasRowPress: typeof onRowPress === 'function',
-      loadListOptionsForColumns,
-      onCancelEditing: clearEdit,
-      onSaveCell: saveCell,
-      onStartEditing: beginEdit,
-      savingCell,
-    },
-    hasTableFilters,
-    onAdd: openAddForm,
-    toolbar: {
-      isCompactView,
-      showTotalItemsInCompactToolbar,
-      showTotalItemsInFooter,
-      tableContainerWidth,
       toolbarActions,
-      width,
-    },
-    onToggleViewMode: toggleViewMode,
-    shouldRenderAddButton,
-  });
+      viewMode: effectiveViewMode,
+    }),
+    [
+      add,
+      compactBreakpoint,
+      debugFallbackParameters,
+      effectiveViewMode,
+      footerComponent,
+      forceCardsOnCompact,
+      getOptionsForColumn,
+      handleEndReached,
+      initialViewMode,
+      onAdd,
+      onDataLoaded,
+      onEditRow,
+      onMomentumScrollBegin,
+      onRowPress,
+      onSaved,
+      onScrollBeginDrag,
+      renderCard,
+      requestSort,
+      resolvedSort,
+      rowActionsComponent,
+      rowStyle,
+      showRowActions,
+      showTotalItemsInCompactToolbar,
+      showTotalItemsInFooter,
+      sortedData,
+      toolbarActions,
+    ],
+  );
+
+  if (store?.getters) {
+    if (storeColumns.length === 0 && Array.isArray(columns) && columns.length > 0) {
+      store.getters.columns = columns;
+    }
+    if (data !== undefined && Array.isArray(data)) {
+      store.getters.items = data;
+    }
+    store.getters.configs = defaultTableConfigs;
+  }
+
+  useEffect(() => {
+    if (typeof resolvedActions.setConfigs === 'function') {
+      resolvedActions.setConfigs(defaultTableConfigs);
+      return;
+    }
+
+    if (store?.getters) {
+      store.getters.configs = defaultTableConfigs;
+    }
+  }, [
+    defaultTableConfigs,
+    resolvedActions,
+    store,
+  ]);
 
   const renderEditModal = () => {
     return (

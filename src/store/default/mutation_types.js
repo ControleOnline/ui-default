@@ -7,6 +7,7 @@ export const SET_DEBUG = 'SET_DEBUG';
 export const SET_ITEMS = 'SET_ITEMS';
 export const SET_ITEM = 'SET_ITEM';
 export const SET_COLUMNS = 'SET_COLUMNS';
+export const SET_CONFIGS = 'SET_CONFIGS';
 export const SET_FILTERS = 'SET_FILTERS';
 export const SET_RESOURCE_ENDPOINT = 'SET_RESOURCE_ENDPOINT';
 export const SET_SELECTED = 'SET_SELECTED';
