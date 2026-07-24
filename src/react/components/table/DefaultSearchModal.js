@@ -2,15 +2,10 @@ import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import DefaultSearch from '../filters/DefaultSearch';
-import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultSearchModal = ({ storeName }) => {
-  const {
-    onClose,
-    visible = false,
-  } = getDefaultTableRuntime(storeName).searchModal || {};
+const DefaultSearchModal = ({ storeName, visible = false, onClose }) => {
   const { modalColors } = useDefaultTableTheme();
   if (!visible) return null;
 

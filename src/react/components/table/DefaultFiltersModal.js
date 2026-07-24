@@ -1,28 +1,33 @@
 import React from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
+import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultFiltersModal = ({ storeName }) => {
+const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
+  const store = useStore(storeName);
   const {
-    applyLabel,
-    clearLabel,
-    columns = [],
-    filters = {},
-    getColumnLabel,
     getOptionsForColumn,
     loadListOptionsForColumns,
     onChange,
-    onApply,
     onClear,
-    onClose,
-    title,
-    visible = false,
-  } = getDefaultTableRuntime(storeName).filtersModal || {};
+  } = getDefaultTableRuntime(storeName).filters || {};
+  const columns = (Array.isArray(store?.getters?.columns) ? store.getters.columns : []).filter(
+    column =>
+      shouldIncludeColumn(column) &&
+      column?.filter !== false &&
+      column?.filters !== false,
+  );
+  const filters = store?.getters?.filters || {};
+  const applyLabel = global.t?.t(storeName, 'button', 'apply');
+  const clearLabel = global.t?.t(storeName, 'button', 'clear');
+  const title = global.t?.t(storeName, 'label', 'filters');
   const { modalColors, resolvedAccentColor } = useDefaultTableTheme();
   if (!visible) return null;
 
@@ -54,11 +59,17 @@ const DefaultFiltersModal = ({ storeName }) => {
           <ScrollView style={styles.filtersModalBody} contentContainerStyle={styles.filtersModalList}>
             {columns.map(column => {
               const fieldName = getColumnKey(column);
+              const label = formatStoreColumnLabel({
+                columns,
+                fieldName,
+                fallbackLabel: column?.label || fieldName,
+                storeName,
+              });
 
               return (
                 <View key={fieldName} style={styles.filtersModalField}>
                   <Text style={[styles.formLabel, { color: textColor }]} numberOfLines={1}>
-                    {getColumnLabel ? getColumnLabel(column) : column?.label || fieldName}
+                    {label}
                   </Text>
                   <DefaultColumnFilter
                     column={column}
@@ -87,7 +98,7 @@ const DefaultFiltersModal = ({ storeName }) => {
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: resolvedAccentColor }]}
               activeOpacity={0.82}
-              onPress={onApply}
+              onPress={onClose}
             >
               <Text style={styles.primaryButtonText}>
                 {applyLabel}

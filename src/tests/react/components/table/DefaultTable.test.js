@@ -221,6 +221,12 @@ describe('DefaultTable', () => {
 
   it('keeps the complete search aligned in the toolbar when there is enough room', () => {
     mockWindowDimensions = {width: 430, height: 932};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+      },
+    };
     let tree;
 
     renderer.act(() => {
@@ -228,7 +234,7 @@ describe('DefaultTable', () => {
         React.createElement(DefaultTable, {
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
-          searchProps: {placeholder: 'Buscar pedidos'},
+          storeName: 'orders',
         }),
       );
     });
@@ -239,6 +245,12 @@ describe('DefaultTable', () => {
 
   it('collapses search into an icon on narrow toolbars and opens the search modal', () => {
     mockWindowDimensions = {width: 375, height: 667};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+      },
+    };
     let tree;
 
     renderer.act(() => {
@@ -246,7 +258,7 @@ describe('DefaultTable', () => {
         React.createElement(DefaultTable, {
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
-          searchProps: {placeholder: 'Buscar pedidos'},
+          storeName: 'orders',
         }),
       );
     });
@@ -257,7 +269,7 @@ describe('DefaultTable', () => {
       .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'search'));
 
     expect(searchButton.props.accessibilityRole).toBe('button');
-    expect(searchButton.props.accessibilityLabel).toBe('Buscar pedidos');
+    expect(searchButton.props.accessibilityLabel).toBe('Buscar');
 
     renderer.act(() => searchButton.props.onPress());
 
@@ -267,6 +279,12 @@ describe('DefaultTable', () => {
 
   it('gives collapsed search a stable accessible name without a placeholder', () => {
     mockWindowDimensions = {width: 375, height: 667};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+      },
+    };
     let tree;
 
     renderer.act(() => {
@@ -274,7 +292,7 @@ describe('DefaultTable', () => {
         React.createElement(DefaultTable, {
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
-          searchProps: {},
+          storeName: 'orders',
         }),
       );
     });
@@ -289,6 +307,13 @@ describe('DefaultTable', () => {
 
   it('keeps the financial compact toolbar aligned when the total is already in the footer', () => {
     mockWindowDimensions = {width: 375, height: 667};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+        totalItems: 27,
+      },
+    };
     let tree;
 
     renderer.act(() => {
@@ -296,10 +321,9 @@ describe('DefaultTable', () => {
         React.createElement(DefaultTable, {
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
-          searchProps: {placeholder: 'Buscar lançamentos'},
           showTotalItemsInCompactToolbar: true,
           showTotalItemsInFooter: true,
-          totalItems: 27,
+          storeName: 'orders',
         }),
       );
     });
@@ -315,21 +339,28 @@ describe('DefaultTable', () => {
 
   it('opens the filters modal with filterable columns only', () => {
     mockWindowDimensions = {width: 375, height: 667};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [
+          {key: 'name', label: 'Nome'},
+          {key: 'ignored', label: 'Ignorado', filter: false},
+          {
+            key: 'status',
+            label: 'Status',
+            list: [{value: 'pos', label: 'POS'}],
+          },
+        ],
+        filters: {},
+      },
+    };
     let tree;
 
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
-          columns: [
-            {key: 'name', label: 'Nome'},
-            {key: 'ignored', label: 'Ignorado', filter: false},
-            {
-              key: 'status',
-              label: 'Status',
-              list: [{value: 'pos', label: 'POS'}],
-            },
-          ],
           data: [],
+          storeName: 'orders',
         }),
       );
     });
@@ -366,7 +397,6 @@ describe('DefaultTable', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
-          searchProps: {placeholder: 'Buscar pedidos'},
           storeName: 'orders',
         }),
       );
@@ -534,6 +564,12 @@ describe('DefaultTable', () => {
 
   it('preserves the compact toolbar total when the footer total is disabled', () => {
     mockWindowDimensions = {width: 375, height: 667};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        totalItems: 27,
+      },
+    };
     let tree;
 
     renderer.act(() => {
@@ -543,7 +579,7 @@ describe('DefaultTable', () => {
           data: [],
           showTotalItemsInCompactToolbar: true,
           showTotalItemsInFooter: false,
-          totalItems: 27,
+          storeName: 'orders',
         }),
       );
     });
@@ -737,6 +773,12 @@ describe('DefaultTable', () => {
 
   it('renders a custom footer component when provided', () => {
     let tree;
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        totalItems: 7,
+      },
+    };
 
     const FooterComponent = props =>
       React.createElement('CustomFooter', {
@@ -752,14 +794,14 @@ describe('DefaultTable', () => {
           data: [{id: 1, name: 'Pedido 1'}],
           footerComponent: FooterComponent,
           showColumnFiltersButton: false,
-          totalItemsText: '7 pedidos',
+          storeName: 'orders',
         }),
       );
     });
 
     const footer = tree.root.findByType('CustomFooter');
 
-    expect(footer.props.resolvedTotalItemsText).toBe('7 pedidos');
+    expect(footer.props.resolvedTotalItemsText).toBe('7 registros');
   });
 
   it('opens a debug query modal when the store exposes debug.query', () => {

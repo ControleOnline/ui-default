@@ -1,28 +1,17 @@
 /* eslint-disable no-unused-vars */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FlatList,
-  ScrollView,
-  Text,
-  TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { useIsFocused, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores, useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
-import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
-import DefaultColumnMenu from './DefaultColumnMenu';
+import DefaultTableBody from './DefaultTableBody';
 import DefaultEditModal from './DefaultEditModal';
-import DefaultFiltersModal from './DefaultFiltersModal';
-import DefaultSearchModal from './DefaultSearchModal';
 import DefaultTableFooter from './DefaultTableFooter';
-import DefaultTableEmptyState from './DefaultTableEmptyState';
-import DefaultTableLoadingOverlay from './DefaultTableLoadingOverlay';
 import DefaultTableToolbar from './DefaultTableToolbar';
 import { setDefaultTableRuntime } from './DefaultTable.runtime';
-import DefaultInput from '../inputs/DefaultInput';
 import useDefaultTableTheme from './useDefaultTableTheme';
 import {
   formatSaveValue,
@@ -38,17 +27,9 @@ import {
 } from '../inputs/defaultInputUtils';
 import {
   ACTIONS_CELL_WIDTH,
-  COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH,
-  COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH,
   DEFAULT_COMPACT_BREAKPOINT,
-  END_REACHED_THRESHOLD,
-  flattenSummaryEntries,
   getColumnMinWidth,
-  getColumnStyle,
   getSortField,
-  getSummaryField,
-  getSummaryOperations,
-  getRowKey,
   isObject,
   isSortableColumn,
   normalizeSortText,
@@ -108,7 +89,6 @@ const DefaultTable = ({
   requestParams = {},
   renderCard = null,
   rowActionsComponent = null,
-  searchProps = null,
   toolbarActions = [],
   showColumnFiltersButton = true,
   showTotalItemsInFooter = true,
@@ -117,11 +97,6 @@ const DefaultTable = ({
   rowStyle = null,
   sort = null,
   storeName = '',
-  summary = null,
-  summaryLabels = null,
-  totalItems = null,
-  totalItemsLabel = null,
-  totalItemsText = null,
   footerComponent = null,
   visibleColumnsPreferenceKey = '',
 }) => {
@@ -146,9 +121,6 @@ const DefaultTable = ({
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
-  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
-  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [listOptionsByColumn, setListOptionsByColumn] = useState({});
   const [savingCell, setSavingCell] = useState(null);
   const [tableContainerWidth, setTableContainerWidth] = useState(0);
@@ -210,7 +182,6 @@ const DefaultTable = ({
   const isFocused = useIsFocused();
   const {showError} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
-  const searchKey = searchProps?.searchKey || 'search';
   const storeActions = store?.actions || {};
   const peopleGetters = peopleStore?.getters || {};
   const currentCompanyId = peopleGetters.currentCompany?.id;
@@ -241,9 +212,8 @@ const DefaultTable = ({
       sanitizeTableFiltersPreference({
         columns: columnsForTable,
         filters: storedFiltersPreference,
-        searchKey,
       }),
-    [columnsForTable, searchKey, storedFiltersPreference],
+    [columnsForTable, storedFiltersPreference],
   );
   const storedFiltersSeedSignature = useMemo(
     () => stableSerialize(storedFiltersSeed),
@@ -294,7 +264,6 @@ const DefaultTable = ({
   const hasCustomRowActions = typeof rowActionsComponent === 'function';
   const resolvedSort = autoMode ? autoSort : sort;
   const resolvedFilters = autoMode ? autoFilters : (filters || {});
-  const resolvedSearchValue = normalizeText(resolvedFilters?.[searchKey]);
   const resolvedGetOptionsForColumn = useCallback(
     column => {
       const explicitOptions = getOptionsForColumn?.(column);
@@ -425,17 +394,6 @@ const DefaultTable = ({
       Object.entries(autoFilters || {}).forEach(([fieldName, value]) => {
         if (!fieldName) return;
 
-        if (fieldName === searchKey) {
-          const normalizedSearch = normalizeText(value).replace(/^#/, '');
-          if (normalizedSearch) {
-            query.search = normalizedSearch;
-            if (searchKey !== 'search') {
-              query[searchKey] = normalizedSearch;
-            }
-          }
-          return;
-        }
-
         const column = columnsForTable.find(item => getColumnKey(item) === fieldName);
 
         if (isDateLikeColumn(column)) {
@@ -468,7 +426,7 @@ const DefaultTable = ({
 
       return query;
     },
-    [autoFilters, autoSort?.direction, autoSort?.field, columnsForTable, pageSizeNumber, requestParamsSeed, searchKey],
+    [autoFilters, autoSort?.direction, autoSort?.field, columnsForTable, pageSizeNumber, requestParamsSeed],
   );
   const autoQuerySignature = useMemo(
     () =>
@@ -476,10 +434,9 @@ const DefaultTable = ({
         filters: autoFilters,
         pageSize: pageSizeNumber,
         requestParams: requestParamsSeed,
-        searchKey,
         sort: autoSort,
       }),
-    [autoFilters, autoSort, pageSizeNumber, requestParamsSeed, searchKey],
+    [autoFilters, autoSort, pageSizeNumber, requestParamsSeed],
   );
 
   const loadAutoPage = useCallback(
@@ -533,11 +490,6 @@ const DefaultTable = ({
         });
     },
     [autoMode, autoQuerySignature, buildRequestQuery, resolvedActions, showError],
-  );
-
-  const availableColumns = useMemo(
-    () => columnsForTable.filter(column => shouldIncludeColumn(column)),
-    [columnsForTable],
   );
 
   useEffect(() => {
@@ -637,7 +589,6 @@ const DefaultTable = ({
       sanitizeTableFiltersPreference({
         columns: columnsForTable,
         filters: nextFilters,
-        searchKey,
       }),
     );
   }, [
@@ -647,7 +598,6 @@ const DefaultTable = ({
     hasStoredFiltersPreference,
     isFiltersControlled,
     onFilterChange,
-    searchKey,
     setStoreFilters,
     storeFiltersSignature,
     storedFiltersSeed,
@@ -756,34 +706,7 @@ const DefaultTable = ({
   const emptyStateLabel = resolvedIsLoading
     ? global.t?.t(storeName, 'label', 'loading')
     : global.t?.t(storeName, 'label', 'empty');
-  const storeTotalItems = store?.getters?.totalItems;
-  const resolvedTotalItems = totalItems !== null && totalItems !== undefined
-    ? totalItems
-    : storeTotalItems;
-  const totalItemsNumber = Number(resolvedTotalItems);
-  const shouldRenderTotalItems =
-    resolvedTotalItems !== null &&
-    resolvedTotalItems !== undefined &&
-    Number.isFinite(totalItemsNumber);
-  const shouldRenderFooterTotalItems =
-    shouldRenderTotalItems &&
-    showTotalItemsInFooter !== false;
-  const shouldRenderCompactToolbarTotalItems =
-    showTotalItemsInCompactToolbar === true &&
-    isCompactView &&
-    shouldRenderTotalItems &&
-    !shouldRenderFooterTotalItems;
-  const shouldCollapseToolbarSearch =
-    Boolean(searchProps) &&
-    ((width > 0 && width <= COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH) ||
-      (tableContainerWidth > 0 &&
-        tableContainerWidth <= COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH));
-  const searchAccessibilityLabel =
-    searchProps?.accessibilityLabel ||
-    searchProps?.placeholder ||
-    global.t?.t(storeName, 'label', 'search') ||
-    global.t?.t(storeName, 'input', searchKey) ||
-    global.t?.t(storeName, 'placeholder', searchKey);
+  const resolvedTotalItems = store?.getters?.totalItems;
   const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
       return buildRequestQuery(autoPageRef.current || 1, false);
@@ -795,82 +718,6 @@ const DefaultTable = ({
       sort: resolvedSort || null,
     };
   }, [autoMode, buildRequestQuery, requestParamsSeed, resolvedFilters, resolvedSort]);
-  const resolvedTotalItemsText =
-    normalizeText(totalItemsText) !== ''
-      ? totalItemsText
-      : shouldRenderTotalItems
-        ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items')}`
-        : '';
-  const storeSummary = store?.getters?.summary;
-  const resolvedSummary = summary !== null && summary !== undefined ? summary : storeSummary;
-  const shouldReadSummary = resolvedSummary !== false && isObject(resolvedSummary);
-  const summaryEntries = useMemo(() => {
-    if (!shouldReadSummary) return [];
-
-    const labels = summaryLabels || {};
-    const usedPaths = new Set();
-    const columnEntries = tableColumns.flatMap(column => {
-      const operations = getSummaryOperations(column);
-      if (!operations.length) return [];
-
-      const columnLabel = formatStoreColumnLabel({
-        columns: columnsForTable,
-        fieldName: getColumnKey(column),
-        fallbackLabel: column?.label || getColumnKey(column),
-        storeName,
-      });
-
-      return operations.map(operation => {
-        const fieldName = getSummaryField(column, operation);
-        const path = [operation, fieldName];
-        const pathKey = path.join('.');
-        const value = resolvedSummary?.[operation]?.[fieldName];
-        if (value === undefined) return null;
-
-        usedPaths.add(pathKey);
-
-        return {
-          key: pathKey,
-          label: labels[pathKey] || (operations.length > 1 ? `${columnLabel} ${operation}` : columnLabel),
-          path,
-          value,
-          column,
-        };
-      }).filter(Boolean);
-    });
-
-    const genericEntries = flattenSummaryEntries({
-      summaryLabels: labels,
-      usedPaths,
-      value: resolvedSummary,
-    });
-
-    return [...columnEntries, ...genericEntries].filter(entry =>
-      entry?.value !== undefined &&
-      entry?.value !== null &&
-      normalizeText(entry.value) !== '',
-    );
-  }, [columnsForTable, resolvedSummary, shouldReadSummary, storeName, summaryLabels, tableColumns]);
-  const shouldRenderFooterBar =
-    (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
-    summaryEntries.length > 0;
-  const footerProps = {
-    columns: columnsForTable,
-    resolvedAccentColor,
-    resolvedTotalItemsText,
-    shouldRenderCompactToolbarTotalItems,
-    shouldRenderFooterTotalItems,
-    storeName,
-    summaryEntries,
-    summaryLabels,
-    tableBorderColor,
-    tableMutedColor,
-    tableSurfaceColor,
-    tableTextColor,
-    toolbarCountBackgroundColor,
-    toolbarCountTextColor,
-  };
-
   const sortedData = useMemo(() => {
     const items = Array.isArray(resolvedData) ? [...resolvedData] : [];
     const sortField = resolvedSort?.field;
@@ -1068,7 +915,6 @@ const DefaultTable = ({
     const persistedFilters = sanitizeTableFiltersPreference({
       columns: columnsForTable,
       filters: resolvedNextFilters,
-      searchKey,
     });
 
     persistTableFiltersPreference(tablePreferenceScope, persistedFilters);
@@ -1085,7 +931,6 @@ const DefaultTable = ({
     autoMode,
     columnsForTable,
     onFilterChange,
-    searchKey,
     setStoreFilters,
     tablePreferenceScope,
   ]);
@@ -1184,42 +1029,41 @@ const DefaultTable = ({
     if (nextWidth > 0) setTableContainerWidth(nextWidth);
   }, []);
 
-  const renderEditableCell = (row, column) => {
-    const fieldName = getColumnKey(column);
-    const cellKey = `${row?.id || row?.['@id']}:${fieldName}`;
-    const isEditing = editingCell === cellKey;
-    const isSaving = savingCell === cellKey;
-    const shouldDelegatePress =
-      typeof onRowPress === 'function' &&
-      !isEditableColumn(column);
-
-    return (
-      <View
-        style={[getColumnStyle(column), isEditing ? styles.editingCell : null]}
-        pointerEvents={shouldDelegatePress ? 'none' : 'auto'}
-      >
-        <DefaultInput
-          accentColor={resolvedAccentColor}
-          column={column}
-          columns={columnsForTable}
-          editing={isEditing}
-          getOptionsForColumn={resolvedGetOptionsForColumn}
-          onBeforeOpen={() => loadListOptionsForColumns([column])}
-          onSearchChange={value => loadListOptionsForColumns([column], value)}
-          onCancelEditing={clearEdit}
-          onSave={value => saveCell(row, column, value)}
-          onStartEditing={() => beginEdit(row, column)}
-          row={row}
-          saving={isSaving}
-          storeName={storeName}
-          variant="cell"
-        />
-      </View>
-    );
-  };
-
   setDefaultTableRuntime(storeName, {
     activeFilterCount,
+    body: {
+      actionsCellWidth,
+      columns: columnsForTable,
+      effectiveViewMode,
+      emptyStateLabel,
+      hasCustomRowActions,
+      hasEditAction,
+      hasRowActions,
+      isLoading: resolvedIsLoading,
+      onEditRow: openEditModal,
+      onEndReached: handleEndReached,
+      onMomentumScrollBegin,
+      onRequestRowPress: typeof onRowPress === 'function' ? requestRowPress : null,
+      onRequestSort: requestSort,
+      onScrollBeginDrag,
+      renderCard,
+      renderValue: (row, column, fallback = '-') =>
+        resolveCellText({ column, columns: columnsForTable, row, storeName }) || fallback,
+      resolvedFilters,
+      resolvedSort,
+      rowActionsComponent,
+      rowStyle,
+      sortedData,
+      tableBorderColor,
+      tableColumns,
+      tableEvenColor,
+      tableHeaderColor,
+      tableLayoutStyle,
+      tableMutedColor,
+      tableOddColor,
+      tableSurfaceColor,
+      tableTextColor,
+    },
     debugFallbackParameters,
     effectiveViewMode,
     editModal: {
@@ -1239,321 +1083,48 @@ const DefaultTable = ({
         ? global.t?.t(storeName, 'button', 'add')
         : global.t?.t(storeName, 'button', 'edit'),
     },
-    columnMenu: {
-      availableColumns,
-      columns: columnsForTable,
-      onClose: () => setIsColumnMenuOpen(false),
+    columns: {
       onToggleColumn: toggleColumn,
-      visible: isColumnMenuOpen,
       visibleColumns,
     },
-    filtersModal: {
-      applyLabel: global.t?.t(storeName, 'button', 'apply'),
-      clearLabel: global.t?.t(storeName, 'button', 'clear'),
-      columns: filterColumns,
-      filters: resolvedFilters,
-      getColumnLabel: column => {
-        const fieldName = getColumnKey(column);
-
-        return formatStoreColumnLabel({
-          columns: columnsForTable,
-          fieldName,
-          fallbackLabel: column?.label || fieldName,
-          storeName,
-        });
-      },
+    filters: {
       getOptionsForColumn: resolvedGetOptionsForColumn,
       loadListOptionsForColumns,
       onChange: updateFilter,
-      onApply: () => setIsFiltersModalOpen(false),
       onClear: () => commitFilters({}),
-      onClose: () => setIsFiltersModalOpen(false),
-      title: global.t?.t(storeName, 'label', 'filters'),
-      visible: isFiltersModalOpen && hasTableFilters,
     },
     footer: {
       columns: columnsForTable,
       footerComponent,
-      footerProps,
-      resolvedTotalItemsText,
-      shouldRenderCompactToolbarTotalItems,
-      shouldRenderFooterBar,
-      shouldRenderFooterTotalItems,
-      summaryEntries,
+      isCompactView,
+      showTotalItemsInCompactToolbar,
+      showTotalItemsInFooter,
+      tableColumns,
+    },
+    input: {
+      columns: columnsForTable,
+      editingCell,
+      getOptionsForColumn: resolvedGetOptionsForColumn,
+      hasRowPress: typeof onRowPress === 'function',
+      loadListOptionsForColumns,
+      onCancelEditing: clearEdit,
+      onSaveCell: saveCell,
+      onStartEditing: beginEdit,
+      savingCell,
     },
     hasTableFilters,
-    isColumnMenuOpen,
-    isFiltersModalOpen,
     onAdd: openAddForm,
-    onOpenFilters: () => setIsFiltersModalOpen(true),
-    searchModal: {
-      onClose: () => setIsSearchModalOpen(false),
-      visible: isSearchModalOpen,
-    },
     toolbar: {
-      onOpenSearchModal: () => setIsSearchModalOpen(true),
-      resolvedTotalItemsText,
-      searchAccessibilityLabel,
-      searchProps,
-      shouldCollapseToolbarSearch,
-      shouldRenderCompactToolbarTotalItems,
+      isCompactView,
+      showTotalItemsInCompactToolbar,
+      showTotalItemsInFooter,
+      tableContainerWidth,
       toolbarActions,
+      width,
     },
-    onToggleColumnMenu: () => setIsColumnMenuOpen(prev => !prev),
     onToggleViewMode: toggleViewMode,
     shouldRenderAddButton,
   });
-
-  const renderFiltersModal = () => {
-    return (
-      <DefaultFiltersModal storeName={storeName} />
-    );
-  };
-
-  const getColumnByField = useCallback(
-    fieldName => columnsForTable.find(column => getColumnKey(column) === fieldName),
-    [columnsForTable],
-  );
-
-  const buildRowHelpers = useCallback(
-    row => {
-      const openEdit = () => openEditModal(row);
-      const openRow = typeof onRowPress === 'function' ? () => requestRowPress(row) : null;
-      const renderValue = (fieldName, fallback = '-') => {
-        const column = getColumnByField(fieldName);
-        if (!column) return fallback;
-        return resolveCellText({ column, columns: columnsForTable, row, storeName });
-      };
-      const renderField = (fieldName, options = {}) => {
-        const column = getColumnByField(fieldName);
-        if (!column) return null;
-
-        const cellKey = `${row?.id || row?.['@id']}:${fieldName}`;
-        const isEditing = editingCell === cellKey;
-        const isSaving = savingCell === cellKey;
-
-        return (
-          <DefaultInput
-            accentColor={options.accentColor || resolvedAccentColor}
-            column={column}
-            columns={columnsForTable}
-            containerStyle={options.containerStyle}
-            displayValue={options.displayValue}
-            editing={isEditing}
-            getOptionsForColumn={resolvedGetOptionsForColumn}
-            inputStyle={options.inputStyle}
-            label={options.label}
-            numberOfLines={options.numberOfLines}
-            onBeforeOpen={() => loadListOptionsForColumns([column])}
-            onSearchChange={value => loadListOptionsForColumns([column], value)}
-            onCancelEditing={clearEdit}
-            onSave={value => saveCell(row, column, value)}
-            onStartEditing={() => beginEdit(row, column)}
-            readTextStyle={options.readTextStyle || options.textStyle}
-            row={row}
-            saving={isSaving}
-            showLabel={options.showLabel}
-            storeName={storeName}
-            variant={options.variant || 'card'}
-          />
-        );
-      };
-
-      return {
-        openEdit,
-        openRow,
-        renderField,
-        renderValue,
-      };
-    },
-    [
-      resolvedAccentColor,
-      beginEdit,
-      clearEdit,
-      columnsForTable,
-      editingCell,
-      getColumnByField,
-      resolvedGetOptionsForColumn,
-      openEditModal,
-      onRowPress,
-      requestRowPress,
-      saveCell,
-      savingCell,
-      storeName,
-    ],
-  );
-
-  const resolveRowStyle = useCallback(
-    (row, index) => {
-      if (typeof rowStyle === 'function') {
-        return rowStyle(row, index);
-      }
-
-      return rowStyle;
-    },
-    [rowStyle],
-  );
-
-  const renderCardItem = (row, index = 0) => {
-    const helpers = buildRowHelpers(row);
-    const rowStyleValue = resolveRowStyle(row, index);
-    const RowActionsComponent = rowActionsComponent;
-    const customRowActions = hasCustomRowActions ? (
-      <RowActionsComponent
-        openEdit={helpers.openEdit}
-        openRow={helpers.openRow}
-        row={row}
-      />
-    ) : null;
-    const editButton = hasEditAction ? (
-      <TouchableOpacity
-        style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-        activeOpacity={0.82}
-        onPress={helpers.openEdit}>
-        <Icon name="edit-2" size={14} color={tableMutedColor} />
-      </TouchableOpacity>
-    ) : null;
-
-    if (typeof renderCard === 'function') {
-      return (
-        <View key={row?.['@id'] || row?.id} style={[styles.cardItem, rowStyleValue]}>
-          {renderCard({
-            item: row,
-            openEdit: helpers.openEdit,
-            openRow: helpers.openRow,
-            renderField: helpers.renderField,
-            renderValue: helpers.renderValue,
-            row,
-          })}
-          {hasRowActions ? (
-            <View style={styles.cardActions}>
-              {customRowActions}
-              {editButton}
-            </View>
-          ) : null}
-        </View>
-      );
-    }
-
-    return (
-      <View
-        key={row?.['@id'] || row?.id}
-        style={[
-          styles.defaultCard,
-          { backgroundColor: tableSurfaceColor, borderColor: tableBorderColor },
-          rowStyleValue,
-        ]}
-      >
-        {tableColumns.map(column => (
-          <View key={getColumnKey(column)} style={styles.defaultCardLine}>
-            <Text style={[styles.defaultCardLabel, { color: tableMutedColor }]}>
-              {formatStoreColumnLabel({
-                columns: columnsForTable,
-                fieldName: getColumnKey(column),
-                fallbackLabel: column?.label || getColumnKey(column),
-                storeName,
-              })}
-            </Text>
-            {helpers.renderField(getColumnKey(column), {
-              readTextStyle: [styles.defaultCardValue, { color: tableTextColor }],
-              numberOfLines: 1,
-            })}
-          </View>
-        ))}
-        {hasRowActions ? (
-          <View style={styles.cardActionGroup}>
-            {customRowActions}
-            {editButton}
-          </View>
-        ) : null}
-      </View>
-    );
-  };
-
-  const renderEmptyState = isTable => {
-    return (
-      <DefaultTableEmptyState
-        emptyStateLabel={emptyStateLabel}
-        isLoading={resolvedIsLoading}
-        isTable={isTable}
-        tableLayoutStyle={tableLayoutStyle}
-        tableMutedColor={tableMutedColor}
-      />
-    );
-  };
-
-  const renderLoadingOverlay = () => {
-    return (
-      <DefaultTableLoadingOverlay
-        isLoading={resolvedIsLoading}
-        itemCount={sortedData.length}
-        tableBorderColor={tableBorderColor}
-        tableSurfaceColor={tableSurfaceColor}
-      />
-    );
-  };
-
-  const renderTableItem = ({ item: row, index }) => {
-    const hasRowPress = typeof onRowPress === 'function';
-    const RowComponent = hasRowPress ? TouchableOpacity : View;
-    const rowStyleValue = resolveRowStyle(row, index);
-    const rowPressProps = hasRowPress
-      ? {
-        activeOpacity: 0.84,
-        onPress: () => requestRowPress(row),
-      }
-      : {};
-    const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;
-    const RowActionsComponent = rowActionsComponent;
-    const customRowActions = hasCustomRowActions ? (
-      <RowActionsComponent
-        openEdit={() => openEditModal(row)}
-        openRow={typeof onRowPress === 'function' ? () => requestRowPress(row) : null}
-        row={row}
-      />
-    ) : null;
-    const editButton = hasEditAction ? (
-      <TouchableOpacity
-        style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
-        activeOpacity={0.82}
-        onPress={() => openEditModal(row)}>
-        <Icon name="edit-2" size={14} color={tableMutedColor} />
-      </TouchableOpacity>
-    ) : null;
-
-    return (
-      <RowComponent
-        key={getRowKey(row)}
-        style={[
-          styles.row,
-          tableLayoutStyle,
-          { backgroundColor: rowBackgroundColor, borderBottomColor: tableBorderColor },
-          rowStyleValue,
-        ]}
-        {...rowPressProps}
-      >
-        {tableColumns.map(column => (
-          <React.Fragment key={getColumnKey(column)}>
-            {renderEditableCell(row, column)}
-          </React.Fragment>
-        ))}
-        {hasRowActions ? (
-          <View
-            style={[
-              styles.cell,
-              styles.actionsCell,
-              { minWidth: actionsCellWidth, width: actionsCellWidth, flexBasis: actionsCellWidth, maxWidth: actionsCellWidth },
-            ]}
-          >
-            <View style={styles.rowActionsGroup}>
-              {customRowActions}
-              {editButton}
-            </View>
-          </View>
-        ) : null}
-      </RowComponent>
-    );
-  };
 
   const renderEditModal = () => {
     return (
@@ -1561,117 +1132,14 @@ const DefaultTable = ({
     );
   };
 
-  const renderColumnMenuModal = () => {
-    return (
-      <DefaultColumnMenu storeName={storeName} />
-    );
-  };
-
-  const renderSearchModal = () => {
-    return (
-      <DefaultSearchModal storeName={storeName} />
-    );
-  };
-
   return (
     <View style={[styles.wrap, { borderColor: panelBorderColor, backgroundColor: panelBackgroundColor }]} onLayout={handleLayout}>
       <DefaultTableToolbar storeName={storeName} />
 
-      {renderSearchModal()}
-      {renderFiltersModal()}
-
-      {effectiveViewMode === 'cards' ? (
-        <FlatList
-          data={sortedData}
-          keyExtractor={getRowKey}
-          renderItem={({ item, index }) => renderCardItem(item, index)}
-          style={styles.cardsScroll}
-          contentContainerStyle={styles.cardsGrid}
-          ListEmptyComponent={renderEmptyState(false)}
-          ListFooterComponent={null}
-          nestedScrollEnabled
-          onMomentumScrollBegin={onMomentumScrollBegin || undefined}
-          onScrollBeginDrag={onScrollBeginDrag || undefined}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={END_REACHED_THRESHOLD}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <ScrollView horizontal style={styles.scroll}>
-          <View style={[styles.content, tableLayoutStyle]}>
-            <View style={[styles.headerRow, tableLayoutStyle, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
-              {tableColumns.map(column => {
-                const fieldName = getColumnKey(column);
-                const label = formatStoreColumnLabel({
-                  columns: columnsForTable,
-                  fieldName,
-                  fallbackLabel: column?.label || fieldName,
-                  storeName,
-                });
-
-                const sortFieldName = getSortField(column);
-
-                return (
-                  <TouchableOpacity
-                    key={fieldName}
-                    style={getColumnStyle(column)}
-                    activeOpacity={isSortableColumn(column) ? 0.8 : 1}
-                    onPress={() => requestSort(column)}
-                  >
-                    <View style={styles.sortableHeader}>
-                      <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
-                      {isSortableColumn(column) && resolvedSort?.field === sortFieldName ? (
-                        <Icon name={resolvedSort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
-                      ) : isSortableColumn(column) ? (
-                        <Icon name="chevrons-up" size={12} color={tableBorderColor} />
-                      ) : null}
-                      {resolvedFilters?.[fieldName] ? <Icon name="filter" size={11} color={tableTextColor} /> : null}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-              {hasRowActions ? (
-                <View
-                  style={[
-                    styles.cell,
-                    styles.actionsCell,
-                    {
-                      minWidth: actionsCellWidth,
-                      width: actionsCellWidth,
-                      flexBasis: actionsCellWidth,
-                      maxWidth: actionsCellWidth,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.headerText, { color: tableTextColor }]}>Acoes</Text>
-                </View>
-              ) : null}
-            </View>
-
-            <FlatList
-              data={sortedData}
-              keyExtractor={getRowKey}
-              renderItem={renderTableItem}
-              style={styles.tableList}
-              contentContainerStyle={styles.tableListContent}
-              ListEmptyComponent={renderEmptyState(true)}
-              ListFooterComponent={null}
-              nestedScrollEnabled
-              onMomentumScrollBegin={onMomentumScrollBegin || undefined}
-              onScrollBeginDrag={onScrollBeginDrag || undefined}
-              onEndReached={handleEndReached}
-              onEndReachedThreshold={END_REACHED_THRESHOLD}
-              showsVerticalScrollIndicator={false}
-            />
-          </View>
-        </ScrollView>
-      )}
-
-      {renderLoadingOverlay()}
+      <DefaultTableBody storeName={storeName} />
 
       <DefaultTableFooter storeName={storeName} />
 
-      {renderColumnMenuModal()}
       {renderEditModal()}
     </View>
   );

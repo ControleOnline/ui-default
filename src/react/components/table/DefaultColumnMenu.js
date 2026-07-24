@@ -1,21 +1,22 @@
 import React from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultColumnMenu = ({ storeName }) => {
+const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
+  const store = useStore(storeName);
   const {
-    availableColumns = [],
-    columns = [],
-    onClose,
     onToggleColumn,
-    visible = false,
     visibleColumns = {},
-  } = getDefaultTableRuntime(storeName).columnMenu || {};
+  } = getDefaultTableRuntime(storeName).columns || {};
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const availableColumns = columns.filter(column => shouldIncludeColumn(column));
   const {
     checkboxBorderColor: resolvedCheckboxBorderColor,
     checkboxSelectedMarkColor: resolvedCheckboxSelectedMarkColor,
@@ -38,7 +39,7 @@ const DefaultColumnMenu = ({ storeName }) => {
         <View style={[styles.modalCard, styles.columnMenuModalCard, { borderColor, backgroundColor }]}>
           <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
             <Text style={[styles.modalTitle, { color: headerTextColor }]} numberOfLines={1}>
-              Colunas
+              {global.t?.t(storeName, 'label', 'columns')}
             </Text>
             <TouchableOpacity
               style={[styles.modalCloseButton, { borderColor, backgroundColor }]}

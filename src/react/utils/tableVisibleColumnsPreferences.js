@@ -151,25 +151,25 @@ export const sanitizeVisibleColumnsPreference = ({
 export const sanitizeTableFiltersPreference = ({
   columns = [],
   filters = null,
-  searchKey = 'search',
 }) => {
   if (!isPlainObject(filters)) {
     return {};
   }
 
-  const allowedFields = new Set(
+  const columnFields = new Set(
     (Array.isArray(columns) ? columns : [])
-      .filter(column => column?.filter !== false && column?.filters !== false)
+      .map(getColumnKey)
+      .filter(Boolean),
+  );
+  const blockedFields = new Set(
+    (Array.isArray(columns) ? columns : [])
+      .filter(column => column?.filter === false || column?.filters === false)
       .map(getColumnKey)
       .filter(Boolean),
   );
 
-  if (searchKey) {
-    allowedFields.add(searchKey);
-  }
-
   return Object.keys(filters).reduce((accumulator, key) => {
-    if (allowedFields.has(key)) {
+    if (!blockedFields.has(key) || !columnFields.has(key)) {
       accumulator[key] = filters[key];
     }
 

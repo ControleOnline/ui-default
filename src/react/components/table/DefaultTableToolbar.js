@@ -1,22 +1,40 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useStore } from '@store';
 import Icon from 'react-native-vector-icons/Feather';
 import DefaultSearch from '../filters/DefaultSearch';
+import DefaultModalButton from './DefaultModalButton';
+import DefaultSearchModal from './DefaultSearchModal';
 import DefaultTableControls from './DefaultTableControls';
 import DefaultToolbarAction from './DefaultToolbarAction';
 import { getDefaultTableRuntime } from './DefaultTable.runtime';
+import {
+  COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH,
+  COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH,
+} from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
+import { normalizeText } from '../inputs/defaultInputUtils';
+
+const hasSearchFilter = store => {
+  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+
+  return columns.some(column =>
+    column?.search === true ||
+    column?.searchable === true ||
+    column?.filter === 'search',
+  );
+};
 
 const DefaultTableToolbar = ({ storeName }) => {
+  const store = useStore(storeName);
   const {
-    onOpenSearchModal,
-    resolvedTotalItemsText = '',
-    searchAccessibilityLabel,
-    searchProps = null,
-    shouldCollapseToolbarSearch = false,
-    shouldRenderCompactToolbarTotalItems = false,
+    isCompactView = false,
+    showTotalItemsInCompactToolbar = false,
+    showTotalItemsInFooter = true,
+    tableContainerWidth = 0,
     toolbarActions = [],
+    width = 0,
   } = getDefaultTableRuntime(storeName).toolbar || {};
   const { tableButtonColors, toolbarColors } = useDefaultTableTheme();
   const {
@@ -30,6 +48,33 @@ const DefaultTableToolbar = ({ storeName }) => {
     borderColor: tableButtonBorderColor,
     iconColor: tableButtonIconColor,
   } = tableButtonColors;
+  const shouldRenderSearch = hasSearchFilter(store);
+  const storeTotalItems = store?.getters?.totalItems;
+  const resolvedTotalItems = storeTotalItems;
+  const totalItemsNumber = Number(resolvedTotalItems);
+  const shouldRenderTotalItems =
+    resolvedTotalItems !== null &&
+    resolvedTotalItems !== undefined &&
+    Number.isFinite(totalItemsNumber);
+  const shouldRenderFooterTotalItems =
+    shouldRenderTotalItems &&
+    showTotalItemsInFooter !== false;
+  const shouldRenderCompactToolbarTotalItems =
+    showTotalItemsInCompactToolbar === true &&
+    isCompactView &&
+    shouldRenderTotalItems &&
+    !shouldRenderFooterTotalItems;
+  const resolvedTotalItemsText =
+    shouldRenderTotalItems
+      ? `${totalItemsNumber} ${global.t?.t(storeName, 'label', 'items')}`
+      : '';
+  const shouldCollapseToolbarSearch =
+    shouldRenderSearch &&
+    ((width > 0 && width <= COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH) ||
+      (tableContainerWidth > 0 &&
+        tableContainerWidth <= COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH));
+  const searchAccessibilityLabel =
+    global.t?.t(storeName, 'label', 'search');
 
   const renderToolbarActions = () =>
     Array.isArray(toolbarActions) && toolbarActions.length > 0 ? (
@@ -63,7 +108,7 @@ const DefaultTableToolbar = ({ storeName }) => {
               {resolvedTotalItemsText}
             </Text>
           </View>
-          {searchProps ? (
+          {shouldRenderSearch ? (
             <DefaultSearch compact storeName={storeName} />
           ) : null}
           {renderToolbarActions()}
@@ -71,22 +116,34 @@ const DefaultTableToolbar = ({ storeName }) => {
       ) : null}
 
       <View style={shouldRenderCompactToolbarTotalItems ? styles.toolbarCompactActions : styles.toolbarLeft}>
-        {!shouldRenderCompactToolbarTotalItems && searchProps && !shouldCollapseToolbarSearch ? (
+        {!shouldRenderCompactToolbarTotalItems && shouldRenderSearch && !shouldCollapseToolbarSearch ? (
           <DefaultSearch compact storeName={storeName} />
         ) : null}
         {!shouldRenderCompactToolbarTotalItems && shouldCollapseToolbarSearch ? (
-          <TouchableOpacity
-            style={[
-              styles.toolbarSearchButton,
-              { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-            ]}
-            accessibilityLabel={searchAccessibilityLabel}
-            accessibilityRole="button"
-            activeOpacity={0.82}
-            onPress={onOpenSearchModal}
+          <DefaultModalButton
+            renderButton={({ open }) => (
+              <TouchableOpacity
+                style={[
+                  styles.toolbarSearchButton,
+                  { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
+                ]}
+                accessibilityLabel={searchAccessibilityLabel}
+                accessibilityRole="button"
+                activeOpacity={0.82}
+                onPress={open}
+              >
+                <Icon name="search" size={14} color={tableButtonIconColor} />
+              </TouchableOpacity>
+            )}
           >
-            <Icon name="search" size={14} color={tableButtonIconColor} />
-          </TouchableOpacity>
+            {({ close, isOpen }) => (
+              <DefaultSearchModal
+                storeName={storeName}
+                visible={isOpen}
+                onClose={close}
+              />
+            )}
+          </DefaultModalButton>
         ) : null}
         <View style={styles.toolbarActionGroup}>
           {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}

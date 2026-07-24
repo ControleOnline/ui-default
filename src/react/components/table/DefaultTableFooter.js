@@ -1,20 +1,28 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text, View } from 'react-native';
+import { useStore } from '@store';
+import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
+import { getColumnKey, normalizeText } from '../inputs/defaultInputUtils';
 import { getDefaultTableRuntime } from './DefaultTable.runtime';
-import { formatSummaryValue } from './DefaultTable.utils';
+import {
+  flattenSummaryEntries,
+  formatSummaryValue,
+  getSummaryField,
+  getSummaryOperations,
+  isObject,
+} from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultTableFooter = ({ storeName }) => {
+  const store = useStore(storeName);
   const {
     columns = [],
     footerComponent = null,
-    footerProps = {},
-    resolvedTotalItemsText = '',
-    shouldRenderCompactToolbarTotalItems = false,
-    shouldRenderFooterBar = false,
-    shouldRenderFooterTotalItems = false,
-    summaryEntries = [],
+    isCompactView = false,
+    showTotalItemsInCompactToolbar = false,
+    showTotalItemsInFooter = true,
+    tableColumns = [],
   } = getDefaultTableRuntime(storeName).footer || {};
   const { themeColors } = useDefaultTableTheme();
   const tableFooterBackgroundColor = themeColors.tableFooterBackground;
@@ -22,8 +30,88 @@ const DefaultTableFooter = ({ storeName }) => {
   const tableFooterTextColor = themeColors.tableFooterText;
   const toolbarCountBackgroundColor = themeColors.badgeBackground;
   const toolbarCountTextColor = themeColors.badgeText;
+  const storeTotalItems = store?.getters?.totalItems;
+  const resolvedTotalItems = storeTotalItems;
+  const totalItemsNumber = Number(resolvedTotalItems);
+  const shouldRenderTotalItems =
+    resolvedTotalItems !== null &&
+    resolvedTotalItems !== undefined &&
+    Number.isFinite(totalItemsNumber);
+  const shouldRenderFooterTotalItems =
+    shouldRenderTotalItems &&
+    showTotalItemsInFooter !== false;
+  const shouldRenderCompactToolbarTotalItems =
+    showTotalItemsInCompactToolbar === true &&
+    isCompactView &&
+    shouldRenderTotalItems &&
+    !shouldRenderFooterTotalItems;
+  const resolvedTotalItemsText =
+    shouldRenderTotalItems
+      ? `${totalItemsNumber} ${global.t?.t(storeName, 'label', 'items')}`
+      : '';
+  const resolvedSummary = store?.getters?.summary;
+  const shouldReadSummary = resolvedSummary !== false && isObject(resolvedSummary);
+  const summaryEntries = useMemo(() => {
+    if (!shouldReadSummary) return [];
+
+    const usedPaths = new Set();
+    const columnEntries = tableColumns.flatMap(column => {
+      const operations = getSummaryOperations(column);
+      if (!operations.length) return [];
+
+      const fieldName = getColumnKey(column);
+      const columnLabel = formatStoreColumnLabel({
+        columns,
+        fieldName,
+        fallbackLabel: column?.label || fieldName,
+        storeName,
+      });
+
+      return operations.map(operation => {
+        const summaryField = getSummaryField(column, operation);
+        const path = [operation, summaryField];
+        const pathKey = path.join('.');
+        const value = resolvedSummary?.[operation]?.[summaryField];
+        if (value === undefined) return null;
+
+        usedPaths.add(pathKey);
+
+        return {
+          key: pathKey,
+            label: operations.length > 1 ? `${columnLabel} ${operation}` : columnLabel,
+          path,
+          value,
+          column,
+        };
+      }).filter(Boolean);
+    });
+
+      const genericEntries = flattenSummaryEntries({
+        summaryLabels: {},
+        usedPaths,
+        value: resolvedSummary,
+      });
+
+    return [...columnEntries, ...genericEntries].filter(entry =>
+      entry?.value !== undefined &&
+      entry?.value !== null &&
+      normalizeText(entry.value) !== '',
+    );
+  }, [columns, resolvedSummary, shouldReadSummary, storeName, tableColumns]);
+  const shouldRenderFooterBar =
+    (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
+    summaryEntries.length > 0;
 
   if (footerComponent) {
+    const footerProps = {
+      columns,
+      resolvedTotalItemsText,
+      shouldRenderCompactToolbarTotalItems,
+      shouldRenderFooterTotalItems,
+      storeName,
+      summaryEntries,
+    };
+
     return React.isValidElement(footerComponent)
       ? footerComponent
       : React.createElement(footerComponent, footerProps);
