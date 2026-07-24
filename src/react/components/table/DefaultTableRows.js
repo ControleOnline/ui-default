@@ -14,6 +14,7 @@ import {
   getRowKey,
   getSortField,
   isSortableColumn,
+  mergeSortedDataWithLiveItems,
   shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
@@ -28,11 +29,10 @@ const DefaultTableRows = ({ storeName }) => {
   const tableColumns = columns.filter(
     column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false,
   );
-  const sortedData = Array.isArray(configs.sortedData)
-    ? configs.sortedData
-    : Array.isArray(store?.getters?.items)
-      ? store.getters.items
-      : [];
+  const sortedData = mergeSortedDataWithLiveItems({
+    liveItems: store?.getters?.items,
+    sortedData: configs.sortedData,
+  });
   const resolvedFilters = store?.getters?.filters || {};
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
   const emptyStateLabel = isLoading

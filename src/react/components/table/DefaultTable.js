@@ -24,7 +24,10 @@ import {
 } from './useDefaultTableSorting';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
-export { resolveColumnListLoadParams } from './DefaultTable.utils';
+export {
+  mergeSortedDataWithLiveItems,
+  resolveColumnListLoadParams,
+} from './DefaultTable.utils';
 
 const publishStoreValue = (store, actionName, value, getterName) => {
   if (typeof store?.actions?.[actionName] === 'function') {

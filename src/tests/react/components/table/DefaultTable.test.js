@@ -115,6 +115,7 @@ jest.mock('@controleonline/ui-common/src/react/components/StateStore', () => pro
 
 const {
   default: DefaultTable,
+  mergeSortedDataWithLiveItems,
   resolveColumnListLoadParams,
 } = require('../../../../react/components/table/DefaultTable');
 const {
@@ -149,6 +150,42 @@ describe('resolveColumnListLoadParams', () => {
       currentCompanyId: 21,
       requestParams: {context: 'receive'},
     })).toEqual({company: 21, context: 'receive'});
+  });
+});
+
+describe('mergeSortedDataWithLiveItems', () => {
+  it('keeps the sorted order and replaces stale rows with live store items', () => {
+    const sortedData = [
+      {
+        '@id': '/invoices/332',
+        id: 332,
+        status: {id: 32, status: 'open'},
+      },
+      {
+        '@id': '/invoices/333',
+        id: 333,
+        status: {id: 33, status: 'paid'},
+      },
+    ];
+    const liveItems = [
+      {
+        id: 333,
+        status: {id: 33, status: 'paid'},
+      },
+      {
+        id: 332,
+        status: {id: 33, status: 'paid'},
+      },
+      {
+        id: 334,
+        status: {id: 33, status: 'paid'},
+      },
+    ];
+
+    const mergedData = mergeSortedDataWithLiveItems({liveItems, sortedData});
+
+    expect(mergedData.map(item => item.id)).toEqual([332, 333]);
+    expect(mergedData[0].status.status).toBe('paid');
   });
 });
 

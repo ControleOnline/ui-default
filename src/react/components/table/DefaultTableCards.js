@@ -5,7 +5,12 @@ import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/util
 import { getColumnKey, resolveCellText } from '../inputs/defaultInputUtils';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
-import { END_REACHED_THRESHOLD, getRowKey, shouldIncludeColumn } from './DefaultTable.utils';
+import {
+  END_REACHED_THRESHOLD,
+  getRowKey,
+  mergeSortedDataWithLiveItems,
+  shouldIncludeColumn,
+} from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
@@ -18,11 +23,10 @@ const DefaultTableCards = ({ storeName }) => {
   const tableColumns = columns.filter(
     column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false,
   );
-  const sortedData = Array.isArray(configs.sortedData)
-    ? configs.sortedData
-    : Array.isArray(store?.getters?.items)
-      ? store.getters.items
-      : [];
+  const sortedData = mergeSortedDataWithLiveItems({
+    liveItems: store?.getters?.items,
+    sortedData: configs.sortedData,
+  });
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading')

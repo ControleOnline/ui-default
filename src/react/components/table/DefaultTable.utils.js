@@ -80,6 +80,51 @@ export const isObject = value =>
 export const getRowKey = (row, index = 0) =>
   String(row?.['@id'] || row?.id || index);
 
+const normalizeRowIdentity = row => {
+  const rawId = row?.['@id'] || row?.id;
+  if (rawId === null || rawId === undefined || rawId === '') {
+    return '';
+  }
+
+  return normalizeText(rawId).replace(/\D+/g, '');
+};
+
+export const mergeSortedDataWithLiveItems = ({ liveItems = [], sortedData = [] }) => {
+  const resolvedSortedData = Array.isArray(sortedData) ? sortedData : [];
+  const resolvedLiveItems = Array.isArray(liveItems) ? liveItems : [];
+
+  if (resolvedLiveItems.length === 0) {
+    return resolvedSortedData;
+  }
+
+  if (resolvedSortedData.length === 0) {
+    return resolvedLiveItems;
+  }
+
+  const liveItemsById = new Map();
+  resolvedLiveItems.forEach(item => {
+    const itemId = normalizeRowIdentity(item);
+    if (itemId) {
+      liveItemsById.set(itemId, item);
+    }
+  });
+
+  if (liveItemsById.size === 0) {
+    return resolvedSortedData;
+  }
+
+  return resolvedSortedData.map(item => {
+    const itemId = normalizeRowIdentity(item);
+    const liveItem = itemId ? liveItemsById.get(itemId) : null;
+
+    if (!liveItem) {
+      return item;
+    }
+
+    return liveItem;
+  });
+};
+
 export const stableSerialize = value => {
   if (value === null || value === undefined) {
     return 'null';
