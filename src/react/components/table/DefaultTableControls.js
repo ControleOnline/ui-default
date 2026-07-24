@@ -70,6 +70,7 @@ const DefaultTableControls = ({ storeName }) => {
       store.getters.configs = nextConfigs;
     }
   };
+  const nextViewMode = effectiveViewMode === 'table' ? 'cards' : 'table';
 
   return (
     <>
@@ -91,13 +92,13 @@ const DefaultTableControls = ({ storeName }) => {
           <Icon
             name="filter"
             size={14}
-            color={tableFiltersVisible ? pressedIconColor : iconColor}
+            color={tableFiltersVisible ? pressedIconColor : textColor}
           />
           {activeFilterCount > 0 ? (
             <Text
               style={[
                 styles.toolbarBadgeText,
-                { color: tableFiltersVisible ? pressedIconColor : iconColor },
+                { color: tableFiltersVisible ? pressedIconColor : textColor },
               ]}
             >
               {activeFilterCount}
@@ -119,13 +120,13 @@ const DefaultTableControls = ({ storeName }) => {
               <Icon
                 name="filter"
                 size={14}
-                color={isOpen ? pressedIconColor : iconColor}
+                color={isOpen ? pressedIconColor : textColor}
               />
               {activeFilterCount > 0 ? (
                 <Text
                   style={[
                     styles.toolbarBadgeText,
-                    { color: isOpen ? pressedIconColor : iconColor },
+                    { color: isOpen ? pressedIconColor : textColor },
                   ]}>
                   {activeFilterCount}
                 </Text>
@@ -143,13 +144,9 @@ const DefaultTableControls = ({ storeName }) => {
         </DefaultModalButton>
       ) : null}
       <TouchableOpacity
-        style={[
-          ...buttonStyle,
-          effectiveViewMode !== 'table' ? pressedStyle : null,
-        ]}
+        style={buttonStyle}
         activeOpacity={0.82}
         onPress={() => {
-          const nextViewMode = effectiveViewMode === 'table' ? 'cards' : 'table';
           const nextConfigs = {
             ...configs,
             effectiveViewMode: nextViewMode,
@@ -161,9 +158,9 @@ const DefaultTableControls = ({ storeName }) => {
         }}
       >
         <Icon
-          name={effectiveViewMode === 'table' ? 'list' : 'grid'}
+          name={nextViewMode === 'cards' ? 'grid' : 'list'}
           size={14}
-          color={effectiveViewMode !== 'table' ? pressedIconColor : iconColor}
+          color={textColor}
         />
       </TouchableOpacity>
       <DefaultModalButton

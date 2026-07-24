@@ -322,7 +322,7 @@ describe('DefaultTable', () => {
 
     const toggleViewButton = tree.root
       .findAllByType('TouchableOpacity')
-      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'grid'));
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'list'));
 
     renderer.act(() => {
       toggleViewButton.props.onPress();
@@ -338,7 +338,7 @@ describe('DefaultTable', () => {
     expect(
       tree.root.findAllByType('ScrollView').some(node => node.props.horizontal === true),
     ).toBe(true);
-    expect(tree.root.findAllByType('icon').map(node => node.props.name)).toContain('list');
+    expect(tree.root.findAllByType('icon').map(node => node.props.name)).toContain('grid');
   });
 
   it('pins identity and action columns on table view', () => {
@@ -396,6 +396,75 @@ describe('DefaultTable', () => {
     expect(scrolledStyles).toEqual(
       expect.arrayContaining([
         expect.objectContaining({transform: [{translateX: 120}]}),
+        expect.objectContaining({transform: [{translateX: -180}]}),
+      ]),
+    );
+  });
+
+  it('keeps only the identity column pinned when row actions are not pinned', () => {
+    mockWindowDimensions = {width: 1200, height: 800};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [
+          {key: 'id', label: 'ID', isIdentity: true},
+          {key: 'name', label: 'Nome'},
+        ],
+        items: [{id: 1, name: 'Pedido'}],
+        visibleColumns: {},
+      },
+    };
+    const rowActionsComponent = () => React.createElement('row-actions');
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          pinRowActions: false,
+          rowActionsComponent,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    const renderedStyles = [
+      ...tree.root.findAllByType('View'),
+      ...tree.root.findAllByType('TouchableOpacity'),
+    ].map(node => flattenStyle(node.props.style));
+
+    expect(renderedStyles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({position: 'sticky', left: 0}),
+      ]),
+    );
+    expect(renderedStyles).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({position: 'sticky', right: 0}),
+      ]),
+    );
+
+    const horizontalScroll = tree.root
+      .findAllByType('ScrollView')
+      .find(node => node.props.horizontal);
+
+    renderer.act(() => {
+      horizontalScroll.props.onLayout({nativeEvent: {layout: {width: 300}}});
+      horizontalScroll.props.onContentSizeChange(600, 200);
+      horizontalScroll.props.onScroll({nativeEvent: {contentOffset: {x: 120}}});
+    });
+
+    const scrolledStyles = [
+      ...tree.root.findAllByType('View'),
+      ...tree.root.findAllByType('TouchableOpacity'),
+    ].map(node => flattenStyle(node.props.style));
+
+    expect(scrolledStyles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({transform: [{translateX: 120}]}),
+      ]),
+    );
+    expect(scrolledStyles).not.toEqual(
+      expect.arrayContaining([
         expect.objectContaining({transform: [{translateX: -180}]}),
       ]),
     );
@@ -513,7 +582,7 @@ describe('DefaultTable', () => {
     const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
 
     expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(0);
-    expect(iconNames).toEqual(expect.arrayContaining(['search', 'filter', 'grid', 'columns']));
+    expect(iconNames).toEqual(expect.arrayContaining(['search', 'filter', 'list', 'columns']));
     expect(
       tree.root.findAllByType('Text').filter(node => node.props.children === '27 registros'),
     ).toHaveLength(1);
@@ -798,6 +867,7 @@ describe('DefaultTable', () => {
 
     renderer.act(() => {
       tree.root.findByProps({name: 'grid'}).parent.props.onPress();
+      tree.update(React.createElement(DefaultTable, props));
     });
 
     expect(tree.root.findAllByType('ScrollView')).toHaveLength(1);
@@ -805,6 +875,7 @@ describe('DefaultTable', () => {
 
     renderer.act(() => {
       tree.root.findByProps({name: 'list'}).parent.props.onPress();
+      tree.update(React.createElement(DefaultTable, props));
     });
 
     expect(tree.root.findAllByType('ScrollView')).toHaveLength(0);

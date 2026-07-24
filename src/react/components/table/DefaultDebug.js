@@ -137,6 +137,7 @@ const DefaultDebug = ({
     pressedBackgroundColor,
     pressedBorderColor,
     pressedIconColor,
+    textColor: buttonTextColor,
   } = tableButtonColors;
 
   return (
@@ -154,7 +155,7 @@ const DefaultDebug = ({
         activeOpacity={0.82}
         onPress={() => setIsOpen(true)}
       >
-        <Icon name="code" size={14} color={isOpen ? pressedIconColor : iconColor} />
+        <Icon name="code" size={14} color={buttonTextColor} />
       </TouchableOpacity>
 
       {isOpen ? (

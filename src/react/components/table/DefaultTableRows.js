@@ -50,6 +50,7 @@ const DefaultTableRows = ({ storeName }) => {
   const hasCustomRowActions = typeof configs.rowActionsComponent === 'function';
   const hasEditAction = typeof configs.onEditRow === 'function';
   const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
+  const shouldPinRowActions = configs.pinRowActions !== false;
   const hasColumnFilters =
     configs.showColumnFiltersButton !== false &&
     configs.tableFiltersVisible === true;
@@ -83,10 +84,13 @@ const DefaultTableRows = ({ storeName }) => {
       : 0;
 
     return {
-      actions: actionsTranslateX !== 0 ? [{ translateX: actionsTranslateX }] : null,
+      actions:
+        shouldPinRowActions && actionsTranslateX !== 0
+          ? [{ translateX: actionsTranslateX }]
+          : null,
       identity: x !== 0 ? [{ translateX: x }] : null,
     };
-  }, [horizontalMetrics]);
+  }, [horizontalMetrics, shouldPinRowActions]);
   const handleHorizontalScroll = event => {
     updateHorizontalMetrics({
       x: Number(event?.nativeEvent?.contentOffset?.x || 0),
@@ -156,7 +160,7 @@ const DefaultTableRows = ({ storeName }) => {
             style={[
               styles.cell,
               styles.actionsCell,
-              styles.pinnedActionsCell,
+              shouldPinRowActions ? styles.pinnedActionsCell : null,
               {
                 minWidth: actionsCellWidth,
                 width: actionsCellWidth,
@@ -245,8 +249,8 @@ const DefaultTableRows = ({ storeName }) => {
                 style={[
                   styles.cell,
                   styles.actionsCell,
-                  styles.stickyActionsCell,
-                  styles.stickyHeaderCell,
+                  shouldPinRowActions ? styles.stickyActionsCell : null,
+                  shouldPinRowActions ? styles.stickyHeaderCell : null,
                   {
                     minWidth: actionsCellWidth,
                     width: actionsCellWidth,
@@ -293,7 +297,7 @@ const DefaultTableRows = ({ storeName }) => {
                   style={[
                     styles.cell,
                     styles.actionsCell,
-                    styles.stickyActionsCell,
+                    shouldPinRowActions ? styles.stickyActionsCell : null,
                     {
                       minWidth: actionsCellWidth,
                       width: actionsCellWidth,

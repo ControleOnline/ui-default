@@ -1,21 +1,15 @@
 import { useMemo } from 'react';
 import { useStore } from '@store';
-import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
-import { colors } from '@controleonline/../../src/styles/colors';
 
 const useDefaultTableTheme = (accentColor = null) => {
   const themeStore = useStore('theme');
-  const baseColors = themeStore?.getters?.colors || {};
+  const themeColors = themeStore.getters.colors;
   const themeTokens = useMemo(
-    () => ({ ...baseColors }),
-    [baseColors],
+    () => ({ ...themeColors }),
+    [themeColors],
   );
-  const palette = useMemo(
-    () => resolveThemePalette(themeTokens, colors) || {},
-    [themeTokens],
-  );
-  const themeColors = palette.colors || baseColors || colors || {};
-  const resolvedAccentColor = accentColor || palette.primary || themeColors.primary || '#0EA5E9';
+  const palette = themeColors;
+  const resolvedAccentColor = accentColor ?? themeColors.primary;
 
   return {
     palette,
