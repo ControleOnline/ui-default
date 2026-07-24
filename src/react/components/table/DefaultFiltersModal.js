@@ -7,6 +7,11 @@ import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import { getColumnKey, normalizeText } from '../inputs/defaultInputUtils';
 import styles from './DefaultTable.styles';
 import { shouldIncludeColumn } from './DefaultTable.utils';
+import {
+  persistTableFiltersPreference,
+  resolveDefaultTablePreferenceScope,
+  sanitizeTableFiltersPreference,
+} from '../../utils/tableVisibleColumnsPreferences';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
@@ -18,6 +23,26 @@ const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
       column?.filters !== false,
   );
   const filters = store?.getters?.filters || {};
+  const configs = store?.getters?.configs || {};
+  const tablePreferenceScope =
+    configs.tablePreferenceScope ||
+    resolveDefaultTablePreferenceScope({ storeName });
+  const applyFilters = nextFilters => {
+    const persistedFilters = sanitizeTableFiltersPreference({
+      columns,
+      filters: nextFilters,
+    });
+
+    persistTableFiltersPreference(tablePreferenceScope, persistedFilters);
+
+    if (typeof store?.actions?.setFilters === 'function') {
+      store.actions.setFilters(nextFilters);
+    } else if (store?.getters) {
+      store.getters.filters = nextFilters;
+    }
+
+    configs.onFilterChange?.(nextFilters);
+  };
   const updateFilter = (fieldName, value) => {
     const nextFilters = { ...(filters || {}) };
     const isEmpty =
@@ -29,7 +54,7 @@ const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
     if (isEmpty) delete nextFilters[fieldName];
     else nextFilters[fieldName] = value;
 
-    store?.actions?.setFilters?.(nextFilters);
+    applyFilters(nextFilters);
   };
   const applyLabel = global.t?.t(storeName, 'button', 'apply');
   const clearLabel = global.t?.t(storeName, 'button', 'clear');
@@ -92,7 +117,7 @@ const DefaultFiltersModal = ({ storeName, visible = false, onClose }) => {
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor }]}
               activeOpacity={0.82}
-              onPress={() => store?.actions?.setFilters?.({})}
+              onPress={() => applyFilters({})}
             >
               <Text style={[styles.secondaryButtonText, { color: textColor }]}>
                 {clearLabel}

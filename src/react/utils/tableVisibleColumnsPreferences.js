@@ -167,9 +167,13 @@ export const sanitizeTableFiltersPreference = ({
       .map(getColumnKey)
       .filter(Boolean),
   );
+  const allowedSpecialFields = new Set(['search']);
 
   return Object.keys(filters).reduce((accumulator, key) => {
-    if (!blockedFields.has(key) || !columnFields.has(key)) {
+    if (
+      allowedSpecialFields.has(key) ||
+      (columnFields.has(key) && !blockedFields.has(key))
+    ) {
       accumulator[key] = filters[key];
     }
 

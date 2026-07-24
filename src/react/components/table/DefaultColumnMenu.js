@@ -4,6 +4,11 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
+import {
+  persistVisibleColumnsPreference,
+  resolveDefaultTablePreferenceScope,
+  sanitizeVisibleColumnsPreference,
+} from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultTable.styles';
 import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
@@ -12,6 +17,10 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
   const store = useStore(storeName);
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const visibleColumns = store?.getters?.visibleColumns || {};
+  const configs = store?.getters?.configs || {};
+  const tablePreferenceScope =
+    configs.tablePreferenceScope ||
+    resolveDefaultTablePreferenceScope({ storeName });
   const availableColumns = columns.filter(column => shouldIncludeColumn(column));
   const {
     checkboxBorderColor: resolvedCheckboxBorderColor,
@@ -55,18 +64,30 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
                 storeName,
               });
               const checked = visibleColumns[fieldName] !== false;
+              const toggleColumn = () => {
+                const nextVisibleColumns = sanitizeVisibleColumnsPreference({
+                  columns,
+                  visibleColumns: {
+                    ...visibleColumns,
+                    [fieldName]: visibleColumns[fieldName] === false,
+                  },
+                });
+
+                persistVisibleColumnsPreference(tablePreferenceScope, nextVisibleColumns);
+
+                if (typeof store?.actions?.setVisibleColumns === 'function') {
+                  store.actions.setVisibleColumns(nextVisibleColumns);
+                } else if (store?.getters) {
+                  store.getters.visibleColumns = nextVisibleColumns;
+                }
+              };
 
               return (
                 <TouchableOpacity
                   key={fieldName}
                   style={styles.columnMenuItem}
                   activeOpacity={0.82}
-                  onPress={() =>
-                    store?.actions?.setVisibleColumns?.({
-                      ...visibleColumns,
-                      [fieldName]: visibleColumns[fieldName] === false,
-                    })
-                  }
+                  onPress={toggleColumn}
                 >
                   <Icon
                     name={checked ? 'check-square' : 'square'}

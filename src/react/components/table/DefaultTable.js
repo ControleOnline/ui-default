@@ -5,7 +5,14 @@ import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import { normalizeText } from '../inputs/defaultInputUtils';
 import { DEFAULT_COMPACT_BREAKPOINT, isObject, stableSerialize } from './DefaultTable.utils';
-import { resolveDefaultTablePreferenceScope } from '../../utils/tableVisibleColumnsPreferences';
+import {
+  resolveDefaultTablePreferenceScope,
+  resolveStoredTableFiltersPreference,
+  resolveStoredTableViewModePreference,
+  resolveStoredVisibleColumnsPreference,
+  sanitizeTableFiltersPreference,
+  sanitizeVisibleColumnsPreference,
+} from '../../utils/tableVisibleColumnsPreferences';
 import DefaultTableBody from './DefaultTableBody';
 import DefaultTableFooter from './DefaultTableFooter';
 import DefaultTableToolbar from './DefaultTableToolbar';
@@ -90,6 +97,10 @@ const DefaultTable = ({
       }),
     [route?.key, route?.name, storeName, visibleColumnsPreferenceKey],
   );
+  const storedViewMode = useMemo(
+    () => resolveStoredTableViewModePreference(tablePreferenceScope, initialViewMode),
+    [initialViewMode, tablePreferenceScope],
+  );
   const resolvedActions = useMemo(
     () => ({
       ...(store?.actions || {}),
@@ -163,8 +174,9 @@ const DefaultTable = ({
   }, [autoMode, buildRequestQuery, currentPage, requestParamsSeed, resolvedSort, storeFilters]);
   const effectiveViewMode =
     isCompactView && forceCardsOnCompact !== false
-      ? (currentConfigs.viewMode || 'cards')
-      : (currentConfigs.viewMode || initialViewMode);
+      ? (currentConfigs.viewMode || storedViewMode || 'cards')
+      : (currentConfigs.viewMode || storedViewMode || initialViewMode);
+  const tableFiltersVisible = Boolean(currentConfigs.tableFiltersVisible);
   const defaultTableConfigs = useMemo(
     () => ({
       add,
@@ -186,6 +198,7 @@ const DefaultTable = ({
       onSaved,
       onScrollBeginDrag,
       renderCard,
+      requestParams: requestParamsSeed,
       requestSort,
       resolvedSort,
       rowActionsComponent,
@@ -195,6 +208,8 @@ const DefaultTable = ({
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
+      tableFiltersVisible,
+      tablePreferenceScope,
       toolbarActions,
       viewMode: effectiveViewMode,
     }),
@@ -218,6 +233,7 @@ const DefaultTable = ({
       onSaved,
       onScrollBeginDrag,
       renderCard,
+      requestParamsSeed,
       requestSort,
       resolvedSort,
       rowActionsComponent,
@@ -227,6 +243,8 @@ const DefaultTable = ({
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
+      tableFiltersVisible,
+      tablePreferenceScope,
       toolbarActions,
     ],
   );
@@ -245,6 +263,8 @@ const DefaultTable = ({
         showRowActions,
         showTotalItemsInCompactToolbar,
         showTotalItemsInFooter,
+        storedViewMode,
+        tableFiltersVisible,
         sortedDataLength: sortedData.length,
         toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
       }),
@@ -261,6 +281,8 @@ const DefaultTable = ({
       showRowActions,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
+      storedViewMode,
+      tableFiltersVisible,
       sortedData.length,
       toolbarActions,
     ],
@@ -285,6 +307,51 @@ const DefaultTable = ({
 
     publishStoreValue(store, 'setItems', data, 'items');
   }, [data, store]);
+
+  useEffect(() => {
+    if (!columnsForTable.length) {
+      return;
+    }
+
+    const storedVisibleColumns = resolveStoredVisibleColumnsPreference(tablePreferenceScope);
+    if (!storedVisibleColumns) {
+      return;
+    }
+
+    const nextVisibleColumns = sanitizeVisibleColumnsPreference({
+      columns: columnsForTable,
+      visibleColumns: storedVisibleColumns,
+    });
+    const currentVisibleColumns = store?.getters?.visibleColumns || {};
+
+    if (stableSerialize(currentVisibleColumns) === stableSerialize(nextVisibleColumns)) {
+      return;
+    }
+
+    publishStoreValue(store, 'setVisibleColumns', nextVisibleColumns, 'visibleColumns');
+  }, [columnsForTable, store, tablePreferenceScope]);
+
+  useEffect(() => {
+    if (!columnsForTable.length || Object.keys(storeFilters).length > 0) {
+      return;
+    }
+
+    const storedFilters = resolveStoredTableFiltersPreference(tablePreferenceScope);
+    if (!storedFilters) {
+      return;
+    }
+
+    const nextFilters = sanitizeTableFiltersPreference({
+      columns: columnsForTable,
+      filters: storedFilters,
+    });
+
+    if (Object.keys(nextFilters).length === 0) {
+      return;
+    }
+
+    publishStoreValue(store, 'setFilters', nextFilters, 'filters');
+  }, [columnsForTable, store, storeFilters, tablePreferenceScope]);
 
   useEffect(() => {
     if (configsSignatureRef.current === defaultTableConfigsSignature) {

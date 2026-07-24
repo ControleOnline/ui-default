@@ -8,22 +8,34 @@ import DefaultFiltersModal from './DefaultFiltersModal';
 import DefaultModalButton from './DefaultModalButton';
 import styles from './DefaultTable.styles';
 import { normalizeText } from '../inputs/defaultInputUtils';
+import {
+  persistTableViewModePreference,
+  resolveDefaultTablePreferenceScope,
+} from '../../utils/tableVisibleColumnsPreferences';
 import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultTableControls = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
-  const effectiveViewMode = configs.viewMode || configs.initialViewMode || 'table';
+  const effectiveViewMode =
+    configs.effectiveViewMode ||
+    configs.viewMode ||
+    configs.initialViewMode ||
+    'table';
+  const tablePreferenceScope =
+    configs.tablePreferenceScope ||
+    resolveDefaultTablePreferenceScope({ storeName });
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const filters = store?.getters?.filters || {};
-  const hasTableFilters = columns.some(
+  const hasFilterableColumns = columns.some(
     column =>
       configs.showColumnFiltersButton !== false &&
       shouldIncludeColumn(column) &&
       column?.filter !== false &&
       column?.filters !== false,
   );
+  const tableFiltersVisible = Boolean(configs.tableFiltersVisible);
   const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
   const addConfig = store?.getters?.add;
   const shouldRenderAddButton =
@@ -48,11 +60,52 @@ const DefaultTableControls = ({ storeName }) => {
     backgroundColor: pressedBackgroundColor,
     borderColor: pressedBorderColor,
   };
+  const updateConfigs = nextConfigs => {
+    if (typeof store?.actions?.setConfigs === 'function') {
+      store.actions.setConfigs(nextConfigs);
+      return;
+    }
+
+    if (store?.getters) {
+      store.getters.configs = nextConfigs;
+    }
+  };
 
   return (
     <>
       <DefaultDebug storeName={storeName} />
-      {hasTableFilters ? (
+      {hasFilterableColumns && effectiveViewMode === 'table' ? (
+        <TouchableOpacity
+          style={[
+            ...buttonStyle,
+            tableFiltersVisible ? pressedStyle : null,
+          ]}
+          activeOpacity={0.82}
+          onPress={() =>
+            updateConfigs({
+              ...configs,
+              tableFiltersVisible: !tableFiltersVisible,
+            })
+          }
+        >
+          <Icon
+            name="filter"
+            size={14}
+            color={tableFiltersVisible ? pressedIconColor : iconColor}
+          />
+          {activeFilterCount > 0 ? (
+            <Text
+              style={[
+                styles.toolbarBadgeText,
+                { color: tableFiltersVisible ? pressedIconColor : iconColor },
+              ]}
+            >
+              {activeFilterCount}
+            </Text>
+          ) : null}
+        </TouchableOpacity>
+      ) : null}
+      {hasFilterableColumns && effectiveViewMode === 'cards' ? (
         <DefaultModalButton
           renderButton={({ isOpen, open }) => (
             <TouchableOpacity
@@ -96,19 +149,15 @@ const DefaultTableControls = ({ storeName }) => {
         ]}
         activeOpacity={0.82}
         onPress={() => {
+          const nextViewMode = effectiveViewMode === 'table' ? 'cards' : 'table';
           const nextConfigs = {
             ...configs,
-            viewMode: effectiveViewMode === 'table' ? 'cards' : 'table',
+            effectiveViewMode: nextViewMode,
+            viewMode: nextViewMode,
           };
 
-          if (typeof store?.actions?.setConfigs === 'function') {
-            store.actions.setConfigs(nextConfigs);
-            return;
-          }
-
-          if (store?.getters) {
-            store.getters.configs = nextConfigs;
-          }
+          persistTableViewModePreference(tablePreferenceScope, nextConfigs.viewMode);
+          updateConfigs(nextConfigs);
         }}
       >
         <Icon

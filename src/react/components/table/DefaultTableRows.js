@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
+import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
 import DefaultTableLoadingOverlay from './DefaultTableLoadingOverlay';
@@ -49,6 +50,9 @@ const DefaultTableRows = ({ storeName }) => {
   const hasCustomRowActions = typeof configs.rowActionsComponent === 'function';
   const hasEditAction = typeof configs.onEditRow === 'function';
   const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
+  const hasColumnFilters =
+    configs.showColumnFiltersButton !== false &&
+    configs.tableFiltersVisible === true;
   const actionsCellWidth = hasRowActions ? 96 : 0;
 
   const renderTableItem = ({ item: row, index }) => {
@@ -168,6 +172,40 @@ const DefaultTableRows = ({ storeName }) => {
               </View>
             ) : null}
           </View>
+          {hasColumnFilters ? (
+            <View style={[styles.filterRow, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
+              {tableColumns.map(column => {
+                const fieldName = getColumnKey(column);
+
+                return (
+                  <View key={`${fieldName}-filter`} style={getColumnStyle(column)}>
+                    {column?.filter !== false && column?.filters !== false ? (
+                      <DefaultColumnFilter
+                        column={column}
+                        filters={resolvedFilters}
+                        storeName={storeName}
+                        style={styles.filterCell}
+                      />
+                    ) : null}
+                  </View>
+                );
+              })}
+              {hasRowActions ? (
+                <View
+                  style={[
+                    styles.cell,
+                    styles.actionsCell,
+                    {
+                      minWidth: actionsCellWidth,
+                      width: actionsCellWidth,
+                      flexBasis: actionsCellWidth,
+                      maxWidth: actionsCellWidth,
+                    },
+                  ]}
+                />
+              ) : null}
+            </View>
+          ) : null}
 
           <FlatList
             data={sortedData}

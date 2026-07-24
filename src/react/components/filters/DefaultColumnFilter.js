@@ -1,15 +1,29 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { TextInput, View } from 'react-native';
+import { getAllStores, useStore } from '@store';
 import {
   buildOptionsFromColumn,
   getColumnKey,
   isDateLikeColumn,
+  mapOptions,
   normalizeOptionKey,
   normalizeText,
+  resolveStoreNameFromList,
 } from '../inputs/defaultInputUtils';
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
+import {
+  normalizeCollectionItems,
+  resolveColumnListLoadParams,
+  resolveListActionName,
+  stableSerialize,
+} from '../table/DefaultTable.utils';
+import {
+  persistTableFiltersPreference,
+  resolveDefaultTablePreferenceScope,
+  sanitizeTableFiltersPreference,
+} from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultColumnFilter.styles';
 
 const DefaultColumnFilter = ({
@@ -23,7 +37,118 @@ const DefaultColumnFilter = ({
   storeName = '',
   style = null,
 }) => {
+  const store = useStore(storeName);
+  const peopleStore = useStore('people');
+  const configs = store?.getters?.configs || {};
+  const [loadedItems, setLoadedItems] = useState([]);
+  const [loadedKey, setLoadedKey] = useState('');
   const fieldName = getColumnKey(column);
+  const currentCompanyId = peopleStore?.getters?.currentCompany?.id;
+  const requestChange = useCallback(
+    (nextFieldName, value) => {
+      if (typeof onChange === 'function') {
+        onChange(nextFieldName, value);
+        return;
+      }
+
+      const currentFilters = store?.getters?.filters || {};
+      const nextFilters = { ...(currentFilters || {}) };
+      const isEmpty =
+        value === null ||
+        value === undefined ||
+        normalizeText(value) === '' ||
+        (Array.isArray(value) && value.length === 0);
+
+      if (isEmpty) delete nextFilters[nextFieldName];
+      else nextFilters[nextFieldName] = value;
+
+      const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+      const tablePreferenceScope =
+        configs.tablePreferenceScope ||
+        resolveDefaultTablePreferenceScope({ storeName });
+      const persistedFilters = sanitizeTableFiltersPreference({
+        columns,
+        filters: nextFilters,
+      });
+
+      persistTableFiltersPreference(tablePreferenceScope, persistedFilters);
+
+      if (typeof store?.actions?.setFilters === 'function') {
+        store.actions.setFilters(nextFilters);
+      } else if (store?.getters) {
+        store.getters.filters = nextFilters;
+      }
+
+      configs.onFilterChange?.(nextFilters);
+    },
+    [configs, onChange, store, storeName],
+  );
+  const resolveOptions = useCallback(
+    targetColumn => {
+      const configOptions = configs.getOptionsForColumn?.(targetColumn);
+      const propOptions = getOptionsForColumn?.(targetColumn);
+
+      if (Array.isArray(configOptions)) return configOptions;
+      if (Array.isArray(propOptions)) return propOptions;
+      if (targetColumn === column && loadedItems.length > 0) return loadedItems;
+
+      return undefined;
+    },
+    [column, configs, getOptionsForColumn, loadedItems],
+  );
+  const loadListOptions = useCallback(
+    (searchValue = '') => {
+      const listStoreName = resolveStoreNameFromList(column?.list);
+      const actionName = resolveListActionName(column?.list);
+      const listStore = getAllStores?.()?.[listStoreName];
+      const listAction = listStore?.actions?.[actionName];
+
+      if (!listStoreName || typeof listAction !== 'function') {
+        return Promise.resolve([]);
+      }
+
+      const listLoadParams = resolveColumnListLoadParams({
+        column,
+        currentCompanyId,
+        requestParams: configs.requestParams || {},
+        searchValue,
+      });
+      const nextLoadedKey = stableSerialize({
+        actionName,
+        listLoadParams,
+        listStoreName,
+      });
+
+      if (!normalizeText(searchValue) && loadedKey === nextLoadedKey && loadedItems.length > 0) {
+        return Promise.resolve(loadedItems);
+      }
+
+      return Promise.resolve(
+        listAction({
+          ...listLoadParams,
+          __storeMeta: {
+            dedupeKey: `default-column-filter-list:${fieldName}:${nextLoadedKey}`,
+            skipSystemError: true,
+          },
+        }),
+      )
+        .then(response => {
+          const items = normalizeCollectionItems(response);
+          setLoadedItems(items);
+          setLoadedKey(nextLoadedKey);
+          return items;
+        })
+        .catch(() => []);
+    },
+    [
+      column,
+      configs.requestParams,
+      currentCompanyId,
+      fieldName,
+      loadedItems,
+      loadedKey,
+    ],
+  );
 
   if (column?.filter === false || column?.filters === false) {
     return <View style={style} />;
@@ -41,12 +166,12 @@ const DefaultColumnFilter = ({
           value={filterValue.shortcut || 'all'}
           customRange={filterValue.customRange || { from: '', to: '' }}
           onChange={optionKey =>
-            onChange?.(
+            requestChange(
               fieldName,
               resolveNextDateFilterValue(filterValue, optionKey),
             )
           }
-          onCustomRangeChange={range => onChange?.(fieldName, {
+          onCustomRangeChange={range => requestChange(fieldName, {
             ...(filterValue || {}),
             shortcut: 'custom',
             customRange: range,
@@ -57,7 +182,9 @@ const DefaultColumnFilter = ({
   }
 
   if (column?.list) {
-    const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn, storeName);
+    const rawOptions = loadedItems.length > 0
+      ? mapOptions(column, loadedItems, storeName)
+      : buildOptionsFromColumn(column, resolveOptions, storeName);
     const options = [
       { key: '', label: global.t?.t(storeName, 'label', 'select') },
       ...rawOptions,
@@ -72,8 +199,8 @@ const DefaultColumnFilter = ({
           store={storeName}
           field={fieldName}
           icon="filter"
-          onBeforeOpen={onBeforeOpen}
-          onSearchChange={onSearchChange}
+          onBeforeOpen={onBeforeOpen || (() => loadListOptions())}
+          onSearchChange={onSearchChange || (value => loadListOptions(value))}
           accentColor={accentColor}
           active={Boolean(selectedKey)}
           label={selected?.label || options[0]?.label || ''}
@@ -81,7 +208,7 @@ const DefaultColumnFilter = ({
           searchable
           selectedKey={selectedKey}
           onSelect={optionKey => {
-            onChange?.(fieldName, optionKey);
+            requestChange(fieldName, optionKey);
             return true;
           }}
         />
@@ -95,7 +222,7 @@ const DefaultColumnFilter = ({
         style={styles.filterInput}
         value={normalizeText(filters?.[fieldName])}
         placeholder={global.t?.t(storeName, 'input', column?.label || fieldName)}
-        onChangeText={value => onChange?.(fieldName, value)}
+        onChangeText={value => requestChange(fieldName, value)}
       />
     </View>
   );
