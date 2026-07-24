@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   getSortField,
   isSortableColumn,
@@ -38,11 +38,14 @@ export const useDefaultTableSortState = ({
     [storedSortSeed],
   );
   const [autoSort, setAutoSort] = useState(() => storedSortSeed);
+  const appliedSortSeedSignatureRef = useRef(storedSortSeedSignature);
   const resolvedSort = autoMode ? autoSort : sort;
 
   useEffect(() => {
     if (!autoMode) return;
+    if (appliedSortSeedSignatureRef.current === storedSortSeedSignature) return;
 
+    appliedSortSeedSignatureRef.current = storedSortSeedSignature;
     setAutoSort(prev =>
       stableSerialize(prev) === storedSortSeedSignature
         ? prev

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { useIsFocused, useRoute } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import { normalizeText } from '../inputs/defaultInputUtils';
-import { DEFAULT_COMPACT_BREAKPOINT, isObject } from './DefaultTable.utils';
+import { DEFAULT_COMPACT_BREAKPOINT, isObject, stableSerialize } from './DefaultTable.utils';
 import { resolveDefaultTablePreferenceScope } from '../../utils/tableVisibleColumnsPreferences';
 import DefaultTableBody from './DefaultTableBody';
 import DefaultTableFooter from './DefaultTableFooter';
@@ -25,6 +25,12 @@ const publishStoreValue = (store, actionName, value, getterName) => {
     return;
   }
 
+  if (store?.getters) {
+    store.getters[getterName] = value;
+  }
+};
+
+const assignGetterValue = (store, getterName, value) => {
   if (store?.getters) {
     store.getters[getterName] = value;
   }
@@ -72,6 +78,7 @@ const DefaultTable = ({
   const route = useRoute?.();
   const store = useStore(storeName);
   const isFocused = useIsFocused();
+  const configsSignatureRef = useRef('');
   const { showError } = useMessage() || {};
   const { themeColors } = useDefaultTableTheme(accentColor);
   const tablePreferenceScope = useMemo(
@@ -100,11 +107,11 @@ const DefaultTable = ({
   const isCompactView = width > 0 && width <= compactBreakpoint;
 
   if (storeColumns.length === 0 && Array.isArray(columns) && columns.length > 0) {
-    publishStoreValue(store, 'setColumns', columns, 'columns');
+    assignGetterValue(store, 'columns', columns);
   }
 
   if (data !== undefined && Array.isArray(data)) {
-    publishStoreValue(store, 'setItems', data, 'items');
+    assignGetterValue(store, 'items', data);
   }
 
   const { requestSort, resolvedSort } = useDefaultTableSortState({
@@ -223,14 +230,70 @@ const DefaultTable = ({
       toolbarActions,
     ],
   );
+  const defaultTableConfigsSignature = useMemo(
+    () =>
+      stableSerialize({
+        add,
+        compactBreakpoint,
+        debugFallbackParameters,
+        effectiveViewMode,
+        filters,
+        forceCardsOnCompact,
+        initialViewMode,
+        resolvedSort,
+        showColumnFiltersButton,
+        showRowActions,
+        showTotalItemsInCompactToolbar,
+        showTotalItemsInFooter,
+        sortedDataLength: sortedData.length,
+        toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
+      }),
+    [
+      add,
+      compactBreakpoint,
+      debugFallbackParameters,
+      effectiveViewMode,
+      filters,
+      forceCardsOnCompact,
+      initialViewMode,
+      resolvedSort,
+      showColumnFiltersButton,
+      showRowActions,
+      showTotalItemsInCompactToolbar,
+      showTotalItemsInFooter,
+      sortedData.length,
+      toolbarActions,
+    ],
+  );
 
   if (store?.getters) {
-    store.getters.configs = defaultTableConfigs;
+    assignGetterValue(store, 'configs', defaultTableConfigs);
   }
 
   useEffect(() => {
+    if (storeColumns.length > 0 || !Array.isArray(columns) || columns.length === 0) {
+      return;
+    }
+
+    publishStoreValue(store, 'setColumns', columns, 'columns');
+  }, [columns, store, storeColumns.length]);
+
+  useEffect(() => {
+    if (data === undefined || !Array.isArray(data)) {
+      return;
+    }
+
+    publishStoreValue(store, 'setItems', data, 'items');
+  }, [data, store]);
+
+  useEffect(() => {
+    if (configsSignatureRef.current === defaultTableConfigsSignature) {
+      return;
+    }
+
+    configsSignatureRef.current = defaultTableConfigsSignature;
     publishStoreValue(store, 'setConfigs', defaultTableConfigs, 'configs');
-  }, [defaultTableConfigs, store]);
+  }, [defaultTableConfigs, defaultTableConfigsSignature, store]);
 
   useEffect(() => {
     onDataLoaded?.(sortedData);
