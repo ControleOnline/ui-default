@@ -3,13 +3,16 @@ import { Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { normalizeText } from '../inputs/defaultInputUtils';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultToolbarAction = ({
-  action,
-  tableActionBackgroundColor,
-  tableActionBorderColor,
-  tableActionTextColor,
-}) => {
+const DefaultToolbarAction = ({ action }) => {
+  const { tableActionColors } = useDefaultTableTheme();
+  const {
+    backgroundColor: tableActionBackgroundColor,
+    borderColor: tableActionBorderColor,
+    textColor: tableActionTextColor,
+  } = tableActionColors;
+
   if (!action || action.hidden) return null;
 
   const hasLabel = normalizeText(action.label) !== '';

@@ -19,8 +19,11 @@ const DefaultSearch = ({
   style = null,
   value,
 }) => {
+  const store = useStore(storeName);
   const themeStore = useStore('theme');
   const themeColors = themeStore.getters.colors;
+  const resolvedFilters = filters || store?.getters?.filters || {};
+  const resolvedChangeFilters = onChangeFilters || store?.actions?.setFilters || null;
   const palette = useMemo(
     () => ({
       buttonBackgroundSecondary: themeColors.buttonBackgroundSecondary,
@@ -36,8 +39,8 @@ const DefaultSearch = ({
     [themeColors],
   );
   const resolvedValue = useMemo(
-    () => normalizeText(value ?? filters?.[searchKey]),
-    [filters, searchKey, value],
+    () => normalizeText(value ?? resolvedFilters?.[searchKey]),
+    [resolvedFilters, searchKey, value],
   );
   const [draftValue, setDraftValue] = useState(resolvedValue);
 
@@ -48,11 +51,11 @@ const DefaultSearch = ({
   const commitSearch = nextValue => {
     const searchValue = normalizeText(nextValue ?? draftValue);
 
-    if (typeof onChangeFilters === 'function') {
-      const nextFilters = { ...(filters || {}) };
+    if (typeof resolvedChangeFilters === 'function') {
+      const nextFilters = { ...(resolvedFilters || {}) };
       if (searchValue) nextFilters[searchKey] = searchValue;
       else delete nextFilters[searchKey];
-      onChangeFilters(nextFilters);
+      resolvedChangeFilters(nextFilters);
     }
 
     onSearch?.(searchValue);
@@ -61,10 +64,10 @@ const DefaultSearch = ({
   const clearSearch = () => {
     setDraftValue('');
 
-    if (typeof onChangeFilters === 'function') {
-      const nextFilters = { ...(filters || {}) };
+    if (typeof resolvedChangeFilters === 'function') {
+      const nextFilters = { ...(resolvedFilters || {}) };
       delete nextFilters[searchKey];
-      onChangeFilters(nextFilters);
+      resolvedChangeFilters(nextFilters);
     }
 
     onClear?.();
@@ -74,8 +77,7 @@ const DefaultSearch = ({
   const resolvedPlaceholder =
     placeholder ||
     global.t?.t(storeName, 'input', searchKey) ||
-    global.t?.t(storeName, 'placeholder', searchKey) ||
-    'Buscar...';
+    global.t?.t(storeName, 'placeholder', searchKey);
 
   return (
     <View

@@ -3,24 +3,23 @@ import { Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import DefaultDebug from './DefaultDebug';
 import styles from './DefaultTable.styles';
+import { getDefaultTableRuntime } from './DefaultTable.runtime';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultTableControls = ({
-  activeFilterCount,
-  debugFallbackParameters,
-  effectiveViewMode,
-  hasTableFilters,
-  isColumnMenuOpen,
-  isFiltersModalOpen,
-  modalColors,
-  onAdd,
-  onOpenFilters,
-  onToggleColumnMenu,
-  onToggleViewMode,
-  resolvedAccentColor,
-  shouldRenderAddButton,
-  storeName,
-  tableButtonColors,
-}) => {
+const DefaultTableControls = ({ storeName }) => {
+  const {
+    activeFilterCount = 0,
+    effectiveViewMode = 'table',
+    hasTableFilters = false,
+    isColumnMenuOpen = false,
+    isFiltersModalOpen = false,
+    onAdd,
+    onOpenFilters,
+    onToggleColumnMenu,
+    onToggleViewMode,
+    shouldRenderAddButton = false,
+  } = getDefaultTableRuntime(storeName);
+  const { tableButtonColors } = useDefaultTableTheme();
   const {
     backgroundColor,
     borderColor,
@@ -42,13 +41,7 @@ const DefaultTableControls = ({
 
   return (
     <>
-      <DefaultDebug
-        fallbackParameters={debugFallbackParameters}
-        modalColors={modalColors}
-        resolvedAccentColor={resolvedAccentColor}
-        storeName={storeName}
-        tableButtonColors={tableButtonColors}
-      />
+      <DefaultDebug storeName={storeName} />
       {hasTableFilters ? (
         <TouchableOpacity
           style={[

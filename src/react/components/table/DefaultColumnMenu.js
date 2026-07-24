@@ -3,20 +3,24 @@ import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
+import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultColumnMenu = ({
-  availableColumns,
-  checkboxBorderColor,
-  checkboxSelectedMarkColor,
-  columns,
-  modalColors,
-  onClose,
-  onToggleColumn,
-  storeName,
-  visible,
-  visibleColumns,
-}) => {
+const DefaultColumnMenu = ({ storeName }) => {
+  const {
+    availableColumns = [],
+    columns = [],
+    onClose,
+    onToggleColumn,
+    visible = false,
+    visibleColumns = {},
+  } = getDefaultTableRuntime(storeName).columnMenu || {};
+  const {
+    checkboxBorderColor: resolvedCheckboxBorderColor,
+    checkboxSelectedMarkColor: resolvedCheckboxSelectedMarkColor,
+    modalColors,
+  } = useDefaultTableTheme();
   if (!visible) return null;
 
   const {
@@ -65,7 +69,7 @@ const DefaultColumnMenu = ({
                   <Icon
                     name={checked ? 'check-square' : 'square'}
                     size={16}
-                    color={checked ? checkboxSelectedMarkColor : checkboxBorderColor}
+                    color={checked ? resolvedCheckboxSelectedMarkColor : resolvedCheckboxBorderColor}
                   />
                   <Text style={[styles.columnMenuText, { color: textColor }]} numberOfLines={1}>{label}</Text>
                 </TouchableOpacity>

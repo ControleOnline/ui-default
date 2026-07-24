@@ -157,6 +157,22 @@ describe('DefaultTable', () => {
     mockCapturedColumnFilterProps = [];
     mockCapturedDefaultInputProps = [];
     global.localStorage = createLocalStorageMock();
+    global.t = {
+      t: jest.fn((store, type, key) => {
+        if (type === 'label' && key === 'search') return 'Buscar';
+        if (type === 'label' && key === 'items') return 'registros';
+        if (type === 'label' && key === 'loading') return 'Carregando...';
+        if (type === 'label' && key === 'empty') return 'Nenhum registro encontrado';
+        if (type === 'label' && key === 'filters') return 'Filtros';
+        if (type === 'label' && key === 'select') return 'Selecionar';
+        if (type === 'button' && key === 'add') return 'Adicionar';
+        if (type === 'button' && key === 'edit') return 'Editar';
+        if (type === 'button' && key === 'apply') return 'Aplicar';
+        if (type === 'button' && key === 'clear') return 'Limpar';
+        if (type === 'input' && key === 'search') return 'Buscar...';
+        return undefined;
+      }),
+    };
     reactNavigation.useIsFocused.mockImplementation(() => false);
 
     mockStores = {
@@ -178,6 +194,7 @@ describe('DefaultTable', () => {
   });
 
   afterEach(() => {
+    delete global.t;
     if (consoleErrorSpy) {
       consoleErrorSpy.mockRestore();
       consoleErrorSpy = null;
@@ -355,10 +372,17 @@ describe('DefaultTable', () => {
       );
     });
 
+    const filterButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'filter'));
+
+    renderer.act(() => filterButton.props.onPress());
+
+    const statusFilterProps = mockCapturedColumnFilterProps
+      .find(props => props.column.key === 'status');
+
     renderer.act(() => {
-      tree.root.findByType('DefaultSearch').props.onChangeFilters({
-        search: '72813',
-      });
+      statusFilterProps.onChange('status', 'paid');
     });
 
     const statusHeader = tree.root
@@ -369,7 +393,7 @@ describe('DefaultTable', () => {
       statusHeader.props.onPress();
     });
 
-    expect(setFilters).toHaveBeenCalledWith({search: '72813'});
+    expect(setFilters).toHaveBeenCalledWith({status: 'paid'});
     expect(
       JSON.parse(
         global.localStorage.getItem(DEFAULT_TABLE_PREFERENCES_STORAGE_KEY),
@@ -378,7 +402,7 @@ describe('DefaultTable', () => {
       orders: {
         OrderHistoryPage: {
           filters: {
-            search: '72813',
+            status: 'paid',
           },
           sort: {
             direction: 'asc',

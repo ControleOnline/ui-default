@@ -2,23 +2,24 @@ import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import DefaultForm from '../form/DefaultForm';
+import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultEditModal = ({
-  accentColor,
-  actions,
-  columns,
-  editingRow,
-  formMode,
-  getOptionsForColumn,
-  modalColors,
-  onBeforeOpen,
-  onClose,
-  onSearchChange,
-  onSaved,
-  storeName,
-  title,
-}) => {
+const DefaultEditModal = ({ storeName }) => {
+  const {
+    actions,
+    columns = [],
+    editingRow = null,
+    formMode = 'edit',
+    getOptionsForColumn,
+    onBeforeOpen,
+    onClose,
+    onSearchChange,
+    onSaved,
+    title,
+  } = getDefaultTableRuntime(storeName).editModal || {};
+  const { modalColors, resolvedAccentColor } = useDefaultTableTheme();
   if (!editingRow) return null;
 
   const {
@@ -45,7 +46,7 @@ const DefaultEditModal = ({
             </TouchableOpacity>
           </View>
           <DefaultForm
-            accentColor={accentColor}
+            accentColor={resolvedAccentColor}
             actions={actions}
             columns={columns}
             getOptionsForColumn={getOptionsForColumn}

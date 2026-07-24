@@ -59,7 +59,7 @@ const DefaultColumnFilter = ({
   if (column?.list) {
     const rawOptions = buildOptionsFromColumn(column, getOptionsForColumn, storeName);
     const options = [
-      { key: '', label: global.t?.t(storeName, 'label', 'select') || 'Selecionar' },
+      { key: '', label: global.t?.t(storeName, 'label', 'select') },
       ...rawOptions,
     ];
     const selectedKey = normalizeOptionKey(filters?.[fieldName]);

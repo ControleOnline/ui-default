@@ -1,23 +1,29 @@
 import React from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import { getColumnKey } from '../inputs/defaultInputUtils';
+import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultFiltersModal = ({
-  applyLabel,
-  clearLabel,
-  columns,
-  getColumnLabel,
-  modalColors,
-  onApply,
-  onClear,
-  onClose,
-  renderColumnFilter,
-  resolvedAccentColor,
-  title,
-  visible,
-}) => {
+const DefaultFiltersModal = ({ storeName }) => {
+  const {
+    applyLabel,
+    clearLabel,
+    columns = [],
+    filters = {},
+    getColumnLabel,
+    getOptionsForColumn,
+    loadListOptionsForColumns,
+    onChange,
+    onApply,
+    onClear,
+    onClose,
+    title,
+    visible = false,
+  } = getDefaultTableRuntime(storeName).filtersModal || {};
+  const { modalColors, resolvedAccentColor } = useDefaultTableTheme();
   if (!visible) return null;
 
   const {
@@ -54,7 +60,16 @@ const DefaultFiltersModal = ({
                   <Text style={[styles.formLabel, { color: textColor }]} numberOfLines={1}>
                     {getColumnLabel ? getColumnLabel(column) : column?.label || fieldName}
                   </Text>
-                  {renderColumnFilter(column, styles.filtersModalInput)}
+                  <DefaultColumnFilter
+                    column={column}
+                    filters={filters}
+                    getOptionsForColumn={getOptionsForColumn}
+                    onBeforeOpen={column?.list ? () => loadListOptionsForColumns?.([column]) : null}
+                    onChange={onChange}
+                    onSearchChange={column?.list ? value => loadListOptionsForColumns?.([column], value) : null}
+                    storeName={storeName}
+                    style={styles.filtersModalInput}
+                  />
                 </View>
               );
             })}

@@ -4,7 +4,9 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import { normalizeText } from '../inputs/defaultInputUtils';
+import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
 const isObject = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -64,15 +66,13 @@ const DebugSection = ({ borderColor, children, copyText, onCopy, textColor, titl
 );
 
 const DefaultDebug = ({
-  fallbackParameters = null,
-  modalColors,
-  resolvedAccentColor,
   storeName,
-  tableButtonColors,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const store = useStore(storeName);
   const { showError, showSuccess } = useMessage();
+  const { modalColors, resolvedAccentColor, tableButtonColors } = useDefaultTableTheme();
+  const { debugFallbackParameters: fallbackParameters = null } = getDefaultTableRuntime(storeName);
 
   const resolvedDebug = isObject(store?.getters?.debug) ? store.getters.debug : {};
   const debugQuery = normalizeText(resolvedDebug?.query);

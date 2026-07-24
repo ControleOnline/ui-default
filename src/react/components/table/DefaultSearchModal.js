@@ -2,22 +2,17 @@ import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import DefaultSearch from '../filters/DefaultSearch';
+import { getDefaultTableRuntime } from './DefaultTable.runtime';
 import styles from './DefaultTable.styles';
+import useDefaultTableTheme from './useDefaultTableTheme';
 
-const DefaultSearchModal = ({
-  accentColor,
-  filters,
-  modalColors,
-  onChangeFilters,
-  onClose,
-  onSearch,
-  searchProps,
-  storeName,
-  title,
-  value,
-  visible,
-}) => {
-  if (!visible || !searchProps) return null;
+const DefaultSearchModal = ({ storeName }) => {
+  const {
+    onClose,
+    visible = false,
+  } = getDefaultTableRuntime(storeName).searchModal || {};
+  const { modalColors } = useDefaultTableTheme();
+  if (!visible) return null;
 
   const {
     backgroundColor,
@@ -33,7 +28,7 @@ const DefaultSearchModal = ({
         <View style={[styles.modalCard, styles.searchModalCard, { borderColor, backgroundColor }]}>
           <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
             <Text style={[styles.modalTitle, { color: headerTextColor }]} numberOfLines={1}>
-              {title}
+              {global.t?.t(storeName, 'label', 'search')}
             </Text>
             <TouchableOpacity
               style={[styles.modalCloseButton, { borderColor, backgroundColor }]}
@@ -46,14 +41,8 @@ const DefaultSearchModal = ({
           <View style={styles.searchModalBody}>
             <DefaultSearch
               autoFocus
-              accentColor={accentColor}
               storeName={storeName}
-              {...searchProps}
-              filters={filters}
-              onChangeFilters={onChangeFilters}
-              onSearch={onSearch}
-              value={value}
-              style={[styles.searchModalInput, searchProps?.style]}
+              onSearch={onClose}
             />
           </View>
         </View>

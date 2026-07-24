@@ -12,22 +12,18 @@ import { useIsFocused, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores, useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
-import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
-import { getDateRange } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
-import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
-import { colors } from '@controleonline/../../src/styles/colors';
 import DefaultColumnMenu from './DefaultColumnMenu';
 import DefaultEditModal from './DefaultEditModal';
 import DefaultFiltersModal from './DefaultFiltersModal';
 import DefaultSearchModal from './DefaultSearchModal';
+import DefaultTableFooter from './DefaultTableFooter';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
-import DefaultTableControls from './DefaultTableControls';
 import DefaultTableLoadingOverlay from './DefaultTableLoadingOverlay';
-import DefaultToolbarAction from './DefaultToolbarAction';
-import DefaultColumnFilter from '../filters/DefaultColumnFilter';
-import DefaultSearch from '../filters/DefaultSearch';
+import DefaultTableToolbar from './DefaultTableToolbar';
+import { setDefaultTableRuntime } from './DefaultTable.runtime';
 import DefaultInput from '../inputs/DefaultInput';
+import useDefaultTableTheme from './useDefaultTableTheme';
 import {
   formatSaveValue,
   getColumnKey,
@@ -40,6 +36,34 @@ import {
   resolveCellText,
   resolveEditValue,
 } from '../inputs/defaultInputUtils';
+import {
+  ACTIONS_CELL_WIDTH,
+  COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH,
+  COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH,
+  DEFAULT_COMPACT_BREAKPOINT,
+  END_REACHED_THRESHOLD,
+  flattenSummaryEntries,
+  getColumnMinWidth,
+  getColumnStyle,
+  getSortField,
+  getSummaryField,
+  getSummaryOperations,
+  getRowKey,
+  isObject,
+  isSortableColumn,
+  normalizeSortText,
+  normalizeCollectionItems,
+  resolveListActionName,
+  resolveColumnListLoadParams,
+  resolveDateRangeQuery,
+  resolveDefaultSort,
+  resolveFilterQueryValue,
+  resolveHasMore,
+  resolveSortComparable,
+  sanitizeStoredSortPreference,
+  shouldIncludeColumn,
+  stableSerialize,
+} from './DefaultTable.utils';
 import {
   persistTableFiltersPreference,
   persistTableSortPreference,
@@ -55,437 +79,7 @@ import {
 } from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultTable.styles';
 
-const DEFAULT_CELL_MIN_WIDTH = 118;
-const DEFAULT_COMPACT_BREAKPOINT = 768;
-const COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH = 400;
-const COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH = 350;
-const END_REACHED_THRESHOLD = 0.35;
-const IDENTITY_CELL_MIN_WIDTH = 76;
-const MONEY_CELL_MIN_WIDTH = 132;
-const ACTIONS_CELL_WIDTH = 60;
-const SUMMARY_OPERATIONS = ['sum', 'count', 'avg', 'min', 'max'];
-
-const shouldIncludeColumn = column =>
-  Boolean(getColumnKey(column)) &&
-  column?.show !== false &&
-  column?.visible !== false &&
-  column?.table !== false;
-
-const resolveListActionName = list =>
-  normalizeText(list).split('/')[1] || 'getItems';
-
-const COMPANY_SCOPED_LIST_STORES = new Set([
-  'categories',
-  'paymentType',
-  'wallet',
-]);
-
-const resolveListLoadParams = ({currentCompanyId, listStoreName}) => {
-  if (!currentCompanyId || !COMPANY_SCOPED_LIST_STORES.has(listStoreName)) {
-    return {};
-  }
-
-  return listStoreName === 'categories'
-    ? {company: currentCompanyId}
-    : {people: currentCompanyId};
-};
-
-export const resolveColumnListLoadParams = ({
-  column,
-  currentCompanyId,
-  requestParams = {},
-  searchValue = '',
-}) => {
-  /*
-   * @agents
-   * List inputs are store-driven. Keep backend narrowing in column metadata:
-   * listRequestParams scopes the first page and listSearchParam/searchParam
-   * drives autocomplete without hardcoding API filters in screens.
-   */
-  const listStoreName = resolveStoreNameFromList(column?.list);
-  const companyScopedParams = resolveListLoadParams({
-    currentCompanyId,
-    listStoreName,
-  });
-  const resolvedCustomParams = typeof column?.listRequestParams === 'function'
-    ? column.listRequestParams({currentCompanyId, requestParams})
-    : column?.listRequestParams;
-  const customParams =
-    resolvedCustomParams &&
-    typeof resolvedCustomParams === 'object' &&
-    !Array.isArray(resolvedCustomParams)
-      ? resolvedCustomParams
-      : {};
-
-  return {
-    ...companyScopedParams,
-    ...customParams,
-    ...(normalizeText(searchValue)
-      ? {[column?.listSearchParam || column?.searchParam || 'search']: normalizeText(searchValue)}
-      : {}),
-  };
-};
-
-const isObject = value =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
-
-const getRowKey = (row, index = 0) =>
-  String(row?.['@id'] || row?.id || index);
-
-const stableSerialize = value => {
-  if (value === null || value === undefined) {
-    return 'null';
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value.map(item => stableSerialize(item)).join(',')}]`;
-  }
-
-  if (value instanceof Date) {
-    return JSON.stringify(value.toISOString());
-  }
-
-  if (isObject(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map(key => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  return JSON.stringify(value);
-};
-
-const resolveDateRangeQuery = value => {
-  if (!value || typeof value !== 'object') {
-    return {};
-  }
-
-  const shortcut = value.shortcut || value.value || 'all';
-  const customRange = value.customRange || { from: '', to: '' };
-  const dateRange = getDateRange(shortcut, customRange, {
-    relativeMode: 'rolling',
-    useCurrentMoment: true,
-  });
-
-  return {
-    after: dateRange?.after || '',
-    before: dateRange?.before || '',
-  };
-};
-
-const resolveFilterQueryValue = value => {
-  if (Array.isArray(value)) {
-    return value
-      .map(item => resolveFilterQueryValue(item))
-      .filter(item => item !== '' && item !== null && item !== undefined);
-  }
-
-  if (value && typeof value === 'object') {
-    return resolveFilterQueryValue(
-      value.value ?? value.id ?? value['@id'] ?? value.key ?? '',
-    );
-  }
-
-  return normalizeText(value);
-};
-
-const normalizeCollectionItems = response => {
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.member)) return response.member;
-  if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
-
-  return [];
-};
-
-const resolveHasMore = ({ hasMore, dataLength, totalItems }) => {
-  if (hasMore !== null && hasMore !== undefined) {
-    return hasMore;
-  }
-
-  const resolvedTotalItems = Number(totalItems);
-  if (!Number.isFinite(resolvedTotalItems)) {
-    return false;
-  }
-
-  return dataLength < resolvedTotalItems;
-};
-
-const humanizeSummaryLabel = value =>
-  normalizeText(value)
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/[._-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-const isMoneySummaryPath = path =>
-  /(amount|price|total|value|paid|open|receivable|payable|pending)/i.test(
-    Array.isArray(path) ? path.join('.') : normalizeText(path),
-  );
-
-const normalizeSummaryMoneyValue = value => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-
-  const rawValue = normalizeText(value).replace(/[^0-9,.-]/g, '');
-  if (!rawValue) return 0;
-
-  const normalizedValue = rawValue.includes(',')
-    ? rawValue.replace(/\./g, '').replace(',', '.')
-    : rawValue;
-  const parsedValue = Number(normalizedValue);
-
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
-};
-
-const getSummaryOperations = column => {
-  if (typeof column?.summary === 'string') return [column.summary];
-  if (Array.isArray(column?.summary)) return column.summary;
-  if (isObject(column?.summary)) {
-    return Object.entries(column.summary)
-      .filter(([, value]) => value)
-      .map(([operation]) => operation);
-  }
-
-  return SUMMARY_OPERATIONS.filter(operation => column?.[operation] === true);
-};
-
-const getSummaryField = (column, operation) => {
-  if (isObject(column?.summary)) {
-    const summaryField = column.summary[operation];
-    if (typeof summaryField === 'string') return summaryField;
-  }
-
-  return getColumnKey(column);
-};
-
-const formatSummaryValue = ({ column, columns, path, storeName, value }) => {
-  const columnKey = column ? getColumnKey(column) : '';
-  const shouldFormatMoney = isMoneySummaryPath(path) || isMoneySummaryPath(columnKey);
-
-  if (shouldFormatMoney) {
-    return Formatter.formatMoney(normalizeSummaryMoneyValue(value));
-  }
-
-  if (column) {
-    return resolveCellText({
-      column,
-      columns,
-      row: { [columnKey]: value },
-      storeName,
-      value,
-    });
-  }
-
-  return normalizeText(value);
-};
-
-const flattenSummaryEntries = ({
-  path = [],
-  summaryLabels = {},
-  usedPaths,
-  value,
-}) => {
-  if (!isObject(value)) {
-    const pathKey = path.join('.');
-    if (!pathKey || usedPaths.has(pathKey)) return [];
-
-    const fallbackLabel = humanizeSummaryLabel(path[path.length - 1] || pathKey);
-
-    return [{
-      key: pathKey,
-      label: summaryLabels[pathKey] || summaryLabels[path[path.length - 1]] || fallbackLabel,
-      path,
-      value,
-    }];
-  }
-
-  return Object.entries(value).flatMap(([key, childValue]) =>
-    flattenSummaryEntries({
-      path: [...path, key],
-      summaryLabels,
-      usedPaths,
-      value: childValue,
-    }),
-  );
-};
-
-const isSortableColumn = column => column?.sortable === true;
-
-const getSortField = column => column?.sortField || getColumnKey(column);
-
-const resolveDefaultSort = columns => {
-  if (!Array.isArray(columns)) {
-    return null;
-  }
-
-  for (const column of columns) {
-    if (!column || column?.defaultSort === undefined || column?.defaultSort === null || column?.defaultSort === false) {
-      continue;
-    }
-
-    const field = getSortField(column);
-    const defaultSort = column.defaultSort;
-
-    if (defaultSort && typeof defaultSort === 'object' && !Array.isArray(defaultSort)) {
-      const resolvedDirection = normalizeText(defaultSort.direction || defaultSort.order || 'desc').toLowerCase();
-      const resolvedField = normalizeText(
-        defaultSort.field || defaultSort.sortField || defaultSort.key || defaultSort.name || field,
-      );
-
-      return {
-        direction: resolvedDirection === 'asc' ? 'asc' : 'desc',
-        field: resolvedField || field,
-      };
-    }
-
-    if (typeof defaultSort === 'string') {
-      const normalizedSort = normalizeText(defaultSort).toLowerCase();
-      if (normalizedSort === 'asc' || normalizedSort === 'desc') {
-        return {
-          direction: normalizedSort,
-          field,
-        };
-      }
-
-      return {
-        direction: 'desc',
-        field: normalizeText(defaultSort) || field,
-      };
-    }
-
-    if (defaultSort === true) {
-      return {
-        direction: 'asc',
-        field,
-      };
-    }
-  }
-
-  return null;
-};
-
-const sanitizeStoredSortPreference = ({
-  columns = [],
-  fallbackSort = null,
-  sort = null,
-}) => {
-  const normalizedFallback =
-    fallbackSort &&
-    typeof fallbackSort === 'object' &&
-    typeof fallbackSort.field === 'string' &&
-    fallbackSort.field.trim()
-      ? {
-          direction: fallbackSort.direction === 'asc' ? 'asc' : 'desc',
-          field: fallbackSort.field.trim(),
-        }
-      : null;
-
-  if (
-    !sort ||
-    typeof sort !== 'object' ||
-    typeof sort.field !== 'string' ||
-    !sort.field.trim()
-  ) {
-    return normalizedFallback;
-  }
-
-  const normalizedDirection = sort.direction === 'asc' ? 'asc' : 'desc';
-  const normalizedField = sort.field.trim();
-  const sortableFields = new Set(
-    (Array.isArray(columns) ? columns : [])
-      .filter(isSortableColumn)
-      .map(column => getSortField(column))
-      .filter(Boolean),
-  );
-
-  if (!sortableFields.has(normalizedField)) {
-    return normalizedFallback;
-  }
-
-  return {
-    direction: normalizedDirection,
-    field: normalizedField,
-  };
-};
-
-const readValueByPath = (object, path) => {
-  if (!object || !path) return object;
-
-  return String(path)
-    .split('.')
-    .reduce((currentValue, key) => {
-      if (currentValue === null || currentValue === undefined) return currentValue;
-      return currentValue?.[key];
-    }, object);
-};
-
-const normalizeSortText = value =>
-  normalizeText(value)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-const resolveSortComparable = ({ column, row, storeName, columns }) => {
-  const fieldName = getColumnKey(column);
-  const sortField = getSortField(column);
-  const rawValue = sortField === fieldName ? row?.[fieldName] : readValueByPath(row, sortField);
-
-  if (isDateLikeColumn(column)) {
-    const dateValue =
-      rawValue && typeof rawValue === 'object'
-        ? rawValue?.value ??
-          rawValue?.date ??
-          rawValue?.createdAt ??
-          rawValue?.updatedAt ??
-          rawValue?.['@id'] ??
-          rawValue?.[fieldName] ??
-          rawValue
-        : rawValue;
-    const parsedDate = Date.parse(dateValue);
-    return Number.isFinite(parsedDate) ? parsedDate : Number.NEGATIVE_INFINITY;
-  }
-
-  const resolvedValue = sortField === fieldName
-    ? resolveCellText({
-        column,
-        columns,
-        row,
-        storeName,
-      })
-    : normalizeText(rawValue ?? resolveCellText({
-        column,
-        columns,
-        row,
-        storeName,
-      }));
-
-  const normalizedNumber = Number(
-    String(resolvedValue).replace(/[^0-9,.-]/g, '').replace(',', '.'),
-  );
-
-  if (Number.isFinite(normalizedNumber) && String(resolvedValue).match(/[0-9]/)) {
-    return normalizedNumber;
-  }
-
-  return normalizeSortText(resolvedValue);
-};
-
-const getColumnStyle = column => {
-  const key = getColumnKey(column);
-  if (column?.isIdentity) return [styles.cell, styles.identityCell];
-  if (['price', 'total', 'amount', 'value'].includes(key)) {
-    return [styles.cell, styles.moneyCell];
-  }
-  return styles.cell;
-};
-
-const getColumnMinWidth = column => {
-  const key = getColumnKey(column);
-  if (column?.isIdentity) return IDENTITY_CELL_MIN_WIDTH;
-  if (['price', 'total', 'amount', 'value'].includes(key)) {
-    return MONEY_CELL_MIN_WIDTH;
-  }
-  return DEFAULT_CELL_MIN_WIDTH;
-};
+export { resolveColumnListLoadParams } from './DefaultTable.utils';
 
 const DefaultTable = ({
   accentColor = null,
@@ -534,6 +128,7 @@ const DefaultTable = ({
   const { width } = useWindowDimensions();
   const route = useRoute?.();
   const store = useStore(storeName);
+  const peopleStore = useStore('people');
   const tablePreferenceScope = useMemo(
     () =>
       resolveDefaultTablePreferenceScope({
@@ -548,8 +143,6 @@ const DefaultTable = ({
     [tablePreferenceScope],
   );
   const visibleColumnsStorageKey = tablePreferenceScope;
-  const peopleStore = useStore('people');
-  const themeStore = useStore('theme');
   const [editingCell, setEditingCell] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
   const [formMode, setFormMode] = useState('edit');
@@ -594,17 +187,12 @@ const DefaultTable = ({
   const [visibleColumns, setVisibleColumns] = useState(() => visibleColumnsSeed);
   const [viewMode, setViewMode] = useState(() => viewModeSeed);
   const [compactViewMode, setCompactViewMode] = useState(null);
-  const { currentCompany } = peopleStore.getters || {};
-  const { colors: themeColors } = themeStore.getters;
-  const themeTokens = useMemo(
-    () => ({...themeColors, ...(currentCompany?.theme?.colors || {})}),
-    [currentCompany?.theme?.colors, themeColors],
-  );
-  const palette = useMemo(
-    () => resolveThemePalette(themeTokens, colors),
-    [themeTokens],
-  );
-  const resolvedAccentColor = accentColor || palette.primary;
+  const {
+    palette,
+    resolvedAccentColor,
+    themeColors,
+    themeTokens,
+  } = useDefaultTableTheme(accentColor);
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
   const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
   const tableOddColor = themeTokens.listItemOddRow || themeTokens['bg-odd-light'] || palette.background;
@@ -614,71 +202,18 @@ const DefaultTable = ({
   const tableMutedColor = palette.textSecondary;
   const panelBackgroundColor = themeColors.panelBackground;
   const panelBorderColor = themeColors.panelBorder;
-  const modalBackgroundColor = themeColors.modalBackground;
-  const modalBorderColor = themeColors.modalBorder;
-  const modalCloseIconColor = themeColors.modalCloseIcon;
-  const modalHeaderTextColor = themeColors.modalHeaderText;
-  const modalOverlayColor = themeColors.modalOverlay;
-  const modalTextColor = themeColors.modalText;
-  const checkboxBorderColor = themeColors.checkboxBorder;
-  const checkboxSelectedMarkColor = themeColors.checkboxSelectedMark;
-  const toolbarBackgroundColor = themeColors.toolbarBackground;
-  const toolbarBorderColor = themeColors.toolbarBorder;
   const toolbarCountBackgroundColor = themeColors.badgeBackground;
   const toolbarCountTextColor = themeColors.badgeText;
-  const tableActionBackgroundColor = themeColors.tableActionBackground;
-  const tableActionBorderColor = themeColors.tableActionBorder;
-  const tableActionTextColor = themeColors.tableActionIcon;
-  const tableButtonBackgroundColor = themeColors.buttonBackground;
-  const tableButtonBorderColor = themeColors.buttonBorder;
-  const tableButtonIconColor = themeColors.buttonIcon;
-  const tableButtonPressedBackgroundColor = themeColors.buttonPressedBackground;
-  const tableButtonPressedBorderColor = themeColors.buttonPressedBorder;
-  const tableButtonPressedIconColor = themeColors.buttonPressedIcon;
-  const tableButtonTextColor = themeColors.buttonText;
   const tableFilterBackgroundColor = themeColors.tableFilterBackground;
   const tableFilterBorderColor = themeColors.tableFilterBorder;
   const tableFilterTextColor = themeColors.tableFilterText;
-  const tableFooterBackgroundColor = themeColors.tableFooterBackground;
-  const tableFooterBorderColor = themeColors.tableFooterBorder;
-  const tableFooterTextColor = themeColors.tableFooterText;
-  const modalColors = useMemo(() => ({
-    backgroundColor: modalBackgroundColor,
-    borderColor: modalBorderColor,
-    closeIconColor: modalCloseIconColor,
-    headerTextColor: modalHeaderTextColor,
-    overlayColor: modalOverlayColor,
-    textColor: modalTextColor,
-  }), [
-    modalBackgroundColor,
-    modalBorderColor,
-    modalCloseIconColor,
-    modalHeaderTextColor,
-    modalOverlayColor,
-    modalTextColor,
-  ]);
-  const tableButtonColors = useMemo(() => ({
-    backgroundColor: tableButtonBackgroundColor,
-    borderColor: tableButtonBorderColor,
-    iconColor: tableButtonIconColor,
-    pressedBackgroundColor: tableButtonPressedBackgroundColor,
-    pressedBorderColor: tableButtonPressedBorderColor,
-    pressedIconColor: tableButtonPressedIconColor,
-    textColor: tableButtonTextColor,
-  }), [
-    tableButtonBackgroundColor,
-    tableButtonBorderColor,
-    tableButtonIconColor,
-    tableButtonPressedBackgroundColor,
-    tableButtonPressedBorderColor,
-    tableButtonPressedIconColor,
-    tableButtonTextColor,
-  ]);
   const isFocused = useIsFocused();
   const {showError} = useMessage() || {};
   const autoMode = data === undefined && normalizeText(storeName) !== '';
   const searchKey = searchProps?.searchKey || 'search';
   const storeActions = store?.actions || {};
+  const peopleGetters = peopleStore?.getters || {};
+  const currentCompanyId = peopleGetters.currentCompany?.id;
   const resolvedActions = useMemo(
     () => ({
       ...storeActions,
@@ -776,7 +311,7 @@ const DefaultTable = ({
   useEffect(() => {
     setListOptionsByColumn({});
     loadedListStoresRef.current.clear();
-  }, [currentCompany?.id]);
+  }, [currentCompanyId]);
 
   const loadListOptionsForColumns = useCallback(
     (targetColumns = [], searchValue = '') => {
@@ -804,7 +339,7 @@ const DefaultTable = ({
 
         const listLoadParams = resolveColumnListLoadParams({
           column,
-          currentCompanyId: currentCompany?.id,
+          currentCompanyId,
           requestParams: requestParamsSeed,
           searchValue,
         });
@@ -872,7 +407,7 @@ const DefaultTable = ({
         return results;
       });
     },
-    [currentCompany?.id, getOptionsForColumn, requestParamsSeed],
+    [currentCompanyId, getOptionsForColumn, requestParamsSeed],
   );
 
   const buildRequestQuery = useCallback(
@@ -1219,8 +754,8 @@ const DefaultTable = ({
     setCompactViewMode(null);
   }, [isCompactView, shouldForceCardsOnCompact]);
   const emptyStateLabel = resolvedIsLoading
-    ? global.t?.t(storeName, 'label', 'loading') || 'Carregando...'
-    : 'Nenhum registro encontrado';
+    ? global.t?.t(storeName, 'label', 'loading')
+    : global.t?.t(storeName, 'label', 'empty');
   const storeTotalItems = store?.getters?.totalItems;
   const resolvedTotalItems = totalItems !== null && totalItems !== undefined
     ? totalItems
@@ -1246,10 +781,9 @@ const DefaultTable = ({
   const searchAccessibilityLabel =
     searchProps?.accessibilityLabel ||
     searchProps?.placeholder ||
-    global.t?.t(storeName, 'input', searchKey) ||
-    global.t?.t(storeName, 'placeholder', searchKey) ||
     global.t?.t(storeName, 'label', 'search') ||
-    'Buscar';
+    global.t?.t(storeName, 'input', searchKey) ||
+    global.t?.t(storeName, 'placeholder', searchKey);
   const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
       return buildRequestQuery(autoPageRef.current || 1, false);
@@ -1265,7 +799,7 @@ const DefaultTable = ({
     normalizeText(totalItemsText) !== ''
       ? totalItemsText
       : shouldRenderTotalItems
-        ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items') || 'registros'}`
+        ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items')}`
         : '';
   const storeSummary = store?.getters?.summary;
   const resolvedSummary = summary !== null && summary !== undefined ? summary : storeSummary;
@@ -1684,68 +1218,97 @@ const DefaultTable = ({
     );
   };
 
-  const renderColumnFilter = (column, style = getColumnStyle(column)) => {
-    return (
-      <DefaultColumnFilter
-        accentColor={resolvedAccentColor}
-        column={column}
-        filters={resolvedFilters}
-        onBeforeOpen={column?.list ? () => loadListOptionsForColumns([column]) : null}
-        onSearchChange={column?.list ? value => loadListOptionsForColumns([column], value) : null}
-        getOptionsForColumn={resolvedGetOptionsForColumn}
-        onChange={updateFilter}
-        storeName={storeName}
-        style={style}
-      />
-    );
-  };
+  setDefaultTableRuntime(storeName, {
+    activeFilterCount,
+    debugFallbackParameters,
+    effectiveViewMode,
+    editModal: {
+      actions: resolvedActions,
+      columns: formMode === 'create' ? columnsForTable : editableColumns,
+      editingRow,
+      formMode,
+      getOptionsForColumn: resolvedGetOptionsForColumn,
+      onBeforeOpen: column => loadListOptionsForColumns([column]),
+      onClose: closeEditModal,
+      onSearchChange: (column, value) => loadListOptionsForColumns([column], value),
+      onSaved: (savedItem, originalRow) => {
+        onSaved?.(savedItem, originalRow);
+        closeEditModal();
+      },
+      title: formMode === 'create'
+        ? global.t?.t(storeName, 'button', 'add')
+        : global.t?.t(storeName, 'button', 'edit'),
+    },
+    columnMenu: {
+      availableColumns,
+      columns: columnsForTable,
+      onClose: () => setIsColumnMenuOpen(false),
+      onToggleColumn: toggleColumn,
+      visible: isColumnMenuOpen,
+      visibleColumns,
+    },
+    filtersModal: {
+      applyLabel: global.t?.t(storeName, 'button', 'apply'),
+      clearLabel: global.t?.t(storeName, 'button', 'clear'),
+      columns: filterColumns,
+      filters: resolvedFilters,
+      getColumnLabel: column => {
+        const fieldName = getColumnKey(column);
+
+        return formatStoreColumnLabel({
+          columns: columnsForTable,
+          fieldName,
+          fallbackLabel: column?.label || fieldName,
+          storeName,
+        });
+      },
+      getOptionsForColumn: resolvedGetOptionsForColumn,
+      loadListOptionsForColumns,
+      onChange: updateFilter,
+      onApply: () => setIsFiltersModalOpen(false),
+      onClear: () => commitFilters({}),
+      onClose: () => setIsFiltersModalOpen(false),
+      title: global.t?.t(storeName, 'label', 'filters'),
+      visible: isFiltersModalOpen && hasTableFilters,
+    },
+    footer: {
+      columns: columnsForTable,
+      footerComponent,
+      footerProps,
+      resolvedTotalItemsText,
+      shouldRenderCompactToolbarTotalItems,
+      shouldRenderFooterBar,
+      shouldRenderFooterTotalItems,
+      summaryEntries,
+    },
+    hasTableFilters,
+    isColumnMenuOpen,
+    isFiltersModalOpen,
+    onAdd: openAddForm,
+    onOpenFilters: () => setIsFiltersModalOpen(true),
+    searchModal: {
+      onClose: () => setIsSearchModalOpen(false),
+      visible: isSearchModalOpen,
+    },
+    toolbar: {
+      onOpenSearchModal: () => setIsSearchModalOpen(true),
+      resolvedTotalItemsText,
+      searchAccessibilityLabel,
+      searchProps,
+      shouldCollapseToolbarSearch,
+      shouldRenderCompactToolbarTotalItems,
+      toolbarActions,
+    },
+    onToggleColumnMenu: () => setIsColumnMenuOpen(prev => !prev),
+    onToggleViewMode: toggleViewMode,
+    shouldRenderAddButton,
+  });
 
   const renderFiltersModal = () => {
     return (
-      <DefaultFiltersModal
-        applyLabel={global.t?.t(storeName, 'button', 'apply') || 'Aplicar'}
-        clearLabel={global.t?.t(storeName, 'button', 'clear') || 'Limpar'}
-        columns={filterColumns}
-        getColumnLabel={column => {
-          const fieldName = getColumnKey(column);
-
-          return formatStoreColumnLabel({
-            columns: columnsForTable,
-            fieldName,
-            fallbackLabel: column?.label || fieldName,
-            storeName,
-          });
-        }}
-        modalColors={modalColors}
-        onApply={() => setIsFiltersModalOpen(false)}
-        onClear={() => commitFilters({})}
-        onClose={() => setIsFiltersModalOpen(false)}
-        renderColumnFilter={renderColumnFilter}
-        resolvedAccentColor={resolvedAccentColor}
-        title={global.t?.t(storeName, 'label', 'filters') || 'Filtros'}
-        visible={isFiltersModalOpen && hasTableFilters}
-      />
+      <DefaultFiltersModal storeName={storeName} />
     );
   };
-
-  const renderToolbarAction = action => {
-    if (!action || action.hidden) return null;
-
-    return (
-      <DefaultToolbarAction
-        key={action.key || action.icon || action.label}
-        action={action}
-        tableActionBackgroundColor={tableActionBackgroundColor}
-        tableActionBorderColor={tableActionBorderColor}
-        tableActionTextColor={tableActionTextColor}
-      />
-    );
-  };
-
-  const renderToolbarActions = () =>
-    Array.isArray(toolbarActions) && toolbarActions.length > 0 ? (
-      <View style={styles.toolbarActionGroup}>{toolbarActions.map(renderToolbarAction)}</View>
-    ) : null;
 
   const getColumnByField = useCallback(
     fieldName => columnsForTable.find(column => getColumnKey(column) === fieldName),
@@ -1993,164 +1556,26 @@ const DefaultTable = ({
   };
 
   const renderEditModal = () => {
-    const isCreate = formMode === 'create';
-
     return (
-      <DefaultEditModal
-        accentColor={resolvedAccentColor}
-        actions={resolvedActions}
-        columns={isCreate ? columnsForTable : editableColumns}
-        editingRow={editingRow}
-        formMode={formMode}
-        getOptionsForColumn={resolvedGetOptionsForColumn}
-        modalColors={modalColors}
-        onBeforeOpen={column => loadListOptionsForColumns([column])}
-        onClose={closeEditModal}
-        onSearchChange={(column, value) => loadListOptionsForColumns([column], value)}
-        onSaved={(savedItem, originalRow) => {
-          onSaved?.(savedItem, originalRow);
-          closeEditModal();
-        }}
-        storeName={storeName}
-        title={
-          isCreate
-            ? global.t?.t(storeName, 'button', 'add') || 'Adicionar'
-            : global.t?.t(storeName, 'button', 'edit') || 'Editar'
-        }
-      />
+      <DefaultEditModal storeName={storeName} />
     );
   };
 
   const renderColumnMenuModal = () => {
     return (
-      <DefaultColumnMenu
-        availableColumns={availableColumns}
-        checkboxBorderColor={checkboxBorderColor}
-        checkboxSelectedMarkColor={checkboxSelectedMarkColor}
-        columns={columnsForTable}
-        modalColors={modalColors}
-        onClose={() => setIsColumnMenuOpen(false)}
-        onToggleColumn={toggleColumn}
-        storeName={storeName}
-        visible={isColumnMenuOpen}
-        visibleColumns={visibleColumns}
-      />
-    );
-  };
-
-  const renderTableControls = () => {
-    return (
-      <DefaultTableControls
-        activeFilterCount={activeFilterCount}
-        debugFallbackParameters={debugFallbackParameters}
-        effectiveViewMode={effectiveViewMode}
-        hasTableFilters={hasTableFilters}
-        isColumnMenuOpen={isColumnMenuOpen}
-        isFiltersModalOpen={isFiltersModalOpen}
-        modalColors={modalColors}
-        onAdd={openAddForm}
-        onOpenFilters={() => setIsFiltersModalOpen(true)}
-        onToggleColumnMenu={() => setIsColumnMenuOpen(prev => !prev)}
-        onToggleViewMode={toggleViewMode}
-        resolvedAccentColor={resolvedAccentColor}
-        shouldRenderAddButton={shouldRenderAddButton}
-        storeName={storeName}
-        tableButtonColors={tableButtonColors}
-      />
+      <DefaultColumnMenu storeName={storeName} />
     );
   };
 
   const renderSearchModal = () => {
     return (
-      <DefaultSearchModal
-        accentColor={resolvedAccentColor}
-        filters={autoMode ? resolvedFilters : searchProps?.filters}
-        modalColors={modalColors}
-        onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
-        onClose={() => setIsSearchModalOpen(false)}
-        onSearch={value => {
-          searchProps?.onSearch?.(value);
-          setIsSearchModalOpen(false);
-        }}
-        searchProps={searchProps}
-        storeName={storeName}
-        title={global.t?.t(storeName, 'label', 'search')}
-        value={autoMode ? resolvedSearchValue : searchProps?.value}
-        visible={isSearchModalOpen}
-      />
+      <DefaultSearchModal storeName={storeName} />
     );
   };
 
   return (
     <View style={[styles.wrap, { borderColor: panelBorderColor, backgroundColor: panelBackgroundColor }]} onLayout={handleLayout}>
-      <View
-        style={[
-          styles.toolbar,
-          shouldRenderCompactToolbarTotalItems ? styles.toolbarWithCompactTotal : null,
-          { borderBottomColor: toolbarBorderColor, backgroundColor: toolbarBackgroundColor },
-        ]}>
-        {shouldRenderCompactToolbarTotalItems ? (
-          <View style={styles.toolbarCompactLead}>
-            <View style={[styles.toolbarCountPill, { backgroundColor: toolbarCountBackgroundColor }]}>
-              <Text
-                style={[styles.toolbarCountText, { color: toolbarCountTextColor }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.82}
-              >
-                {resolvedTotalItemsText}
-              </Text>
-            </View>
-            {searchProps ? (
-              <DefaultSearch
-                accentColor={resolvedAccentColor}
-                compact
-                storeName={storeName}
-                {...searchProps}
-                filters={autoMode ? resolvedFilters : searchProps?.filters}
-                onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
-                value={autoMode ? resolvedSearchValue : searchProps?.value}
-                style={[styles.toolbarSearch, styles.toolbarCompactSearch, searchProps?.style]}
-              />
-            ) : null}
-            {renderToolbarActions()}
-          </View>
-        ) : null}
-
-        <View style={shouldRenderCompactToolbarTotalItems ? styles.toolbarCompactActions : styles.toolbarLeft}>
-          {!shouldRenderCompactToolbarTotalItems && searchProps && !shouldCollapseToolbarSearch ? (
-            <DefaultSearch
-              accentColor={resolvedAccentColor}
-              compact
-              storeName={storeName}
-              {...searchProps}
-              filters={autoMode ? resolvedFilters : searchProps?.filters}
-              onChangeFilters={autoMode ? commitFilters : searchProps?.onChangeFilters}
-              value={autoMode ? resolvedSearchValue : searchProps?.value}
-              style={[styles.toolbarSearch, searchProps?.style]}
-            />
-          ) : null}
-          {!shouldRenderCompactToolbarTotalItems && shouldCollapseToolbarSearch ? (
-            <TouchableOpacity
-              style={[
-                styles.toolbarSearchButton,
-                { borderColor: tableButtonBorderColor, backgroundColor: tableButtonBackgroundColor },
-              ]}
-              accessibilityLabel={searchAccessibilityLabel}
-              accessibilityRole="button"
-              activeOpacity={0.82}
-              onPress={() => setIsSearchModalOpen(true)}
-            >
-              <Icon name="search" size={14} color={tableButtonIconColor} />
-            </TouchableOpacity>
-          ) : null}
-          <View style={styles.toolbarActionGroup}>
-            {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}
-            {renderTableControls()}
-          </View>
-        </View>
-
-      </View>
+      <DefaultTableToolbar storeName={storeName} />
 
       {renderSearchModal()}
       {renderFiltersModal()}
@@ -2244,56 +1669,7 @@ const DefaultTable = ({
 
       {renderLoadingOverlay()}
 
-      {footerComponent ? (
-        React.isValidElement(footerComponent) ? (
-          footerComponent
-        ) : (
-          React.createElement(footerComponent, footerProps)
-        )
-      ) : shouldRenderFooterBar ? (
-        <View style={[styles.footerBar, { backgroundColor: tableFooterBackgroundColor, borderTopColor: tableFooterBorderColor }]}>
-          {summaryEntries.length > 0 ? (
-            <View style={styles.footerSummaryList}>
-              {summaryEntries.map(entry => (
-                <View key={entry.key} style={styles.footerSummaryItem}>
-                  <Text style={[styles.footerSummaryLabel, { color: tableFooterTextColor }]} numberOfLines={1}>
-                    {entry.label}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.footerSummaryValue,
-                      { color: tableFooterTextColor },
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.78}
-                  >
-                    {formatSummaryValue({
-                      column: entry.column,
-                      columns: columnsForTable,
-                      path: entry.path,
-                      storeName,
-                      value: entry.value,
-                    })}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          {shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems ? (
-            <View style={[styles.footerCountPill, { backgroundColor: toolbarCountBackgroundColor }]}>
-              <Text
-                style={[styles.footerCountText, { color: toolbarCountTextColor }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.82}
-              >
-                {resolvedTotalItemsText}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
+      <DefaultTableFooter storeName={storeName} />
 
       {renderColumnMenuModal()}
       {renderEditModal()}
