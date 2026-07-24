@@ -54,6 +54,8 @@ const buildDraft = (columns, row) =>
     return draft;
   }, {});
 
+const EMPTY_ROW = {};
+
 const DefaultForm = ({
   actions = {},
   columns = [],
@@ -62,7 +64,7 @@ const DefaultForm = ({
   onBeforeOpen = null,
   onCancel = null,
   onSaved = null,
-  row = {},
+  row = EMPTY_ROW,
   storeName = '',
 }) => {
   const themeStore = useStore('theme');
