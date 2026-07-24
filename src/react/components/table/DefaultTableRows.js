@@ -7,7 +7,6 @@ import { getColumnKey } from '../inputs/defaultInputUtils';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
-import DefaultTableLoadingOverlay from './DefaultTableLoadingOverlay';
 import {
   END_REACHED_THRESHOLD,
   getColumnStyle,
@@ -121,7 +120,11 @@ const DefaultTableRows = ({ storeName }) => {
 
   return (
     <>
-      <ScrollView horizontal style={styles.scroll}>
+      <ScrollView
+        horizontal
+        style={styles.scroll}
+        contentContainerStyle={styles.horizontalScrollContent}
+      >
         <View style={styles.content}>
           <View style={[styles.headerRow, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
             {tableColumns.map(column => {
@@ -231,12 +234,6 @@ const DefaultTableRows = ({ storeName }) => {
           />
         </View>
       </ScrollView>
-      <DefaultTableLoadingOverlay
-        isLoading={isLoading}
-        itemCount={sortedData.length}
-        tableBorderColor={tableBorderColor}
-        tableSurfaceColor={tableSurfaceColor}
-      />
     </>
   );
 };

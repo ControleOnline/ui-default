@@ -261,6 +261,10 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 0,
   },
+  horizontalScrollContent: {
+    flexGrow: 1,
+    minWidth: '100%',
+  },
   content: {
     flex: 1,
     width: '100%',
@@ -491,43 +495,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  loadingFooter: {
-    padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  loadingOverlay: {
-    ...Platform.select({
-      web: {
-        position: 'absolute',
-        inset: 0,
-      },
-      default: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-      },
-    }),
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 14,
-    padding: 16,
-  },
-  loadingOverlayCard: {
-    minWidth: 220,
-    maxWidth: '100%',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    ...shadow,
   },
   footerBar: {
     minHeight: 40,

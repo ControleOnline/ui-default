@@ -844,6 +844,35 @@ describe('DefaultTable', () => {
     expect(footer.props.resolvedTotalItemsText).toBe('7 registros');
   });
 
+  it('keeps infinite scroll loading transparent over existing rows', () => {
+    let tree;
+    mockWindowDimensions = {width: 1024, height: 800};
+    mockStores.invoices = {
+      actions: {},
+      getters: {
+        columns: [{key: 'status', label: 'Situação'}],
+        isLoadingList: true,
+        items: [{id: 332, status: 'Pago'}],
+        totalItems: 1394,
+      },
+    };
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          showColumnFiltersButton: false,
+          showRowActions: false,
+          storeName: 'invoices',
+        }),
+      );
+    });
+
+    expect(tree.root.findAllByType('StateStore')).toHaveLength(0);
+    expect(tree.root.findByType('ScrollView').props.contentContainerStyle).toEqual(
+      expect.objectContaining({minWidth: '100%'}),
+    );
+  });
+
   it('opens a debug query modal when the store exposes debug.query', () => {
     mockWindowDimensions = {width: 1024, height: 800};
     mockStores.orders = {
