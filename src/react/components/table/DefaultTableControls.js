@@ -19,6 +19,7 @@ const DefaultTableControls = ({ storeName }) => {
   const filters = store?.getters?.filters || {};
   const hasTableFilters = columns.some(
     column =>
+      configs.showColumnFiltersButton !== false &&
       shouldIncludeColumn(column) &&
       column?.filter !== false &&
       column?.filters !== false,
@@ -94,12 +95,21 @@ const DefaultTableControls = ({ storeName }) => {
           effectiveViewMode !== 'table' ? pressedStyle : null,
         ]}
         activeOpacity={0.82}
-        onPress={() =>
-          store?.actions?.setConfigs?.({
+        onPress={() => {
+          const nextConfigs = {
             ...configs,
             viewMode: effectiveViewMode === 'table' ? 'cards' : 'table',
-          })
-        }
+          };
+
+          if (typeof store?.actions?.setConfigs === 'function') {
+            store.actions.setConfigs(nextConfigs);
+            return;
+          }
+
+          if (store?.getters) {
+            store.getters.configs = nextConfigs;
+          }
+        }}
       >
         <Icon
           name={effectiveViewMode === 'table' ? 'list' : 'grid'}

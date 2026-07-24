@@ -356,11 +356,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     backgroundColor: '#EFF6FF',
   },
-  editingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   input: {
     flex: 1,
     height: 32,
