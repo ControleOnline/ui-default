@@ -1,21 +1,14 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
-import { getAllStores, useStore } from '@store';
+import { useStore } from '@store';
 import DefaultInput from '../inputs/DefaultInput';
 import {
   formatSaveValue,
   getColumnKey,
   isEditableColumn,
-  normalizeText,
   normalizeId,
-  resolveStoreNameFromList,
 } from '../inputs/defaultInputUtils';
-import {
-  getColumnStyle,
-  resolveColumnListLoadParams,
-  resolveListActionName,
-  stableSerialize,
-} from './DefaultTable.utils';
+import { getColumnStyle } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
@@ -60,60 +53,13 @@ const DefaultTableInput = ({
   variant = 'cell',
 }) => {
   const store = useStore(storeName);
-  const peopleStore = useStore('people');
   const configs = store?.getters?.configs || {};
-  const loadedListStoresRef = useRef(new Set());
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const hasRowPress = false;
   const { resolvedAccentColor } = useDefaultTableTheme();
   const column = columnProp || columns.find(item => getColumnKey(item) === fieldName);
-  const currentCompanyId = peopleStore?.getters?.currentCompany?.id;
-
-  const loadListOptionsForColumn = useCallback((searchValue = '') => {
-    const listStoreName = resolveStoreNameFromList(column?.list);
-    const actionName = resolveListActionName(column?.list);
-    const stores = getAllStores?.() || {};
-    const listStore = stores?.[listStoreName];
-    const listAction = listStore?.actions?.[actionName];
-
-    if (!listStoreName || typeof listAction !== 'function') {
-      return Promise.resolve([]);
-    }
-
-    const listLoadParams = resolveColumnListLoadParams({
-      column,
-      currentCompanyId,
-      requestParams: configs.requestParams || {},
-      searchValue,
-    });
-    const loadKey = `${getColumnKey(column)}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
-
-    if (
-      !normalizeText(searchValue) &&
-      loadedListStoresRef.current.has(loadKey)
-    ) {
-      return Promise.resolve(listStore?.getters?.items || []);
-    }
-
-    if (!normalizeText(searchValue)) {
-      loadedListStoresRef.current.add(loadKey);
-    }
-
-    return Promise.resolve(
-      listAction({
-        ...listLoadParams,
-        __storeMeta: {
-          dedupeKey: `default-table-cell-list-options:${loadKey}`,
-          skipSystemError: true,
-        },
-      }),
-    ).catch(error => {
-      loadedListStoresRef.current.delete(loadKey);
-      throw error;
-    });
-  }, [column, configs.requestParams, currentCompanyId]);
 
   if (!column) return null;
 
@@ -130,7 +76,6 @@ const DefaultTableInput = ({
       inputStyle={options.inputStyle}
       label={options.label}
       numberOfLines={options.numberOfLines}
-      onBeforeOpen={column?.list ? () => loadListOptionsForColumn() : null}
       onCancelEditing={() => setIsEditing(false)}
       onSave={value => {
         if (typeof store?.actions?.save !== 'function') {
@@ -165,7 +110,6 @@ const DefaultTableInput = ({
           setIsEditing(false);
         });
       }}
-      onSearchChange={column?.list ? value => loadListOptionsForColumn(value) : null}
       onStartEditing={() => setIsEditing(true)}
       readTextStyle={options.readTextStyle || options.textStyle}
       row={row}
