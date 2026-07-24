@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
@@ -54,6 +54,54 @@ const DefaultTableRows = ({ storeName }) => {
     configs.showColumnFiltersButton !== false &&
     configs.tableFiltersVisible === true;
   const actionsCellWidth = hasRowActions ? 96 : 0;
+  const [horizontalMetrics, setHorizontalMetrics] = useState({
+    contentWidth: 0,
+    viewportWidth: 0,
+    x: 0,
+  });
+  const updateHorizontalMetrics = patch => {
+    setHorizontalMetrics(current => {
+      const next = {
+        ...current,
+        ...patch,
+      };
+
+      return next.contentWidth === current.contentWidth &&
+        next.viewportWidth === current.viewportWidth &&
+        next.x === current.x
+        ? current
+        : next;
+    });
+  };
+  const stickyBodyTransforms = useMemo(() => {
+    const viewportWidth = Number(horizontalMetrics.viewportWidth || 0);
+    const contentWidth = Number(horizontalMetrics.contentWidth || 0);
+    const x = Number(horizontalMetrics.x || 0);
+    const canScrollHorizontally = viewportWidth > 0 && contentWidth > viewportWidth;
+    const actionsTranslateX = canScrollHorizontally
+      ? x + viewportWidth - contentWidth
+      : 0;
+
+    return {
+      actions: actionsTranslateX !== 0 ? [{ translateX: actionsTranslateX }] : null,
+      identity: x !== 0 ? [{ translateX: x }] : null,
+    };
+  }, [horizontalMetrics]);
+  const handleHorizontalScroll = event => {
+    updateHorizontalMetrics({
+      x: Number(event?.nativeEvent?.contentOffset?.x || 0),
+    });
+  };
+  const handleHorizontalLayout = event => {
+    updateHorizontalMetrics({
+      viewportWidth: Number(event?.nativeEvent?.layout?.width || 0),
+    });
+  };
+  const handleHorizontalContentSizeChange = width => {
+    updateHorizontalMetrics({
+      contentWidth: Number(width || 0),
+    });
+  };
   const handleListScroll = event => {
     if (shouldTriggerEndReachedFromScroll(event)) {
       configs.onEndReached?.();
@@ -86,7 +134,17 @@ const DefaultTableRows = ({ storeName }) => {
           <React.Fragment key={getColumnKey(column)}>
             <DefaultTableInput
               column={column}
-              options={column?.isIdentity ? { cellStyle: { backgroundColor: rowBackgroundColor } } : {}}
+              options={column?.isIdentity ? {
+                cellStyle: [
+                  styles.pinnedIdentityCell,
+                  {
+                    backgroundColor: rowBackgroundColor,
+                    ...(stickyBodyTransforms.identity
+                      ? { transform: stickyBodyTransforms.identity }
+                      : {}),
+                  },
+                ],
+              } : {}}
               row={row}
               storeName={storeName}
               variant="cell"
@@ -98,13 +156,16 @@ const DefaultTableRows = ({ storeName }) => {
             style={[
               styles.cell,
               styles.actionsCell,
-              styles.stickyActionsCell,
+              styles.pinnedActionsCell,
               {
                 minWidth: actionsCellWidth,
                 width: actionsCellWidth,
                 flexBasis: actionsCellWidth,
                 maxWidth: actionsCellWidth,
                 backgroundColor: rowBackgroundColor,
+                ...(stickyBodyTransforms.actions
+                  ? { transform: stickyBodyTransforms.actions }
+                  : {}),
               },
             ]}
           >
@@ -136,6 +197,10 @@ const DefaultTableRows = ({ storeName }) => {
     <>
       <ScrollView
         horizontal
+        onContentSizeChange={handleHorizontalContentSizeChange}
+        onLayout={handleHorizontalLayout}
+        onScroll={handleHorizontalScroll}
+        scrollEventThrottle={16}
         style={styles.scroll}
         contentContainerStyle={styles.horizontalScrollContent}
       >
@@ -156,7 +221,9 @@ const DefaultTableRows = ({ storeName }) => {
                   key={fieldName}
                   style={[
                     getColumnStyle(column),
-                    column?.isIdentity ? [styles.stickyHeaderCell, { backgroundColor: tableHeaderColor }] : null,
+                    column?.isIdentity
+                      ? [styles.stickyIdentityCell, styles.stickyHeaderCell, { backgroundColor: tableHeaderColor }]
+                      : null,
                   ]}
                   activeOpacity={isSortableColumn(column) ? 0.8 : 1}
                   onPress={() => configs.requestSort?.(column)}
@@ -205,7 +272,9 @@ const DefaultTableRows = ({ storeName }) => {
                     key={`${fieldName}-filter`}
                     style={[
                       getColumnStyle(column),
-                      column?.isIdentity ? { backgroundColor: tableHeaderColor } : null,
+                      column?.isIdentity
+                        ? [styles.stickyIdentityCell, { backgroundColor: tableHeaderColor }]
+                        : null,
                     ]}
                   >
                     {column?.filter !== false && column?.filters !== false ? (

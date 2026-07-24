@@ -17,6 +17,8 @@ const STORE_ACTION_META_KEY = '__storeMeta';
 const isPlainObject = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
+const asStyleArray = style => (Array.isArray(style) ? style : [style]).filter(Boolean);
+
 const buildSavedItemPatch = (column, fieldName, value) => {
   if (!column?.list || !fieldName || !isPlainObject(value)) {
     return {};
@@ -128,7 +130,11 @@ const DefaultTableInput = ({
 
   return (
     <View
-      style={[getColumnStyle(column), options.cellStyle, isEditing ? styles.editingCell : null]}
+      style={[
+        ...asStyleArray(getColumnStyle(column)),
+        ...asStyleArray(options.cellStyle),
+        isEditing ? styles.editingCell : null,
+      ]}
       pointerEvents={shouldDelegatePress ? 'none' : 'auto'}
     >
       {input}

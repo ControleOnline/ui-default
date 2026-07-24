@@ -314,6 +314,7 @@ const styles = StyleSheet.create({
     flexGrow: 0.62,
   },
   stickyIdentityCell: {
+    backgroundColor: '#FFFFFF',
     zIndex: 5,
     ...Platform.select({
       web: {
@@ -324,6 +325,7 @@ const styles = StyleSheet.create({
     }),
   },
   stickyActionsCell: {
+    backgroundColor: '#FFFFFF',
     zIndex: 5,
     ...Platform.select({
       web: {
@@ -335,6 +337,28 @@ const styles = StyleSheet.create({
   },
   stickyHeaderCell: {
     zIndex: 8,
+  },
+  pinnedIdentityCell: {
+    backgroundColor: '#FFFFFF',
+    zIndex: 6,
+    ...Platform.select({
+      web: {
+        boxShadow: '2px 0 0 rgba(226,232,240,0.9)',
+        position: 'relative',
+      },
+      default: {},
+    }),
+  },
+  pinnedActionsCell: {
+    backgroundColor: '#FFFFFF',
+    zIndex: 6,
+    ...Platform.select({
+      web: {
+        boxShadow: '-2px 0 0 rgba(226,232,240,0.9)',
+        position: 'relative',
+      },
+      default: {},
+    }),
   },
   moneyCell: {
     minWidth: 132,

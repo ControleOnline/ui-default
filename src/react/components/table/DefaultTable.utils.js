@@ -485,7 +485,7 @@ export const resolveSortComparable = ({ column, row, storeName, columns }) => {
 
 export const getColumnStyle = column => {
   const key = getColumnKey(column);
-  if (column?.isIdentity) return [styles.cell, styles.identityCell, styles.stickyIdentityCell];
+  if (column?.isIdentity) return [styles.cell, styles.identityCell];
   if (['price', 'total', 'amount', 'value'].includes(key)) {
     return [styles.cell, styles.moneyCell];
   }

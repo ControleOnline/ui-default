@@ -330,6 +330,28 @@ describe('DefaultTable', () => {
         expect.objectContaining({position: 'sticky', right: 0}),
       ]),
     );
+
+    const horizontalScroll = tree.root
+      .findAllByType('ScrollView')
+      .find(node => node.props.horizontal);
+
+    renderer.act(() => {
+      horizontalScroll.props.onLayout({nativeEvent: {layout: {width: 300}}});
+      horizontalScroll.props.onContentSizeChange(600, 200);
+      horizontalScroll.props.onScroll({nativeEvent: {contentOffset: {x: 120}}});
+    });
+
+    const scrolledStyles = [
+      ...tree.root.findAllByType('View'),
+      ...tree.root.findAllByType('TouchableOpacity'),
+    ].map(node => flattenStyle(node.props.style));
+
+    expect(scrolledStyles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({transform: [{translateX: 120}]}),
+        expect.objectContaining({transform: [{translateX: -180}]}),
+      ]),
+    );
   });
 
   it('keeps the complete search aligned in the toolbar when there is enough room', () => {
