@@ -117,6 +117,7 @@ const {
   default: DefaultTable,
   mergeSortedDataWithLiveItems,
   resolveColumnListLoadParams,
+  shouldTriggerEndReachedFromScroll,
 } = require('../../../../react/components/table/DefaultTable');
 const {
   DEFAULT_TABLE_PREFERENCES_STORAGE_KEY,
@@ -186,6 +187,26 @@ describe('mergeSortedDataWithLiveItems', () => {
 
     expect(mergedData.map(item => item.id)).toEqual([332, 333]);
     expect(mergedData[0].status.status).toBe('paid');
+  });
+});
+
+describe('shouldTriggerEndReachedFromScroll', () => {
+  it('returns true before the scroll reaches the exact end', () => {
+    expect(shouldTriggerEndReachedFromScroll({
+      nativeEvent: {
+        contentOffset: {y: 650},
+        contentSize: {height: 1200},
+        layoutMeasurement: {height: 400},
+      },
+    })).toBe(true);
+
+    expect(shouldTriggerEndReachedFromScroll({
+      nativeEvent: {
+        contentOffset: {y: 100},
+        contentSize: {height: 1200},
+        layoutMeasurement: {height: 400},
+      },
+    })).toBe(false);
   });
 });
 
@@ -846,12 +867,14 @@ describe('DefaultTable', () => {
 
   it('keeps infinite scroll loading transparent over existing rows', () => {
     let tree;
+    const getItems = jest.fn(() => Promise.resolve({member: []}));
     mockWindowDimensions = {width: 1024, height: 800};
     mockStores.invoices = {
-      actions: {},
+      actions: {
+        getItems,
+      },
       getters: {
         columns: [{key: 'status', label: 'Situação'}],
-        isLoadingList: true,
         items: [{id: 332, status: 'Pago'}],
         totalItems: 1394,
       },
@@ -868,9 +891,63 @@ describe('DefaultTable', () => {
     });
 
     expect(tree.root.findAllByType('StateStore')).toHaveLength(0);
+    const flatList = tree.root.findByType('FlatList');
+    expect(flatList.props.onEndReachedThreshold).toBeGreaterThanOrEqual(0.75);
     expect(tree.root.findByType('ScrollView').props.contentContainerStyle).toEqual(
       expect.objectContaining({minWidth: '100%'}),
     );
+
+    renderer.act(() => {
+      flatList.props.onScroll({
+        nativeEvent: {
+          contentOffset: {y: 650},
+          contentSize: {height: 1200},
+          layoutMeasurement: {height: 400},
+        },
+      });
+    });
+
+    expect(getItems).toHaveBeenCalledWith(expect.objectContaining({append: true}));
+  });
+
+  it('uses the configured summary and labels before the store summary', () => {
+    let tree;
+    mockWindowDimensions = {width: 1024, height: 800};
+    mockStores.invoice = {
+      actions: {},
+      getters: {
+        summary: {
+          financial: {
+            paidAmount: 0,
+          },
+        },
+        totalItems: 1,
+      },
+    };
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'status', label: 'Situação'}],
+          data: [{id: 332, status: 'Pago'}],
+          showColumnFiltersButton: false,
+          showRowActions: false,
+          storeName: 'invoice',
+          summary: {
+            financial: {
+              paidAmount: 80.25,
+            },
+          },
+          summaryLabels: {
+            'financial.paidAmount': 'Valor pago',
+          },
+        }),
+      );
+    });
+
+    const textValues = tree.root.findAllByType('Text').map(node => node.props.children);
+    expect(textValues).toContain('Valor pago');
+    expect(textValues).toContain('R$ 80,25');
   });
 
   it('opens a debug query modal when the store exposes debug.query', () => {

@@ -14,6 +14,7 @@ import {
   getSortField,
   isSortableColumn,
   mergeSortedDataWithLiveItems,
+  shouldTriggerEndReachedFromScroll,
   shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
@@ -53,6 +54,11 @@ const DefaultTableRows = ({ storeName }) => {
     configs.showColumnFiltersButton !== false &&
     configs.tableFiltersVisible === true;
   const actionsCellWidth = hasRowActions ? 96 : 0;
+  const handleListScroll = event => {
+    if (shouldTriggerEndReachedFromScroll(event)) {
+      configs.onEndReached?.();
+    }
+  };
 
   const renderTableItem = ({ item: row, index }) => {
     const RowComponent = hasRowPress ? TouchableOpacity : View;
@@ -227,9 +233,11 @@ const DefaultTableRows = ({ storeName }) => {
             ListFooterComponent={null}
             nestedScrollEnabled
             onMomentumScrollBegin={configs.onMomentumScrollBegin || undefined}
+            onScroll={handleListScroll}
             onScrollBeginDrag={configs.onScrollBeginDrag || undefined}
             onEndReached={configs.onEndReached}
             onEndReachedThreshold={END_REACHED_THRESHOLD}
+            scrollEventThrottle={120}
             showsVerticalScrollIndicator={false}
           />
         </View>

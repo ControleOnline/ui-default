@@ -27,6 +27,7 @@ import useDefaultTableTheme from './useDefaultTableTheme';
 export {
   mergeSortedDataWithLiveItems,
   resolveColumnListLoadParams,
+  shouldTriggerEndReachedFromScroll,
 } from './DefaultTable.utils';
 
 const publishStoreValue = (store, actionName, value, getterName) => {
@@ -81,6 +82,8 @@ const DefaultTable = ({
   showTotalItemsInFooter = true,
   sort = null,
   storeName = '',
+  summary = undefined,
+  summaryLabels = {},
   toolbarActions = [],
   visibleColumnsPreferenceKey = '',
 }) => {
@@ -211,6 +214,8 @@ const DefaultTable = ({
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
+      summary,
+      summaryLabels,
       tableFiltersVisible,
       tablePreferenceScope,
       toolbarActions,
@@ -246,6 +251,8 @@ const DefaultTable = ({
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
+      summary,
+      summaryLabels,
       tableFiltersVisible,
       tablePreferenceScope,
       toolbarActions,

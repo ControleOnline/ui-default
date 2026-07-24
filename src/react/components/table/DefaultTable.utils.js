@@ -13,7 +13,7 @@ export const DEFAULT_CELL_MIN_WIDTH = 118;
 export const DEFAULT_COMPACT_BREAKPOINT = 768;
 export const COLLAPSED_SEARCH_MAX_VIEWPORT_WIDTH = 400;
 export const COLLAPSED_SEARCH_MAX_CONTAINER_WIDTH = 350;
-export const END_REACHED_THRESHOLD = 0.35;
+export const END_REACHED_THRESHOLD = 0.75;
 export const IDENTITY_CELL_MIN_WIDTH = 76;
 export const MONEY_CELL_MIN_WIDTH = 132;
 export const ACTIONS_CELL_WIDTH = 60;
@@ -79,6 +79,27 @@ export const isObject = value =>
 
 export const getRowKey = (row, index = 0) =>
   String(row?.['@id'] || row?.id || index);
+
+export const shouldTriggerEndReachedFromScroll = event => {
+  const nativeEvent = event?.nativeEvent || {};
+  const viewportHeight = Number(nativeEvent.layoutMeasurement?.height);
+  const contentOffsetY = Number(nativeEvent.contentOffset?.y);
+  const contentHeight = Number(nativeEvent.contentSize?.height);
+
+  if (
+    !Number.isFinite(viewportHeight) ||
+    !Number.isFinite(contentOffsetY) ||
+    !Number.isFinite(contentHeight) ||
+    viewportHeight <= 0 ||
+    contentHeight <= viewportHeight
+  ) {
+    return false;
+  }
+
+  const distanceFromEnd = contentHeight - (contentOffsetY + viewportHeight);
+
+  return distanceFromEnd <= viewportHeight * END_REACHED_THRESHOLD;
+};
 
 const normalizeRowIdentity = row => {
   const rawId = row?.['@id'] || row?.id;

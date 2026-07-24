@@ -47,7 +47,11 @@ const DefaultTableFooter = ({ storeName }) => {
     shouldRenderTotalItems
       ? `${totalItemsNumber} ${global.t?.t(storeName, 'label', 'items')}`
       : '';
-  const resolvedSummary = store?.getters?.summary;
+  const configuredSummary = configs.summary;
+  const resolvedSummary = configuredSummary !== undefined
+    ? configuredSummary
+    : store?.getters?.summary;
+  const summaryLabels = isObject(configs.summaryLabels) ? configs.summaryLabels : {};
   const shouldReadSummary = resolvedSummary !== false && isObject(resolvedSummary);
   const summaryEntries = useMemo(() => {
     if (!shouldReadSummary) return [];
@@ -85,7 +89,7 @@ const DefaultTableFooter = ({ storeName }) => {
     });
 
       const genericEntries = flattenSummaryEntries({
-        summaryLabels: {},
+        summaryLabels,
         usedPaths,
         value: resolvedSummary,
       });
@@ -95,7 +99,7 @@ const DefaultTableFooter = ({ storeName }) => {
       entry?.value !== null &&
       normalizeText(entry.value) !== '',
     );
-  }, [columns, resolvedSummary, shouldReadSummary, storeName, tableColumns]);
+  }, [columns, resolvedSummary, shouldReadSummary, storeName, summaryLabels, tableColumns]);
   const shouldRenderFooterBar =
     (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
     summaryEntries.length > 0;

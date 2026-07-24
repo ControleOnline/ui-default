@@ -9,6 +9,7 @@ import {
   END_REACHED_THRESHOLD,
   getRowKey,
   mergeSortedDataWithLiveItems,
+  shouldTriggerEndReachedFromScroll,
   shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
@@ -35,6 +36,11 @@ const DefaultTableCards = ({ storeName }) => {
   const tableMutedColor = palette.textSecondary;
   const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
+  const handleListScroll = event => {
+    if (shouldTriggerEndReachedFromScroll(event)) {
+      configs.onEndReached?.();
+    }
+  };
 
   const renderCardItem = (row, index = 0) => {
     const rowStyleValue = typeof configs.rowStyle === 'function'
@@ -152,9 +158,11 @@ const DefaultTableCards = ({ storeName }) => {
       ListFooterComponent={null}
       nestedScrollEnabled
       onMomentumScrollBegin={configs.onMomentumScrollBegin || undefined}
+      onScroll={handleListScroll}
       onScrollBeginDrag={configs.onScrollBeginDrag || undefined}
       onEndReached={configs.onEndReached}
       onEndReachedThreshold={END_REACHED_THRESHOLD}
+      scrollEventThrottle={120}
       showsVerticalScrollIndicator={false}
     />
   );
