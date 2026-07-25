@@ -79,6 +79,7 @@ const DefaultTable = ({
   rowStyle = null,
   showColumnFiltersButton = true,
   showRowActions = true,
+  showToolbar = true,
   showTotalItemsInCompactToolbar = false,
   showTotalItemsInFooter = true,
   sort = null,
@@ -213,6 +214,7 @@ const DefaultTable = ({
       rowStyle,
       showColumnFiltersButton,
       showRowActions,
+      showToolbar,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
@@ -251,6 +253,7 @@ const DefaultTable = ({
       rowStyle,
       showColumnFiltersButton,
       showRowActions,
+      showToolbar,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
@@ -275,6 +278,7 @@ const DefaultTable = ({
         resolvedSort,
         showColumnFiltersButton,
         showRowActions,
+        showToolbar,
         showTotalItemsInCompactToolbar,
         showTotalItemsInFooter,
         storedViewMode,
@@ -294,6 +298,7 @@ const DefaultTable = ({
       resolvedSort,
       showColumnFiltersButton,
       showRowActions,
+      showToolbar,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       storedViewMode,
@@ -391,7 +396,7 @@ const DefaultTable = ({
         },
       ]}
     >
-      <DefaultTableToolbar storeName={storeName} />
+      {showToolbar !== false ? <DefaultTableToolbar storeName={storeName} /> : null}
       <DefaultTableBody storeName={storeName} />
       <DefaultTableFooter storeName={storeName} />
     </View>

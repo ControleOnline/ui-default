@@ -494,6 +494,33 @@ describe('DefaultTable', () => {
     expect(tree.root.findAllByType('icon').map(node => node.props.name)).not.toContain('search');
   });
 
+  it('hides the toolbar when the screen disables it', () => {
+    mockWindowDimensions = {width: 430, height: 932};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+      },
+    };
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome', searchable: true}],
+          data: [],
+          showToolbar: false,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    expect(tree.root.findAllByType('DefaultSearch')).toHaveLength(0);
+    expect(tree.root.findAllByType('icon').map(node => node.props.name)).not.toEqual(
+      expect.arrayContaining(['columns', 'grid', 'list', 'search']),
+    );
+  });
+
   it('collapses search into an icon on narrow toolbars and opens the search modal', () => {
     mockWindowDimensions = {width: 375, height: 667};
     mockStores.orders = {
