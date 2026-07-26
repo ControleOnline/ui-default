@@ -310,6 +310,7 @@ const DefaultSelect = ({
         {shouldRenderIconFallbackText ? (
           <Text
             style={[
+              inputStyles.readText,
               inputStyles.readTextBadge,
               readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
               readTextStyle,

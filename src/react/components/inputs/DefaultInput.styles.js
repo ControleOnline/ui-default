@@ -42,8 +42,6 @@ const styles = StyleSheet.create({
   readTextBadge: {
     flex: 1,
     maxWidth: '100%',
-    fontSize: 11,
-    fontWeight: '800',
   },
   readBadgeIcon: {
     flexShrink: 0,

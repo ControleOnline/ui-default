@@ -233,7 +233,8 @@ describe('DefaultSelect', () => {
       expect.arrayContaining([
         expect.objectContaining({
           flex: 1,
-          fontWeight: '800',
+          fontSize: 13,
+          fontWeight: '600',
         }),
         {color: '#000000'},
       ]),

@@ -166,6 +166,7 @@ const DefaultInput = ({
           {shouldRenderIconFallbackText ? (
             <Text
               style={[
+                styles.readText,
                 styles.readTextBadge,
                 readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
                 readTextStyle,
