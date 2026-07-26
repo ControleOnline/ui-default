@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   readTextBadge: {
-    flex: 0,
+    flex: 1,
     alignSelf: 'flex-start',
     minWidth: 22,
     minHeight: 22,

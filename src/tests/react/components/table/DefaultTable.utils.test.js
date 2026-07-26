@@ -1,5 +1,18 @@
 const {describe, expect, it} = require('@jest/globals');
 
+jest.mock('@store', () => ({
+  getAllStores: () => ({}),
+}));
+
+jest.mock('react-native', () => ({
+  Platform: {
+    select: value => value.web || value.default,
+  },
+  StyleSheet: {
+    create: value => value,
+  },
+}));
+
 jest.mock('@controleonline/ui-common/src/utils/formatter.js', () => ({}));
 jest.mock('@controleonline/ui-common/src/react/utils/dateRangeFilter', () => ({
   getDateRange: () => ({}),
