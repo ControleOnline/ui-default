@@ -70,7 +70,7 @@ const DefaultDebug = ({
   const [isOpen, setIsOpen] = useState(false);
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
-  const { showError, showSuccess } = useMessage();
+  const { showError, showSuccess } = useMessage() || {};
   const { modalColors, resolvedAccentColor, tableButtonColors } = useDefaultTableTheme();
 
   const resolvedDebug = isObject(store?.getters?.debug) ? store.getters.debug : {};

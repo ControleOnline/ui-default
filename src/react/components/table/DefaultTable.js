@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useIsFocused, useRoute } from '@react-navigation/native';
+import { NavigationRouteContext, useIsFocused } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import Icon from 'react-native-vector-icons/Feather';
@@ -92,7 +92,7 @@ const DefaultTable = ({
   visibleColumnsPreferenceKey = '',
 }) => {
   const { width } = useWindowDimensions();
-  const route = useRoute?.();
+  const route = React.useContext(NavigationRouteContext);
   const store = useStore(storeName);
   const isFocused = useIsFocused();
   const configsSignatureRef = useRef('');

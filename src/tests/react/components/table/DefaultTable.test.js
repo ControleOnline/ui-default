@@ -34,6 +34,7 @@ jest.mock('@store', () => ({
 }));
 
 jest.mock('@react-navigation/native', () => ({
+  NavigationRouteContext: require('react').createContext(undefined),
   useIsFocused: jest.fn(() => false),
   useRoute: jest.fn(() => ({
     key: 'OrderHistoryPage-key',
