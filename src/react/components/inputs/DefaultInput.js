@@ -167,7 +167,6 @@ const DefaultInput = ({
             <Text
               style={[
                 styles.readTextBadge,
-                readPresentationStyles.badgeStyle,
                 readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
                 readTextStyle,
               ]}

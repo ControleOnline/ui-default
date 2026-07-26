@@ -311,7 +311,6 @@ const DefaultSelect = ({
           <Text
             style={[
               inputStyles.readTextBadge,
-              readPresentationStyles.badgeStyle,
               readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
               readTextStyle,
             ]}

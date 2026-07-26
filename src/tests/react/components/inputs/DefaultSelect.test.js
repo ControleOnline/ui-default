@@ -238,5 +238,19 @@ describe('DefaultSelect', () => {
         {color: '#000000'},
       ]),
     );
+    expect(visibleStatus.props.style).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          backgroundColor: expect.any(String),
+        }),
+      ]),
+    );
+    expect(visibleStatus.props.style).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          borderColor: expect.any(String),
+        }),
+      ]),
+    );
   });
 });
