@@ -97,9 +97,16 @@ const DefaultTable = ({
   const configsSignatureRef = useRef('');
   const { showError } = useMessage() || {};
   const { themeColors } = useDefaultTableTheme(accentColor);
+  const tablePanelBorderColor =
+    themeColors.tableBorderSoft ||
+    themeColors.panelBorderSoft ||
+    themeColors.borderSoft ||
+    themeColors.tableBorder ||
+    themeColors.panelBorder ||
+    themeColors.border;
   const floatingAddBackgroundColor =
-    themeColors.buttonBackground || themeColors.primary || accentColor || '#2563EB';
-  const floatingAddIconColor = themeColors.buttonText || '#FFFFFF';
+    themeColors.buttonBackground || themeColors.primary || accentColor;
+  const floatingAddIconColor = themeColors.buttonText;
   const tablePreferenceScope = useMemo(
     () =>
       resolveDefaultTablePreferenceScope({
@@ -400,7 +407,8 @@ const DefaultTable = ({
       style={[
         styles.wrap,
         {
-          borderColor: themeColors.panelBorder,
+          borderWidth: tablePanelBorderColor ? 1 : 0,
+          borderColor: tablePanelBorderColor,
           backgroundColor: themeColors.panelBackground,
         },
       ]}

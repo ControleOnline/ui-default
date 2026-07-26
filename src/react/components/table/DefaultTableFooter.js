@@ -124,7 +124,16 @@ const DefaultTableFooter = ({ storeName }) => {
   }
 
   return (
-    <View style={[styles.footerBar, { backgroundColor: tableFooterBackgroundColor, borderTopColor: tableFooterBorderColor }]}>
+    <View
+      style={[
+        styles.footerBar,
+        {
+          backgroundColor: tableFooterBackgroundColor,
+          borderTopColor: tableFooterBorderColor,
+          borderTopWidth: tableFooterBorderColor ? 1 : 0,
+        },
+      ]}
+    >
       {summaryEntries.length > 0 ? (
         <View style={styles.footerSummaryList}>
           {summaryEntries.map(entry => (

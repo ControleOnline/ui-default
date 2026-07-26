@@ -38,7 +38,13 @@ const DefaultTableRows = ({ storeName }) => {
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading')
     : global.t?.t(storeName, 'label', 'empty');
-  const tableBorderColor = palette.border;
+  const tableBorderColor =
+    themeTokens.tableBorderSoft ||
+    themeTokens.panelBorderSoft ||
+    themeTokens.borderSoft ||
+    themeTokens.tableBorder ||
+    themeTokens.panelBorder ||
+    palette.border;
   const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
   const tableMutedColor = palette.textSecondary;
@@ -129,7 +135,11 @@ const DefaultTableRows = ({ storeName }) => {
         key={getRowKey(row)}
         style={[
           styles.row,
-          { backgroundColor: rowBackgroundColor, borderBottomColor: tableBorderColor },
+          {
+            backgroundColor: rowBackgroundColor,
+            borderBottomColor: tableBorderColor,
+            borderBottomWidth: tableBorderColor ? 1 : 0,
+          },
           rowStyleValue,
         ]}
         {...rowPressProps}
@@ -209,7 +219,16 @@ const DefaultTableRows = ({ storeName }) => {
         contentContainerStyle={styles.horizontalScrollContent}
       >
         <View style={styles.content}>
-          <View style={[styles.headerRow, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
+          <View
+            style={[
+              styles.headerRow,
+              {
+                backgroundColor: tableHeaderColor,
+                borderBottomColor: tableBorderColor,
+                borderBottomWidth: tableBorderColor ? 1 : 0,
+              },
+            ]}
+          >
             {tableColumns.map(column => {
               const fieldName = getColumnKey(column);
               const label = formatStoreColumnLabel({
@@ -267,7 +286,16 @@ const DefaultTableRows = ({ storeName }) => {
             ) : null}
           </View>
           {hasColumnFilters ? (
-            <View style={[styles.filterRow, { backgroundColor: tableHeaderColor, borderBottomColor: tableBorderColor }]}>
+            <View
+              style={[
+                styles.filterRow,
+                {
+                  backgroundColor: tableHeaderColor,
+                  borderBottomColor: tableBorderColor,
+                  borderBottomWidth: tableBorderColor ? 1 : 0,
+                },
+              ]}
+            >
               {tableColumns.map(column => {
                 const fieldName = getColumnKey(column);
 

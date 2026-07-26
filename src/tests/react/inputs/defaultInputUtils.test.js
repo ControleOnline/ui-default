@@ -7,10 +7,14 @@ jest.mock('@store', () => ({
 jest.mock('@controleonline/ui-common/src/utils/formatter.js', () => ({}));
 
 jest.mock('@controleonline/ui-common/src/react/utils/storeColumns', () => ({
-  formatStoreColumnValue: ({value}) => value,
+  formatStoreColumnValue: ({value}) => value?.status || value?.category || value,
 }));
 
-const {mapOptions} = require('../../../react/components/inputs/defaultInputUtils');
+const {
+  buildReadPresentationStyles,
+  mapOptions,
+  resolveCellPresentation,
+} = require('../../../react/components/inputs/defaultInputUtils');
 
 describe('defaultInputUtils', () => {
   it('deduplicates list options by normalized key', () => {
@@ -41,5 +45,72 @@ describe('defaultInputUtils', () => {
         raw: {id: 4579, wallet: 'Cielo'},
       },
     ]);
+  });
+
+  it('preserves option color and icon metadata from formatList', () => {
+    const column = {
+      formatList(item) {
+        return {
+          color: item.color,
+          icon: item.icon,
+          value: item.id,
+          label: item.status,
+        };
+      },
+    };
+
+    const options = mapOptions(column, [
+      {id: 1, status: 'Em rota', color: '#2563EB', icon: 'truck'},
+    ]);
+
+    expect(options).toEqual([
+      {
+        color: '#2563EB',
+        icon: 'truck',
+        key: '1',
+        label: 'Em rota',
+        raw: {id: 1, status: 'Em rota', color: '#2563EB', icon: 'truck'},
+      },
+    ]);
+  });
+
+  it('resolves table cell presentation from row value and column style', () => {
+    const presentation = resolveCellPresentation({
+      column: {
+        name: 'status',
+        style: row => ({color: row.status.color}),
+      },
+      row: {
+        status: {
+          status: 'Aprovado',
+          color: '#16A34A',
+          icon: 'check-circle',
+        },
+      },
+      storeName: 'orders',
+    });
+
+    expect(presentation).toEqual({
+      backgroundColor: undefined,
+      borderColor: undefined,
+      color: '#16A34A',
+      icon: 'check-circle',
+      image: undefined,
+      label: 'Aprovado',
+    });
+  });
+
+  it('builds subtle badge colors from resource colors', () => {
+    expect(buildReadPresentationStyles({
+      color: '#16A34A',
+      label: 'Aprovado',
+    })).toEqual({
+      badgeStyle: {
+        backgroundColor: 'rgba(22, 163, 74, 0.1)',
+        borderColor: 'rgba(22, 163, 74, 0.32)',
+      },
+      color: '#16A34A',
+      hasDecoration: true,
+    });
   });
 });

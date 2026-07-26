@@ -63,7 +63,11 @@ const DefaultTableToolbar = ({ storeName }) => {
       style={[
         styles.toolbar,
         shouldRenderCompactToolbarTotalItems ? styles.toolbarWithCompactTotal : null,
-        { borderBottomColor: toolbarBorderColor, backgroundColor: toolbarBackgroundColor },
+        {
+          borderBottomColor: toolbarBorderColor,
+          borderBottomWidth: toolbarBorderColor ? 1 : 0,
+          backgroundColor: toolbarBackgroundColor,
+        },
       ]}
     >
       {shouldRenderCompactToolbarTotalItems ? (

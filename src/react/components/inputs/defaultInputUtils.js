@@ -151,6 +151,9 @@ const filterItemsByListRequestParams = (items = [], column = null) => {
   );
 };
 
+const normalizeObject = value =>
+  value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+
 export const mapOptions = (column, items = [], storeName = '') => {
   const seenKeys = new Set();
   const options = [];
@@ -166,7 +169,26 @@ export const mapOptions = (column, items = [], storeName = '') => {
     if (dedupeKey && seenKeys.has(dedupeKey)) return;
     if (dedupeKey) seenKeys.add(dedupeKey);
 
+    const formattedMeta = normalizeObject(formatted);
+    const itemMeta = normalizeObject(item);
+    const color = formattedMeta.color ?? itemMeta.color;
+    const icon =
+      formattedMeta.icon ??
+      formattedMeta.iconName ??
+      itemMeta.icon ??
+      itemMeta.iconName;
+    const image =
+      formattedMeta.image ??
+      formattedMeta.logo ??
+      formattedMeta.source ??
+      itemMeta.image ??
+      itemMeta.logo ??
+      itemMeta.source;
+
     options.push({
+      ...(color ? { color } : {}),
+      ...(icon ? { icon } : {}),
+      ...(image ? { image } : {}),
       key,
       label: resolveOptionLabel(column, item, storeName) || '-',
       raw: item,
@@ -209,6 +231,131 @@ export const resolveCellText = ({ column, columns = [], row, storeName, value })
   });
 
   return normalizeText(formattedValue) || '-';
+};
+
+const resolveFormattedListMeta = (column, rawValue, row) => {
+  if (typeof column?.formatList !== 'function') {
+    return {};
+  }
+
+  const formatted = column.formatList(rawValue, row, column);
+  return normalizeObject(formatted);
+};
+
+const resolveStyleMeta = (column, row) => {
+  if (typeof column?.style !== 'function') {
+    return normalizeObject(column?.style);
+  }
+
+  return normalizeObject(column.style(row));
+};
+
+export const resolveCellPresentation = ({
+  column,
+  columns = [],
+  row = {},
+  storeName = '',
+  value,
+} = {}) => {
+  const fieldName = getColumnKey(column);
+  const rawValue = value ?? row?.[fieldName];
+  const rawMeta = normalizeObject(rawValue);
+  const formattedMeta = resolveFormattedListMeta(column, rawValue, row);
+  const styleMeta = resolveStyleMeta(column, row);
+  const label = resolveCellText({
+    column,
+    columns,
+    row,
+    storeName,
+    value,
+  });
+
+  return {
+    backgroundColor:
+      formattedMeta.backgroundColor ??
+      formattedMeta.bgColor ??
+      rawMeta.backgroundColor ??
+      rawMeta.bgColor ??
+      styleMeta.backgroundColor ??
+      styleMeta.bgColor,
+    borderColor:
+      formattedMeta.borderColor ??
+      rawMeta.borderColor ??
+      styleMeta.borderColor,
+    color:
+      formattedMeta.color ??
+      rawMeta.color ??
+      rawMeta.statusColor ??
+      rawMeta.categoryColor ??
+      styleMeta.color,
+    icon:
+      formattedMeta.icon ??
+      formattedMeta.iconName ??
+      rawMeta.icon ??
+      rawMeta.iconName ??
+      styleMeta.icon ??
+      styleMeta.iconName,
+    image:
+      formattedMeta.image ??
+      formattedMeta.logo ??
+      formattedMeta.source ??
+      rawMeta.image ??
+      rawMeta.logo ??
+      rawMeta.source ??
+      styleMeta.image ??
+      styleMeta.logo ??
+      styleMeta.source,
+    label,
+  };
+};
+
+const resolveAlphaColor = (color, opacity = 0.12) => {
+  const normalized = normalizeText(color);
+  const hex = normalized.match(/^#?([a-f\d]{6})$/i)?.[1];
+
+  if (!hex) return normalized || undefined;
+
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
+};
+
+export const buildReadPresentationStyles = presentation => {
+  const color = normalizeText(presentation?.color);
+  const icon = normalizeText(presentation?.icon);
+  const hasDecoration = Boolean(
+    color ||
+    normalizeText(presentation?.backgroundColor) ||
+    normalizeText(presentation?.borderColor) ||
+    (icon && color),
+  );
+
+  if (!hasDecoration || presentation?.label === '-') {
+    return {
+      badgeStyle: null,
+      color: null,
+      hasDecoration: false,
+    };
+  }
+
+  const backgroundColor =
+    presentation.backgroundColor ||
+    (color ? resolveAlphaColor(color, 0.1) : undefined);
+  const borderColor =
+    presentation.borderColor ||
+    presentation.backgroundColor ||
+    (color ? resolveAlphaColor(color, 0.32) : undefined);
+
+  return {
+    badgeStyle: {
+      backgroundColor,
+      borderColor,
+    },
+    color: color || undefined,
+    hasDecoration: true,
+  };
 };
 
 export const resolveEditValue = (column, row, value) => {

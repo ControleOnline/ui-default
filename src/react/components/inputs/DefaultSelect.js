@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Modal,
+  Image,
   ScrollView,
   Text,
   TextInput,
@@ -10,12 +11,14 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import { getAllStores, useStore } from '@store';
 import {
+  buildReadPresentationStyles,
   buildOptionsFromColumn,
   getColumnKey,
   isEditableColumn,
   mapOptions,
   normalizeOptionKey,
   normalizeText,
+  resolveCellPresentation,
   resolveCellText,
   resolveEditValue,
   resolveStoreNameFromList,
@@ -144,6 +147,17 @@ const DefaultSelect = ({
     displayValue ??
     selected?.label ??
     resolveCellText({ column, columns, row, storeName, value });
+  const readPresentation = useMemo(
+    () => resolveCellPresentation({ column, columns, row, storeName, value }),
+    [column, columns, row, storeName, value],
+  );
+  const readPresentationStyles = useMemo(
+    () => buildReadPresentationStyles({
+      ...readPresentation,
+      label: resolvedLabel,
+    }),
+    [readPresentation, resolvedLabel],
+  );
   const canEdit = isEditableColumn(column) && typeof onStartEditing === 'function';
   const isForm = variant === 'form';
   const filteredOptions = useMemo(() => {
@@ -282,16 +296,41 @@ const DefaultSelect = ({
         disabled={!canEdit && !isForm}
         onPress={open}
       >
-        <Text
+        <View
           style={[
-            inputStyles.readText,
-            resolvedLabel === '-' ? inputStyles.mutedText : null,
-            readTextStyle,
+            inputStyles.readValueWrap,
+            readPresentationStyles.hasDecoration ? inputStyles.readBadge : null,
+            readPresentationStyles.badgeStyle,
           ]}
-          numberOfLines={numberOfLines}
         >
-          {resolvedLabel || '-'}
-        </Text>
+          {readPresentation.image ? (
+            <Image
+              source={readPresentation.image}
+              style={inputStyles.readImage}
+              resizeMode="contain"
+            />
+          ) : null}
+          {readPresentationStyles.hasDecoration && readPresentation.icon && readPresentationStyles.color ? (
+            <Icon
+              style={inputStyles.readBadgeIcon}
+              name={readPresentation.icon}
+              size={12}
+              color={readPresentationStyles.color}
+            />
+          ) : null}
+          <Text
+            style={[
+              inputStyles.readText,
+              readPresentationStyles.hasDecoration ? inputStyles.readBadgeText : null,
+              resolvedLabel === '-' ? inputStyles.mutedText : null,
+              readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
+              readTextStyle,
+            ]}
+            numberOfLines={numberOfLines}
+          >
+            {resolvedLabel || '-'}
+          </Text>
+        </View>
         {saving ? (
           <Text style={[inputStyles.savingText, { color: accentColor }]}>Salvando</Text>
         ) : canEdit || isForm ? (
@@ -331,12 +370,21 @@ const DefaultSelect = ({
                       activeOpacity={0.78}
                       onPress={() => selectOption(option)}
                     >
-                      <Icon
-                        name={isSelected ? 'check-circle' : 'circle'}
-                        size={15}
-                        color={isSelected ? accentColor : '#CBD5E1'}
-                      />
-                      <Text style={styles.optionText}>
+                      {option.image ? (
+                        <Image
+                          source={option.image}
+                          style={inputStyles.readImage}
+                          resizeMode="contain"
+                        />
+                      ) : null}
+                      {isSelected || (option.icon && option.color) ? (
+                        <Icon
+                          name={isSelected ? 'check-circle' : option.icon}
+                          size={15}
+                          color={isSelected ? accentColor : option.color}
+                        />
+                      ) : null}
+                      <Text style={[styles.optionText, option.color ? { color: option.color } : null]}>
                         {option.label}
                       </Text>
                     </TouchableOpacity>

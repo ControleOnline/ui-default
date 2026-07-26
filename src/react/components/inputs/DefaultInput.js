@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import {
+  buildReadPresentationStyles,
   getColumnKey,
   isDateLikeColumn,
   isEditableColumn,
   normalizeText,
+  resolveCellPresentation,
   resolveCellText,
   resolveEditValue,
 } from './defaultInputUtils';
@@ -50,6 +52,17 @@ const DefaultInput = ({
   const [draftValue, setDraftValue] = useState(editValue);
   const resolvedLabel =
     displayValue ?? resolveCellText({ column, columns, row, storeName, value });
+  const readPresentation = useMemo(
+    () => resolveCellPresentation({ column, columns, row, storeName, value }),
+    [column, columns, row, storeName, value],
+  );
+  const readPresentationStyles = useMemo(
+    () => buildReadPresentationStyles({
+      ...readPresentation,
+      label: resolvedLabel,
+    }),
+    [readPresentation, resolvedLabel],
+  );
 
   useEffect(() => {
     setDraftValue(editValue);
@@ -138,18 +151,43 @@ const DefaultInput = ({
           disabled={!canEdit}
           onPress={() => onStartEditing?.()}
         >
-          <Text
+          <View
             style={[
-              styles.readText,
-              resolvedLabel === '-' ? styles.mutedText : null,
-              readTextStyle,
+              styles.readValueWrap,
+              readPresentationStyles.hasDecoration ? styles.readBadge : null,
+              readPresentationStyles.badgeStyle,
             ]}
-            numberOfLines={numberOfLines}
           >
-            {column?.prefix || ''}
-            {resolvedLabel || '-'}
-            {column?.sufix || column?.suffix || ''}
-          </Text>
+            {readPresentation.image ? (
+              <Image
+                source={readPresentation.image}
+                style={styles.readImage}
+                resizeMode="contain"
+              />
+            ) : null}
+            {readPresentationStyles.hasDecoration && readPresentation.icon && readPresentationStyles.color ? (
+              <Icon
+                style={styles.readBadgeIcon}
+                name={readPresentation.icon}
+                size={12}
+                color={readPresentationStyles.color}
+              />
+            ) : null}
+            <Text
+              style={[
+                styles.readText,
+                readPresentationStyles.hasDecoration ? styles.readBadgeText : null,
+                resolvedLabel === '-' ? styles.mutedText : null,
+                readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
+                readTextStyle,
+              ]}
+              numberOfLines={numberOfLines}
+            >
+              {column?.prefix || ''}
+              {resolvedLabel || '-'}
+              {column?.sufix || column?.suffix || ''}
+            </Text>
+          </View>
           {saving ? (
             <Text style={[styles.savingText, { color: accentColor }]}>Salvando</Text>
           ) : canEdit ? (

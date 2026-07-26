@@ -3,7 +3,11 @@ import { useStore } from '@store';
 
 const useDefaultTableTheme = (accentColor = null) => {
   const themeStore = useStore('theme');
-  const themeColors = themeStore.getters.colors;
+  const rawThemeColors = themeStore?.getters?.colors || {};
+  const themeColors = useMemo(
+    () => ({ ...rawThemeColors }),
+    [rawThemeColors],
+  );
   const themeTokens = useMemo(
     () => ({ ...themeColors }),
     [themeColors],
