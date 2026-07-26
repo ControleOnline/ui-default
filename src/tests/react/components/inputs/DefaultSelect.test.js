@@ -232,11 +232,8 @@ describe('DefaultSelect', () => {
     expect(visibleStatus.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          minWidth: 22,
+          flex: 1,
           fontWeight: '800',
-        }),
-        expect.objectContaining({
-          backgroundColor: 'rgba(0, 0, 0, 0.1)',
         }),
         {color: '#000000'},
       ]),
