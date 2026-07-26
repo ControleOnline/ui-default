@@ -5,6 +5,9 @@ import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/util
 import { getColumnKey, resolveCellText } from '../inputs/defaultInputUtils';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
+import DefaultTableRowActions, {
+  hasDefaultTableRowActionsComponent,
+} from './DefaultTableRowActions';
 import {
   END_REACHED_THRESHOLD,
   getRowKey,
@@ -63,14 +66,20 @@ const DefaultTableCards = ({ storeName }) => {
     };
     const RowActionsComponent = configs.rowActionsComponent;
     const hasRowPress = typeof configs.onRowPress === 'function';
-    const hasCustomRowActions = typeof RowActionsComponent === 'function';
+    const hasCustomRowActions = hasDefaultTableRowActionsComponent(RowActionsComponent);
     const hasEditAction = typeof configs.onEditRow === 'function';
     const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
     const customRowActions = hasCustomRowActions ? (
-      <RowActionsComponent
+      <DefaultTableRowActions
+        component={RowActionsComponent}
+        helpers={{
+          openEdit: () => configs.onEditRow?.(row),
+          openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+        }}
         openEdit={() => configs.onEditRow?.(row)}
         openRow={hasRowPress ? () => configs.onRowPress(row) : null}
         row={row}
+        storeName={storeName}
       />
     ) : null;
     const editButton = hasEditAction ? (

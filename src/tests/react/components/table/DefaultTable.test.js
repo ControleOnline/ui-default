@@ -401,6 +401,61 @@ describe('DefaultTable', () => {
     );
   });
 
+  it('renders a custom row actions component with the configured actions width', () => {
+    mockWindowDimensions = {width: 1200, height: 800};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        columns: [
+          {key: 'id', label: 'ID', isIdentity: true},
+          {key: 'name', label: 'Nome'},
+        ],
+        items: [{id: 12, name: 'Pedido'}],
+        visibleColumns: {},
+      },
+    };
+    const rowActionsComponent = props =>
+      React.createElement('row-actions', props, props.row.name);
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          onEditRow: jest.fn(),
+          rowActionsComponent,
+          rowActionsWidth: 180,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    const rowActions = tree.root.findByType('row-actions');
+    expect(rowActions.props.row).toEqual({id: 12, name: 'Pedido'});
+    expect(rowActions.props.storeName).toBe('orders');
+    expect(typeof rowActions.props.openEdit).toBe('function');
+    expect(rowActions.props.helpers).toEqual(
+      expect.objectContaining({
+        openEdit: expect.any(Function),
+      }),
+    );
+
+    const renderedStyles = [
+      ...tree.root.findAllByType('View'),
+      ...tree.root.findAllByType('TouchableOpacity'),
+    ].map(node => flattenStyle(node.props.style));
+
+    expect(renderedStyles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          flexBasis: 180,
+          maxWidth: 180,
+          minWidth: 180,
+          width: 180,
+        }),
+      ]),
+    );
+  });
+
   it('keeps only the identity column pinned when row actions are not pinned', () => {
     mockWindowDimensions = {width: 1200, height: 800};
     mockStores.orders = {

@@ -7,6 +7,10 @@ import { getColumnKey } from '../inputs/defaultInputUtils';
 import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
+import DefaultTableRowActions, {
+  hasDefaultTableRowActionsComponent,
+  resolveDefaultTableRowActionsWidth,
+} from './DefaultTableRowActions';
 import {
   END_REACHED_THRESHOLD,
   getColumnStyle,
@@ -48,14 +52,14 @@ const DefaultTableRows = ({ storeName }) => {
   const tableTextColor = palette.text;
   const rowStyle = configs.rowStyle;
   const hasRowPress = typeof configs.onRowPress === 'function';
-  const hasCustomRowActions = typeof configs.rowActionsComponent === 'function';
+  const hasCustomRowActions = hasDefaultTableRowActionsComponent(configs.rowActionsComponent);
   const hasEditAction = typeof configs.onEditRow === 'function';
   const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
   const shouldPinRowActions = configs.pinRowActions !== false;
   const hasColumnFilters =
     configs.showColumnFiltersButton !== false &&
     configs.tableFiltersVisible === true;
-  const actionsCellWidth = hasRowActions ? 96 : 0;
+  const actionsCellWidth = hasRowActions ? resolveDefaultTableRowActionsWidth(configs) : 0;
   const [horizontalMetrics, setHorizontalMetrics] = useState({
     contentWidth: 0,
     viewportWidth: 0,
@@ -180,10 +184,16 @@ const DefaultTableRows = ({ storeName }) => {
           >
             <View style={styles.rowActionsGroup}>
               {hasCustomRowActions ? (
-                <RowActionsComponent
+                <DefaultTableRowActions
+                  component={RowActionsComponent}
+                  helpers={{
+                    openEdit: () => configs.onEditRow?.(row),
+                    openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+                  }}
                   openEdit={() => configs.onEditRow?.(row)}
                   openRow={hasRowPress ? () => configs.onRowPress(row) : null}
                   row={row}
+                  storeName={storeName}
                 />
               ) : null}
               {hasEditAction ? (

@@ -445,9 +445,11 @@ const styles = StyleSheet.create({
   },
   rowActionsGroup: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    width: '100%',
   },
   iconButton: {
     width: 28,
