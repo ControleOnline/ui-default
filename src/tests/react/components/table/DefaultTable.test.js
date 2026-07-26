@@ -521,6 +521,43 @@ describe('DefaultTable', () => {
     );
   });
 
+  it('keeps add available as a floating button when the toolbar is hidden', () => {
+    const onAdd = jest.fn();
+    mockWindowDimensions = {width: 430, height: 932};
+    mockStores.orders = {
+      actions: {},
+      getters: {
+        add: true,
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+      },
+    };
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome', searchable: true}],
+          data: [],
+          onAdd,
+          showToolbar: false,
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    const addButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'plus'));
+
+    expect(addButton).toBeTruthy();
+    expect(addButton.props.accessibilityRole).toBe('button');
+    expect(addButton.props.accessibilityLabel).toBe('Adicionar');
+
+    renderer.act(() => addButton.props.onPress());
+
+    expect(onAdd).toHaveBeenCalledTimes(1);
+  });
+
   it('collapses search into an icon on narrow toolbars and opens the search modal', () => {
     mockWindowDimensions = {width: 375, height: 667};
     mockStores.orders = {

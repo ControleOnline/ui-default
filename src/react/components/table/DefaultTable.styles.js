@@ -128,6 +128,18 @@ const styles = StyleSheet.create({
     width: 30,
     paddingHorizontal: 0,
   },
+  floatingAddButton: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 30,
+    ...shadow,
+  },
   toolbarBadgeText: {
     fontSize: 10,
     fontWeight: '900',

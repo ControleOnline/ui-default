@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useIsFocused, useRoute } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
+import Icon from 'react-native-vector-icons/Feather';
 import { normalizeText } from '../inputs/defaultInputUtils';
 import { DEFAULT_COMPACT_BREAKPOINT, isObject, stableSerialize } from './DefaultTable.utils';
 import {
@@ -96,6 +97,9 @@ const DefaultTable = ({
   const configsSignatureRef = useRef('');
   const { showError } = useMessage() || {};
   const { themeColors } = useDefaultTableTheme(accentColor);
+  const floatingAddBackgroundColor =
+    themeColors.buttonBackground || themeColors.primary || accentColor || '#2563EB';
+  const floatingAddIconColor = themeColors.buttonText || '#FFFFFF';
   const tablePreferenceScope = useMemo(
     () =>
       resolveDefaultTablePreferenceScope({
@@ -124,6 +128,11 @@ const DefaultTable = ({
   const resolvedTotalItems = store?.getters?.totalItems;
   const currentConfigs = store?.getters?.configs || {};
   const isCompactView = width > 0 && width <= compactBreakpoint;
+  const addConfig = store?.getters?.add;
+  const shouldRenderFloatingAddButton =
+    showToolbar === false &&
+    (addConfig === true || add === true) &&
+    (typeof onAdd === 'function' || typeof store?.actions?.save === 'function');
 
   if (storeColumns.length === 0 && Array.isArray(columns) && columns.length > 0) {
     assignGetterValue(store, 'columns', columns);
@@ -399,6 +408,20 @@ const DefaultTable = ({
       {showToolbar !== false ? <DefaultTableToolbar storeName={storeName} /> : null}
       <DefaultTableBody storeName={storeName} />
       <DefaultTableFooter storeName={storeName} />
+      {shouldRenderFloatingAddButton ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={global.t?.t(storeName, 'button', 'add') || 'Adicionar'}
+          activeOpacity={0.84}
+          style={[
+            styles.floatingAddButton,
+            { backgroundColor: floatingAddBackgroundColor },
+          ]}
+          onPress={() => onAdd?.()}
+        >
+          <Icon name="plus" size={24} color={floatingAddIconColor} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };
