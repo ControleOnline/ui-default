@@ -32,6 +32,11 @@ const createStyles = (theme, dense = false, windowWidth = 0) => {
     iconWrapActive: {
       backgroundColor: theme.activeIconBackgroundColor,
     },
+    triggerIconImage: {
+      width: dense ? 16 : 18,
+      height: dense ? 16 : 18,
+      flexShrink: 0,
+    },
     textWrap: {
       flex: 1,
       minWidth: 0,
@@ -117,6 +122,20 @@ const createStyles = (theme, dense = false, windowWidth = 0) => {
       justifyContent: 'space-between',
       gap: 8,
     },
+    modalOptionIcon: {
+      flexShrink: 0,
+    },
+    modalOptionImage: {
+      width: 18,
+      height: 18,
+      flexShrink: 0,
+    },
+    modalOptionFallbackText: {
+      flex: 1,
+      minWidth: 0,
+      fontSize: 14,
+      fontWeight: '800',
+    },
     modalOptionActive: {
       borderColor: theme.accentColor,
       backgroundColor: theme.activeBackgroundColor,
@@ -126,6 +145,9 @@ const createStyles = (theme, dense = false, windowWidth = 0) => {
       fontSize: 14,
       fontWeight: '700',
       color: theme.textColor,
+    },
+    modalOptionTextNoVisual: {
+      marginLeft: 0,
     },
     modalOptionTextActive: {
       color: theme.optionSelectedTextColor,

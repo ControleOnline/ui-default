@@ -6,6 +6,7 @@ import {
   getColumnKey,
   isDateLikeColumn,
   isEditableColumn,
+  isValidFeatherIcon,
   normalizeText,
   resolveCellPresentation,
   resolveCellText,
@@ -142,6 +143,17 @@ const DefaultInput = ({
   };
 
   if (!editing && !isForm) {
+    const readIconName = isValidFeatherIcon(readPresentation.icon)
+      ? readPresentation.icon
+      : '';
+    const shouldRenderIconFallbackText = Boolean(
+      readPresentationStyles.hasDecoration &&
+      !readIconName &&
+      readPresentationStyles.color &&
+      normalizeText(resolvedLabel) &&
+      resolvedLabel !== '-',
+    );
+
     return (
       <View style={[styles.wrap, containerStyle]}>
         {showLabel ? <Text style={styles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
@@ -151,43 +163,57 @@ const DefaultInput = ({
           disabled={!canEdit}
           onPress={() => onStartEditing?.()}
         >
-          <View
-            style={[
-              styles.readValueWrap,
-              readPresentationStyles.hasDecoration ? styles.readBadge : null,
-              readPresentationStyles.badgeStyle,
-            ]}
-          >
-            {readPresentation.image ? (
-              <Image
-                source={readPresentation.image}
-                style={styles.readImage}
-                resizeMode="contain"
-              />
-            ) : null}
-            {readPresentationStyles.hasDecoration && readPresentation.icon && readPresentationStyles.color ? (
-              <Icon
-                style={styles.readBadgeIcon}
-                name={readPresentation.icon}
-                size={12}
-                color={readPresentationStyles.color}
-              />
-            ) : null}
+          {shouldRenderIconFallbackText ? (
             <Text
               style={[
-                styles.readText,
-                readPresentationStyles.hasDecoration ? styles.readBadgeText : null,
-                resolvedLabel === '-' ? styles.mutedText : null,
+                styles.readTextBadge,
+                readPresentationStyles.badgeStyle,
                 readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
                 readTextStyle,
               ]}
               numberOfLines={numberOfLines}
             >
-              {column?.prefix || ''}
-              {resolvedLabel || '-'}
-              {column?.sufix || column?.suffix || ''}
+              {resolvedLabel}
             </Text>
-          </View>
+          ) : (
+            <View
+              style={[
+                styles.readValueWrap,
+                readPresentationStyles.hasDecoration ? styles.readBadge : null,
+                readPresentationStyles.badgeStyle,
+              ]}
+            >
+              {readPresentation.image ? (
+                <Image
+                  source={readPresentation.image}
+                  style={styles.readImage}
+                  resizeMode="contain"
+                />
+              ) : null}
+              {readPresentationStyles.hasDecoration && readIconName && readPresentationStyles.color ? (
+                <Icon
+                  style={styles.readBadgeIcon}
+                  name={readIconName}
+                  size={12}
+                  color={readPresentationStyles.color}
+                />
+              ) : null}
+              <Text
+                style={[
+                  styles.readText,
+                  readPresentationStyles.hasDecoration ? styles.readBadgeText : null,
+                  resolvedLabel === '-' ? styles.mutedText : null,
+                  readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
+                  readTextStyle,
+                ]}
+                numberOfLines={numberOfLines}
+              >
+                {column?.prefix || ''}
+                {resolvedLabel || '-'}
+                {column?.sufix || column?.suffix || ''}
+              </Text>
+            </View>
+          )}
           {saving ? (
             <Text style={[styles.savingText, { color: accentColor }]}>Salvando</Text>
           ) : canEdit ? (

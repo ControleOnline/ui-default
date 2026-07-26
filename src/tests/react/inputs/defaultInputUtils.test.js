@@ -100,6 +100,38 @@ describe('defaultInputUtils', () => {
     });
   });
 
+  it('resolves table cell presentation from the column format object', () => {
+    const presentation = resolveCellPresentation({
+      column: {
+        name: 'status',
+        format(value) {
+          return {
+            label: value.status,
+            color: value.color,
+            icon: value.icon,
+          };
+        },
+      },
+      row: {
+        status: {
+          status: 'Preparando',
+          color: '#0EA5E9',
+          icon: 'clock',
+        },
+      },
+      storeName: 'orders',
+    });
+
+    expect(presentation).toEqual({
+      backgroundColor: undefined,
+      borderColor: undefined,
+      color: '#0EA5E9',
+      icon: 'clock',
+      image: undefined,
+      label: 'Preparando',
+    });
+  });
+
   it('builds subtle badge colors from resource colors', () => {
     expect(buildReadPresentationStyles({
       color: '#16A34A',

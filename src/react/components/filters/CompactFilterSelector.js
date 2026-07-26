@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Image,
   Modal,
   ScrollView,
   Text,
@@ -15,6 +16,7 @@ import {
   resolveStoreColumn,
   resolveStoreConfigByName,
 } from '@controleonline/ui-common/src/react/utils/storeColumns';
+import { isValidFeatherIcon } from '../inputs/defaultInputUtils';
 import createStyles from './CompactFilterSelector.styles';
 
 const buildTheme = ({ accentColor, themeColors = {} }) => ({
@@ -119,6 +121,21 @@ const CompactFilterSelector = ({
   });
   const resolvedLabelCaption = labelCaption || storeFieldLabel;
   const resolvedTitle = title || storeFieldLabel;
+  const selectedOption = useMemo(
+    () => options.find(option => option?.key === selectedKey),
+    [options, selectedKey],
+  );
+  const selectedOptionColor = normalizeText(selectedOption?.color);
+  const selectedOptionIcon = normalizeText(selectedOption?.icon);
+  const selectedOptionIconName = isValidFeatherIcon(selectedOptionIcon)
+    ? selectedOptionIcon
+    : '';
+  const triggerIconName = active && selectedOptionIconName
+    ? selectedOptionIconName
+    : icon;
+  const triggerIconColor = active
+    ? selectedOptionColor || resolvedTheme.activeIconColor
+    : resolvedTheme.iconColor;
 
   const closeModal = useCallback(() => {
     setVisible(false);
@@ -202,11 +219,19 @@ const CompactFilterSelector = ({
         onPress={openModal}
       >
         <View style={[styles.iconWrap, active ? styles.iconWrapActive : null]}>
-          <Icon
-            name={icon}
-            size={dense ? 14 : 15}
-            color={active ? resolvedTheme.activeIconColor : resolvedTheme.iconColor}
-          />
+          {active && selectedOption?.image ? (
+            <Image
+              source={selectedOption.image}
+              style={styles.triggerIconImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <Icon
+              name={triggerIconName}
+              size={dense ? 14 : 15}
+              color={triggerIconColor}
+            />
+          )}
         </View>
 
         <View style={styles.textWrap}>
@@ -216,6 +241,7 @@ const CompactFilterSelector = ({
               style={[
                 styles.triggerCaption,
                 active ? styles.triggerCaptionActive : null,
+                active && selectedOptionColor ? { color: selectedOptionColor } : null,
               ]}
             >
               {resolvedLabelCaption}
@@ -224,7 +250,11 @@ const CompactFilterSelector = ({
 
           <Text
             numberOfLines={1}
-            style={[styles.triggerText, active ? styles.triggerTextActive : null]}
+            style={[
+              styles.triggerText,
+              active ? styles.triggerTextActive : null,
+              active && selectedOptionColor ? { color: selectedOptionColor } : null,
+            ]}
           >
             {label}
           </Text>
@@ -271,6 +301,18 @@ const CompactFilterSelector = ({
 
                   {filteredOptions.map(option => {
                     const isSelected = option.key === selectedKey;
+                    const optionColor = normalizeText(option?.color);
+                    const optionIcon = normalizeText(option?.icon);
+                    const optionIconName = isValidFeatherIcon(optionIcon)
+                      ? optionIcon
+                      : '';
+                    const shouldRenderOptionFallbackText = Boolean(
+                      !option?.image &&
+                      !optionIconName &&
+                      optionColor &&
+                      normalizeText(option?.label),
+                    );
+                    const hasOptionVisual = Boolean(option?.image || optionIconName || shouldRenderOptionFallbackText);
 
                     return (
                       <TouchableOpacity
@@ -282,20 +324,49 @@ const CompactFilterSelector = ({
                         activeOpacity={0.9}
                         onPress={() => handleSelect(option.key)}
                       >
-                        <Text
-                          style={[
-                            styles.modalOptionText,
-                            isSelected ? styles.modalOptionTextActive : null,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
+                        {option?.image ? (
+                          <Image
+                            source={option.image}
+                            style={styles.modalOptionImage}
+                            resizeMode="contain"
+                          />
+                        ) : optionIconName ? (
+                          <Icon
+                            style={styles.modalOptionIcon}
+                            name={optionIconName}
+                            size={16}
+                            color={optionColor || resolvedTheme.iconColor}
+                          />
+                        ) : shouldRenderOptionFallbackText ? (
+                          <Text
+                            style={[
+                              styles.modalOptionFallbackText,
+                              { color: optionColor },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {option.label}
+                          </Text>
+                        ) : null}
+
+                        {shouldRenderOptionFallbackText ? null : (
+                          <Text
+                            style={[
+                              styles.modalOptionText,
+                              isSelected ? styles.modalOptionTextActive : null,
+                              optionColor ? { color: optionColor } : null,
+                              !hasOptionVisual ? styles.modalOptionTextNoVisual : null,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        )}
 
                         {isSelected ? (
                           <Icon
                             name="check"
                             size={16}
-                            color={resolvedTheme.activeIconColor}
+                            color={optionColor || resolvedTheme.activeIconColor}
                           />
                         ) : null}
                       </TouchableOpacity>

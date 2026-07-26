@@ -182,4 +182,64 @@ describe('DefaultSelect', () => {
       }),
     });
   });
+
+  it('keeps the status label visible when the row status has color but no icon', async () => {
+    global.t = {
+      t: jest.fn(() => 'Waiting payment'),
+    };
+    let tree;
+
+    await renderer.act(async () => {
+      tree = renderer.create(
+        React.createElement(DefaultSelect, {
+          column: {
+            name: 'status',
+            label: 'Status',
+            list: 'status/getItems',
+            translate: false,
+            format(value) {
+              return {
+                value: value.id,
+                label: global.t.t('orders', 'status', value.status),
+                color: value.color,
+              };
+            },
+            formatList(value) {
+              return {
+                value: value.id,
+                label: global.t.t('orders', 'status', value.status),
+                color: value.color,
+              };
+            },
+          },
+          row: {
+            status: {
+              id: 6,
+              status: 'waiting payment',
+              color: '#000000',
+            },
+          },
+          storeName: 'orders',
+        }),
+      );
+    });
+
+    const visibleStatus = tree.root
+      .findAllByType('Text')
+      .find(node => node.props.children === 'Waiting payment');
+
+    expect(visibleStatus).toBeTruthy();
+    expect(visibleStatus.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          minWidth: 22,
+          fontWeight: '800',
+        }),
+        expect.objectContaining({
+          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        }),
+        {color: '#000000'},
+      ]),
+    );
+  });
 });

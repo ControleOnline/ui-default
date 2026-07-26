@@ -15,6 +15,7 @@ import {
   buildOptionsFromColumn,
   getColumnKey,
   isEditableColumn,
+  isValidFeatherIcon,
   mapOptions,
   normalizeOptionKey,
   normalizeText,
@@ -160,6 +161,16 @@ const DefaultSelect = ({
   );
   const canEdit = isEditableColumn(column) && typeof onStartEditing === 'function';
   const isForm = variant === 'form';
+  const readIconName = isValidFeatherIcon(readPresentation.icon)
+    ? readPresentation.icon
+    : '';
+  const shouldRenderIconFallbackText = Boolean(
+    readPresentationStyles.hasDecoration &&
+    !readIconName &&
+    readPresentationStyles.color &&
+    normalizeText(resolvedLabel) &&
+    resolvedLabel !== '-',
+  );
   const filteredOptions = useMemo(() => {
     const query = normalizeText(searchText).toLowerCase();
     if (!query || onSearchChange) return options;
@@ -296,41 +307,55 @@ const DefaultSelect = ({
         disabled={!canEdit && !isForm}
         onPress={open}
       >
-        <View
-          style={[
-            inputStyles.readValueWrap,
-            readPresentationStyles.hasDecoration ? inputStyles.readBadge : null,
-            readPresentationStyles.badgeStyle,
-          ]}
-        >
-          {readPresentation.image ? (
-            <Image
-              source={readPresentation.image}
-              style={inputStyles.readImage}
-              resizeMode="contain"
-            />
-          ) : null}
-          {readPresentationStyles.hasDecoration && readPresentation.icon && readPresentationStyles.color ? (
-            <Icon
-              style={inputStyles.readBadgeIcon}
-              name={readPresentation.icon}
-              size={12}
-              color={readPresentationStyles.color}
-            />
-          ) : null}
+        {shouldRenderIconFallbackText ? (
           <Text
             style={[
-              inputStyles.readText,
-              readPresentationStyles.hasDecoration ? inputStyles.readBadgeText : null,
-              resolvedLabel === '-' ? inputStyles.mutedText : null,
+              inputStyles.readTextBadge,
+              readPresentationStyles.badgeStyle,
               readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
               readTextStyle,
             ]}
             numberOfLines={numberOfLines}
           >
-            {resolvedLabel || '-'}
+            {resolvedLabel}
           </Text>
-        </View>
+        ) : (
+          <View
+            style={[
+              inputStyles.readValueWrap,
+              readPresentationStyles.hasDecoration ? inputStyles.readBadge : null,
+              readPresentationStyles.badgeStyle,
+            ]}
+          >
+            {readPresentation.image ? (
+              <Image
+                source={readPresentation.image}
+                style={inputStyles.readImage}
+                resizeMode="contain"
+              />
+            ) : null}
+            {readPresentationStyles.hasDecoration && readIconName && readPresentationStyles.color ? (
+              <Icon
+                style={inputStyles.readBadgeIcon}
+                name={readIconName}
+                size={12}
+                color={readPresentationStyles.color}
+              />
+            ) : null}
+            <Text
+              style={[
+                inputStyles.readText,
+                readPresentationStyles.hasDecoration ? inputStyles.readBadgeText : null,
+                resolvedLabel === '-' ? inputStyles.mutedText : null,
+                readPresentationStyles.color ? { color: readPresentationStyles.color } : null,
+                readTextStyle,
+              ]}
+              numberOfLines={numberOfLines}
+            >
+              {resolvedLabel || '-'}
+            </Text>
+          </View>
+        )}
         {saving ? (
           <Text style={[inputStyles.savingText, { color: accentColor }]}>Salvando</Text>
         ) : canEdit || isForm ? (
@@ -363,6 +388,16 @@ const DefaultSelect = ({
               {filteredOptions.length > 0 ? (
                 filteredOptions.map(option => {
                   const isSelected = option.key === selectedKey;
+                  const optionColor = normalizeText(option.color);
+                  const optionIconName = isValidFeatherIcon(option.icon)
+                    ? option.icon
+                    : '';
+                  const shouldRenderOptionFallbackText = Boolean(
+                    !option.image &&
+                    !optionIconName &&
+                    optionColor &&
+                    normalizeText(option.label),
+                  );
                   return (
                     <TouchableOpacity
                       key={`${option.key}_${option.label}`}
@@ -377,14 +412,20 @@ const DefaultSelect = ({
                           resizeMode="contain"
                         />
                       ) : null}
-                      {isSelected || (option.icon && option.color) ? (
+                      {isSelected || (optionIconName && optionColor) ? (
                         <Icon
-                          name={isSelected ? 'check-circle' : option.icon}
+                          name={isSelected ? 'check-circle' : optionIconName}
                           size={15}
-                          color={isSelected ? accentColor : option.color}
+                          color={isSelected ? accentColor : optionColor}
                         />
                       ) : null}
-                      <Text style={[styles.optionText, option.color ? { color: option.color } : null]}>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          optionColor ? { color: optionColor } : null,
+                          shouldRenderOptionFallbackText ? styles.optionFallbackText : null,
+                        ]}
+                      >
                         {option.label}
                       </Text>
                     </TouchableOpacity>

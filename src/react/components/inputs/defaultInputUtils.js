@@ -1,8 +1,10 @@
 import { getAllStores } from '@store';
 import Formatter from '@controleonline/ui-common/src/utils/formatter.js';
 import { formatStoreColumnValue } from '@controleonline/ui-common/src/react/utils/storeColumns';
+import FeatherGlyphMap from 'react-native-vector-icons/glyphmaps/Feather.json';
 
 export const normalizeText = value => String(value ?? '').trim();
+export const isValidFeatherIcon = icon => Boolean(FeatherGlyphMap[normalizeText(icon)]);
 const formatHumanLabel = value =>
   normalizeText(value)
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -242,6 +244,15 @@ const resolveFormattedListMeta = (column, rawValue, row) => {
   return normalizeObject(formatted);
 };
 
+const resolveFormattedValueMeta = (column, rawValue, row) => {
+  if (typeof column?.format !== 'function') {
+    return {};
+  }
+
+  const formatted = column.format(rawValue, column, row, false);
+  return normalizeObject(formatted);
+};
+
 const resolveStyleMeta = (column, row) => {
   if (typeof column?.style !== 'function') {
     return normalizeObject(column?.style);
@@ -260,6 +271,7 @@ export const resolveCellPresentation = ({
   const fieldName = getColumnKey(column);
   const rawValue = value ?? row?.[fieldName];
   const rawMeta = normalizeObject(rawValue);
+  const formattedValueMeta = resolveFormattedValueMeta(column, rawValue, row);
   const formattedMeta = resolveFormattedListMeta(column, rawValue, row);
   const styleMeta = resolveStyleMeta(column, row);
   const label = resolveCellText({
@@ -272,23 +284,29 @@ export const resolveCellPresentation = ({
 
   return {
     backgroundColor:
+      formattedValueMeta.backgroundColor ??
       formattedMeta.backgroundColor ??
+      formattedValueMeta.bgColor ??
       formattedMeta.bgColor ??
       rawMeta.backgroundColor ??
       rawMeta.bgColor ??
       styleMeta.backgroundColor ??
       styleMeta.bgColor,
     borderColor:
+      formattedValueMeta.borderColor ??
       formattedMeta.borderColor ??
       rawMeta.borderColor ??
       styleMeta.borderColor,
     color:
+      formattedValueMeta.color ??
       formattedMeta.color ??
       rawMeta.color ??
       rawMeta.statusColor ??
       rawMeta.categoryColor ??
       styleMeta.color,
     icon:
+      formattedValueMeta.icon ??
+      formattedValueMeta.iconName ??
       formattedMeta.icon ??
       formattedMeta.iconName ??
       rawMeta.icon ??
@@ -296,6 +314,9 @@ export const resolveCellPresentation = ({
       styleMeta.icon ??
       styleMeta.iconName,
     image:
+      formattedValueMeta.image ??
+      formattedValueMeta.logo ??
+      formattedValueMeta.source ??
       formattedMeta.image ??
       formattedMeta.logo ??
       formattedMeta.source ??

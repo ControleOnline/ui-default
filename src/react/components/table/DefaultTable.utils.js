@@ -485,14 +485,44 @@ export const resolveSortComparable = ({ column, row, storeName, columns }) => {
 
 export const getColumnStyle = column => {
   const key = getColumnKey(column);
-  if (column?.isIdentity) return [styles.cell, styles.identityCell];
-  if (['price', 'total', 'amount', 'value'].includes(key)) {
-    return [styles.cell, styles.moneyCell];
+  const customSize = {};
+  const columnWidth = Number(column?.width);
+  const columnMinWidth = Number(column?.minWidth);
+  const columnFlexBasis = Number(column?.flexBasis);
+
+  if (Number.isFinite(columnWidth) && columnWidth > 0) {
+    customSize.width = columnWidth;
+    customSize.flexBasis = columnWidth;
   }
-  return styles.cell;
+
+  if (Number.isFinite(columnMinWidth) && columnMinWidth > 0) {
+    customSize.minWidth = columnMinWidth;
+  }
+
+  if (Number.isFinite(columnFlexBasis) && columnFlexBasis > 0) {
+    customSize.flexBasis = columnFlexBasis;
+  }
+
+  const columnSizeStyle = Object.keys(customSize).length ? customSize : null;
+
+  if (column?.isIdentity) return [styles.cell, styles.identityCell, columnSizeStyle];
+  if (['price', 'total', 'amount', 'value'].includes(key)) {
+    return [styles.cell, styles.moneyCell, columnSizeStyle];
+  }
+  return [styles.cell, columnSizeStyle];
 };
 
 export const getColumnMinWidth = column => {
+  const columnMinWidth = Number(column?.minWidth);
+  if (Number.isFinite(columnMinWidth) && columnMinWidth > 0) {
+    return columnMinWidth;
+  }
+
+  const columnWidth = Number(column?.width);
+  if (Number.isFinite(columnWidth) && columnWidth > 0) {
+    return columnWidth;
+  }
+
   const key = getColumnKey(column);
   if (column?.isIdentity) return IDENTITY_CELL_MIN_WIDTH;
   if (['price', 'total', 'amount', 'value'].includes(key)) {

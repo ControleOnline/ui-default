@@ -51,6 +51,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  optionFallbackText: {
+    fontWeight: '800',
+  },
   emptyBox: {
     padding: 18,
     alignItems: 'center',
