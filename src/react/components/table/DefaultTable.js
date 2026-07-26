@@ -96,14 +96,8 @@ const DefaultTable = ({
   const isFocused = useIsFocused();
   const configsSignatureRef = useRef('');
   const { showError } = useMessage() || {};
-  const { themeColors } = useDefaultTableTheme(accentColor);
-  const tablePanelBorderColor =
-    themeColors.tableBorderSoft ||
-    themeColors.panelBorderSoft ||
-    themeColors.borderSoft ||
-    themeColors.tableBorder ||
-    themeColors.panelBorder ||
-    themeColors.border;
+  const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor);
+  const tablePanelBorderColor = tableBorderColors.containerBorderColor;
   const floatingAddBackgroundColor =
     themeColors.buttonBackground || themeColors.primary || accentColor;
   const floatingAddIconColor = themeColors.buttonText;

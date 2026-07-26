@@ -20,13 +20,15 @@ const DefaultTableToolbar = ({ storeName }) => {
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
   const toolbarActions = Array.isArray(configs.toolbarActions) ? configs.toolbarActions : [];
-  const { toolbarColors } = useDefaultTableTheme();
+  const { tableBorderColors, toolbarColors } = useDefaultTableTheme();
   const {
     backgroundColor: toolbarBackgroundColor,
     borderColor: toolbarBorderColor,
     countBackgroundColor: toolbarCountBackgroundColor,
     countTextColor: toolbarCountTextColor,
   } = toolbarColors;
+  const resolvedToolbarBorderColor =
+    tableBorderColors.toolbarBorderColor || toolbarBorderColor;
   const storeTotalItems = store?.getters?.totalItems;
   const resolvedTotalItems = storeTotalItems;
   const totalItemsNumber = Number(resolvedTotalItems);
@@ -64,8 +66,8 @@ const DefaultTableToolbar = ({ storeName }) => {
         styles.toolbar,
         shouldRenderCompactToolbarTotalItems ? styles.toolbarWithCompactTotal : null,
         {
-          borderBottomColor: toolbarBorderColor,
-          borderBottomWidth: toolbarBorderColor ? 1 : 0,
+          borderBottomColor: resolvedToolbarBorderColor,
+          borderBottomWidth: resolvedToolbarBorderColor ? 1 : 0,
           backgroundColor: toolbarBackgroundColor,
         },
       ]}

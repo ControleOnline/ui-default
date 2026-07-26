@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { useStore } from '@store';
 
+const firstThemeToken = (themeColors, keys) =>
+  keys.map(key => themeColors?.[key]).find(Boolean);
+
 const useDefaultTableTheme = (accentColor = null) => {
   const themeStore = useStore('theme');
   const rawThemeColors = themeStore?.getters?.colors || {};
@@ -14,10 +17,52 @@ const useDefaultTableTheme = (accentColor = null) => {
   );
   const palette = themeColors;
   const resolvedAccentColor = accentColor ?? themeColors.primary;
+  const tableBorderColors = {
+    containerBorderColor: firstThemeToken(themeColors, [
+      'tableContainerBorder',
+      'tableBorder',
+      'tableHeaderBorder',
+      'tableToolbarBorder',
+      'cardBorder',
+      'listItemBorder',
+      'dividerBorder',
+      'dividerBackground',
+      'inputBorder',
+      'panelBorder',
+      'border',
+    ]),
+    headerBorderColor: firstThemeToken(themeColors, [
+      'tableHeaderBorder',
+      'tableToolbarBorder',
+      'tableBorder',
+      'dividerBorder',
+      'dividerBackground',
+      'listItemBorder',
+      'border',
+    ]),
+    rowBorderColor: firstThemeToken(themeColors, [
+      'tableRowBorder',
+      'listItemBorder',
+      'dividerBorder',
+      'dividerBackground',
+      'tableBorder',
+      'border',
+    ]),
+    toolbarBorderColor: firstThemeToken(themeColors, [
+      'tableToolbarBorder',
+      'tableHeaderBorder',
+      'toolbarBorder',
+      'tableBorder',
+      'dividerBorder',
+      'dividerBackground',
+      'border',
+    ]),
+  };
 
   return {
     palette,
     resolvedAccentColor,
+    tableBorderColors,
     themeColors,
     themeTokens,
     checkboxBorderColor: themeColors.checkboxBorder,

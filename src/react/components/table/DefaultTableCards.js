@@ -81,15 +81,24 @@ const DefaultTableCards = ({ storeName }) => {
 
     if (typeof configs.renderCard === 'function') {
       return (
-        <View key={row?.['@id'] || row?.id} style={[styles.cardItem, rowStyleValue]}>
-          {configs.renderCard({
-            item: row,
-            openEdit: () => configs.onEditRow?.(row),
-            openRow: hasRowPress ? () => configs.onRowPress(row) : null,
-            renderField,
-            renderValue,
-            row,
-          })}
+        <View
+          key={row?.['@id'] || row?.id}
+          style={[
+            styles.cardItem,
+            hasRowActions ? styles.cardItemWithActions : null,
+            rowStyleValue,
+          ]}
+        >
+          <View style={styles.cardContent}>
+            {configs.renderCard({
+              item: row,
+              openEdit: () => configs.onEditRow?.(row),
+              openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+              renderField,
+              renderValue,
+              row,
+            })}
+          </View>
           {hasRowActions ? (
             <View style={styles.cardActions}>
               {customRowActions}

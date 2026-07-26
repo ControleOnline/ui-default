@@ -23,7 +23,7 @@ import useDefaultTableTheme from './useDefaultTableTheme';
 const DefaultTableRows = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
-  const { palette, resolvedAccentColor, themeTokens } = useDefaultTableTheme();
+  const { palette, resolvedAccentColor, tableBorderColors, themeTokens } = useDefaultTableTheme();
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const visibleColumns = store?.getters?.visibleColumns || {};
   const tableColumns = columns.filter(
@@ -38,13 +38,8 @@ const DefaultTableRows = ({ storeName }) => {
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading')
     : global.t?.t(storeName, 'label', 'empty');
-  const tableBorderColor =
-    themeTokens.tableBorderSoft ||
-    themeTokens.panelBorderSoft ||
-    themeTokens.borderSoft ||
-    themeTokens.tableBorder ||
-    themeTokens.panelBorder ||
-    palette.border;
+  const tableBorderColor = tableBorderColors.rowBorderColor;
+  const tableHeaderBorderColor = tableBorderColors.headerBorderColor || tableBorderColor;
   const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
   const tableMutedColor = palette.textSecondary;
@@ -224,8 +219,8 @@ const DefaultTableRows = ({ storeName }) => {
               styles.headerRow,
               {
                 backgroundColor: tableHeaderColor,
-                borderBottomColor: tableBorderColor,
-                borderBottomWidth: tableBorderColor ? 1 : 0,
+                borderBottomColor: tableHeaderBorderColor,
+                borderBottomWidth: tableHeaderBorderColor ? 1 : 0,
               },
             ]}
           >
@@ -291,8 +286,8 @@ const DefaultTableRows = ({ storeName }) => {
                 styles.filterRow,
                 {
                   backgroundColor: tableHeaderColor,
-                  borderBottomColor: tableBorderColor,
-                  borderBottomWidth: tableBorderColor ? 1 : 0,
+                  borderBottomColor: tableHeaderBorderColor,
+                  borderBottomWidth: tableHeaderBorderColor ? 1 : 0,
                 },
               ]}
             >

@@ -490,20 +490,27 @@ const styles = StyleSheet.create({
   cardItem: {
     position: 'relative',
   },
-  cardActions: {
-    position: 'absolute',
-    right: 10,
-    bottom: 10,
+  cardItemWithActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  cardContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 6,
+    flexShrink: 0,
   },
   cardActionGroup: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
     gap: 6,
   },
   defaultCard: {
