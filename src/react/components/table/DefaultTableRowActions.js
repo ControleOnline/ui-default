@@ -32,9 +32,7 @@ const DefaultTableRowActions = ({ component, ...props }) => {
   }
 
   if (hasDefaultTableRowActionsComponent(component)) {
-    const RowActionsComponent = component;
-
-    return <RowActionsComponent {...props} />;
+    return React.createElement(component, props);
   }
 
   return null;
