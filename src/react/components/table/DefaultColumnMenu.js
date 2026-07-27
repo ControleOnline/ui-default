@@ -26,6 +26,7 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
     checkboxBorderColor: resolvedCheckboxBorderColor,
     checkboxSelectedMarkColor: resolvedCheckboxSelectedMarkColor,
     modalColors,
+    themeColors,
   } = useDefaultTableTheme();
   if (!visible) return null;
 
@@ -51,7 +52,7 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
               activeOpacity={0.82}
               onPress={onClose}
             >
-              <Icon name="x" size={16} color={closeIconColor} />
+              <Icon name="x" size={16} color={themeColors.iconWarning || closeIconColor} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.columnMenuModalBody} contentContainerStyle={styles.columnMenuModalList}>

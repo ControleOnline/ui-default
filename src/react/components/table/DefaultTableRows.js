@@ -93,7 +93,6 @@ const DefaultTableRows = ({ storeName }) => {
         shouldPinRowActions && actionsTranslateX !== 0
           ? [{ translateX: actionsTranslateX }]
           : null,
-      identity: x !== 0 ? [{ translateX: x }] : null,
     };
   }, [horizontalMetrics, shouldPinRowActions]);
   const handleHorizontalScroll = event => {
@@ -150,11 +149,9 @@ const DefaultTableRows = ({ storeName }) => {
               options={column?.isIdentity ? {
                 cellStyle: [
                   styles.pinnedIdentityCell,
+                  styles.stickyIdentityCell,
                   {
                     backgroundColor: rowBackgroundColor,
-                    ...(stickyBodyTransforms.identity
-                      ? { transform: stickyBodyTransforms.identity }
-                      : {}),
                   },
                 ],
               } : {}}
