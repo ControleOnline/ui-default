@@ -113,6 +113,18 @@ const extractCoordinates = address => {
 const buildPopupTitle = item =>
   item?.unitAlias || item?.alias || item?.companyName || item?.title || 'Unidade';
 
+const buildLogoFallback = item => {
+  const title = buildPopupTitle(item);
+
+  return String(title || 'CO')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(chunk => chunk[0] || '')
+    .join('')
+    .toUpperCase();
+};
+
 const loadGoogleMapsApi = apiKey => {
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
     return Promise.resolve(null);
@@ -655,6 +667,7 @@ export default function DefaultGoogleMap({
   }
 
   const selectedTitle = buildPopupTitle(selectedMarker);
+  const selectedLogoFallback = buildLogoFallback(selectedMarker);
   const selectedTravelSummary = buildPopupTravelSummaryText(
     selectedMarker,
     selectedRouteSummary,
@@ -699,7 +712,15 @@ export default function DefaultGoogleMap({
                     style={styles.popupLogoImage}
                     resizeMode="cover"
                   />
-                ) : null}
+                ) : (
+                  <Text
+                    style={[
+                      styles.popupLogoFallback,
+                      {color: resolvedPopupTheme.buttonBackground},
+                    ]}>
+                    {selectedLogoFallback}
+                  </Text>
+                )}
               </View>
               <View style={styles.popupTitleWrap}>
                 <Text

@@ -38,8 +38,8 @@ export default StyleSheet.create({
   },
   popupLogoWrap: {
     width: 58,
-    height: 58,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
     alignItems: 'center',
@@ -51,6 +51,13 @@ export default StyleSheet.create({
   popupLogoImage: {
     width: '100%',
     height: '100%',
+  },
+  popupLogoFallback: {
+    fontSize: 24,
+    lineHeight: 26,
+    fontWeight: '900',
+    letterSpacing: 0.04,
+    textTransform: 'uppercase',
   },
   popupTitleWrap: {
     flex: 1,
