@@ -13,6 +13,7 @@ import {
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
+import useDefaultTableTheme from '../table/useDefaultTableTheme';
 import {
   normalizeCollectionItems,
   resolveColumnListLoadParams,
@@ -27,7 +28,7 @@ import {
 import styles from './DefaultColumnFilter.styles';
 
 const DefaultColumnFilter = ({
-  accentColor = '#2563EB',
+  accentColor = null,
   column,
   filters = {},
   onBeforeOpen = null,
@@ -40,6 +41,7 @@ const DefaultColumnFilter = ({
   const store = useStore(storeName);
   const peopleStore = useStore('people');
   const configs = store?.getters?.configs || {};
+  const { resolvedAccentColor } = useDefaultTableTheme(accentColor);
   const [loadedItems, setLoadedItems] = useState([]);
   const [loadedKey, setLoadedKey] = useState('');
   const fieldName = getColumnKey(column);
@@ -201,7 +203,7 @@ const DefaultColumnFilter = ({
           icon="filter"
           onBeforeOpen={onBeforeOpen || (() => loadListOptions())}
           onSearchChange={onSearchChange || (value => loadListOptions(value))}
-          accentColor={accentColor}
+          accentColor={resolvedAccentColor}
           active={Boolean(selectedKey)}
           label={selected?.label || options[0]?.label || ''}
           options={options}

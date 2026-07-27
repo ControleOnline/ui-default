@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useStore } from '@store';
 import Icon from 'react-native-vector-icons/Feather';
 import {
   formatStoreColumnLabel,
@@ -22,9 +23,9 @@ import createStyles from './CompactFilterSelector.styles';
 const buildTheme = ({ accentColor, themeColors = {} }) => ({
   accentColor: accentColor,
   activeBackgroundColor:
-    themeColors.activeBackgroundColor || `${accentColor}14`,
+    themeColors.activeBackgroundColor || (accentColor ? `${accentColor}14` : themeColors.backgroundColor),
   activeIconBackgroundColor:
-    themeColors.activeIconBackgroundColor || `${accentColor}24`,
+    themeColors.activeIconBackgroundColor || (accentColor ? `${accentColor}24` : themeColors.iconBackgroundColor),
   activeChevronColor:
     themeColors.activeChevronColor ||
     themeColors.activeIconColor ||
@@ -83,7 +84,7 @@ const resolveStoreFieldLabel = ({ fallbackLabel = '', field = '', store = '' }) 
 };
 
 const CompactFilterSelector = ({
-  accentColor = '#2563EB',
+  accentColor = null,
   active = false,
   children = null,
   dense = false,
@@ -103,12 +104,27 @@ const CompactFilterSelector = ({
   themeColors = {},
   title = '',
 }) => {
+  const themeStore = useStore('theme');
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const { width: windowWidth } = useWindowDimensions();
+  const themeStoreColors = themeStore?.getters?.colors || {};
+  const resolvedAccentColor =
+    accentColor ||
+    themeColors.primary ||
+    themeColors.accent ||
+    themeStoreColors.primary ||
+    themeStoreColors.accent ||
+    '';
   const resolvedTheme = useMemo(
-    () => buildTheme({ accentColor, themeColors }),
-    [accentColor, themeColors],
+    () => buildTheme({
+      accentColor: resolvedAccentColor,
+      themeColors: {
+        ...themeStoreColors,
+        ...themeColors,
+      },
+    }),
+    [resolvedAccentColor, themeColors, themeStoreColors],
   );
   const styles = useMemo(
     () => createStyles(resolvedTheme, dense, windowWidth),
