@@ -13,7 +13,7 @@ import {
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
-import useDefaultTableTheme from '../table/useDefaultTableTheme';
+import useDefaultTableTheme from '@controleonline/ui-default/src/react/components/table/useDefaultTableTheme';
 import {
   normalizeCollectionItems,
   resolveColumnListLoadParams,
