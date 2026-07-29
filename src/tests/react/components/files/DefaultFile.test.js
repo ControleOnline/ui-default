@@ -35,7 +35,7 @@ describe('DefaultFile', () => {
     jest.clearAllTimers();
   });
 
-  it('renders backend download files with app-domain query and headers', () => {
+  it('renders backend download files with path app-domain and headers', () => {
     let tree;
 
     renderer.act(() => {
@@ -59,7 +59,7 @@ describe('DefaultFile', () => {
     const image = tree.root.findByType('image');
 
     expect(image.props.source).toEqual({
-      uri: 'https://api.controleonline.com/files/3/download?app-domain=maincompany.controleonline.com',
+      uri: 'https://api.controleonline.com/maincompany.controleonline.com/files/3/download',
       headers: {
         Authorization: 'Bearer token',
         'app-domain': 'maincompany.controleonline.com',
