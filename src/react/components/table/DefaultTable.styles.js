@@ -145,6 +145,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
+    zIndex: 14,
+    ...shadow,
+    ...Platform.select({
+      web: {
+        position: 'sticky',
+        bottom: 0,
+      },
+      default: {},
+    }),
   },
   bottomAddButton: {
     minHeight: 46,
@@ -291,6 +300,12 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     minHeight: 0,
+  },
+  body: {
+    flex: 1,
+    width: '100%',
+    minHeight: 0,
+    overflow: 'hidden',
   },
   horizontalScrollContent: {
     flexGrow: 1,
@@ -493,12 +508,22 @@ const styles = StyleSheet.create({
   },
   cardsScroll: {
     flex: 1,
+    width: '100%',
     minHeight: 0,
+    ...Platform.select({
+      web: {
+        overflowY: 'auto',
+      },
+      default: {},
+    }),
   },
   cardsGrid: {
     padding: 10,
     gap: 10,
     flexGrow: 1,
+  },
+  cardsGridWithBottomAdd: {
+    paddingBottom: 86,
   },
   tableList: {
     flex: 1,

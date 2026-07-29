@@ -1,9 +1,10 @@
 import React from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { useStore } from '@store';
 import DefaultTableCards from './DefaultTableCards';
 import DefaultTableRows from './DefaultTableRows';
 import { DEFAULT_COMPACT_BREAKPOINT } from './DefaultTable.utils';
+import styles from './DefaultTable.styles';
 
 const DefaultTableBody = ({ storeName }) => {
   const store = useStore(storeName);
@@ -18,9 +19,13 @@ const DefaultTableBody = ({ storeName }) => {
     configs.initialViewMode ||
     'table';
 
-  return effectiveViewMode === 'cards'
-    ? <DefaultTableCards storeName={storeName} />
-    : <DefaultTableRows storeName={storeName} />;
+  return (
+    <View style={styles.body}>
+      {effectiveViewMode === 'cards'
+        ? <DefaultTableCards storeName={storeName} />
+        : <DefaultTableRows storeName={storeName} />}
+    </View>
+  );
 };
 
 export default DefaultTableBody;

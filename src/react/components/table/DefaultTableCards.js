@@ -49,6 +49,7 @@ const DefaultTableCards = ({ storeName }) => {
   const tableMutedColor = palette.textSecondary;
   const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
+  const hasBottomAddButton = configs.addButtonPlacement === 'bottom';
   const handleListScroll = event => {
     if (shouldTriggerEndReachedFromScroll(event)) {
       configs.onEndReached?.();
@@ -175,7 +176,11 @@ const DefaultTableCards = ({ storeName }) => {
       keyExtractor={getRowKey}
       renderItem={({ item, index }) => renderCardItem(item, index)}
       style={styles.cardsScroll}
-      contentContainerStyle={[styles.cardsGrid, contentContainerStyle]}
+      contentContainerStyle={[
+        styles.cardsGrid,
+        contentContainerStyle,
+        hasBottomAddButton ? styles.cardsGridWithBottomAdd : null,
+      ]}
       ListEmptyComponent={(
         <DefaultTableEmptyState
           emptyStateLabel={emptyStateLabel}
