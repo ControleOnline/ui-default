@@ -40,7 +40,7 @@
 ## Arquivos e imagens
 
 - `DefaultFile` e o componente compartilhado para arquivos/imagens vindos do backend.
-- Quando a fonte for um arquivo de download do backend, o componente deve resolver a URL com `app-domain=<dominio configurado>` e enviar o mesmo valor em `headers` quando a plataforma permitir.
+- Quando a fonte for um arquivo de download do backend, o componente deve resolver a URL com o dominio no path (`/{dominio}/files/{id}/download`) quando nao for possivel enviar header e enviar o mesmo valor em `headers` quando a plataforma permitir.
 - Telas que exibem logo, fundo, avatar, banner ou qualquer arquivo de empresa devem preferir `DefaultFile` em vez de `Image` direto quando o contrato vier do backend.
 
 ## Regra de uso
