@@ -72,6 +72,7 @@ const DefaultTableInput = ({
       column={column}
       columns={columns}
       containerStyle={options.containerStyle}
+      defaultColor={options.defaultColor || configs.defaultColor}
       displayValue={options.displayValue}
       editing={isEditing}
       getOptionsForColumn={configs.getOptionsForColumn}

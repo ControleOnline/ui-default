@@ -40,6 +40,20 @@ export const isDateRangeColumn = column =>
 export const isDateLikeColumn = column =>
   isDateColumn(column) || isDateRangeColumn(column);
 
+export const isColorColumn = column => {
+  const fieldName = normalizeColumnKey(getColumnKey(column));
+  const inputType = normalizeColumnKey(column?.inputType || column?.type);
+
+  return (
+    inputType === 'color' ||
+    inputType === 'hexcolor' ||
+    fieldName === 'color' ||
+    fieldName === 'bgcolor' ||
+    fieldName === 'backgroundcolor' ||
+    fieldName === 'bordercolor'
+  );
+};
+
 const normalizeColumnKey = value =>
   normalizeText(value)
     .replace(/[^a-zA-Z0-9]/g, '')
@@ -152,6 +166,29 @@ const filterItemsByListRequestParams = (items = [], column = null) => {
     }),
   );
 };
+
+export const resolveColorToken = (value, themeColors = {}) => {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+
+  if (normalized.startsWith('$')) {
+    return normalizeText(themeColors?.[normalized.slice(1)]);
+  }
+
+  const cssVarMatch = normalized.match(/^var\([^,]+,\s*(#[0-9a-fA-F]{3,8})\s*\)$/);
+  if (cssVarMatch?.[1]) return cssVarMatch[1];
+
+  return normalized;
+};
+
+export const resolveDefaultColorValue = (column, themeColors = {}, fallbackColor = '') =>
+  resolveColorToken(
+    column?.defaultColor ??
+      column?.defaultColour ??
+      column?.defaultValue ??
+      fallbackColor,
+    themeColors,
+  );
 
 const normalizeObject = value =>
   value && typeof value === 'object' && !Array.isArray(value) ? value : {};

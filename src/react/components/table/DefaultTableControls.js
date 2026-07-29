@@ -38,7 +38,9 @@ const DefaultTableControls = ({ storeName }) => {
   const tableFiltersVisible = Boolean(configs.tableFiltersVisible);
   const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
   const addConfig = store?.getters?.add;
+  const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
   const shouldRenderAddButton =
+    addButtonPlacement === 'toolbar' &&
     (addConfig === true || configs.add === true) &&
     (typeof configs.onAdd === 'function' || typeof store?.actions?.save === 'function');
   const { tableButtonColors } = useDefaultTableTheme();

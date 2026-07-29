@@ -139,6 +139,26 @@ const styles = StyleSheet.create({
     zIndex: 30,
     ...shadow,
   },
+  bottomAddBar: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  bottomAddButton: {
+    minHeight: 46,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  bottomAddText: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
   toolbarBadgeText: {
     fontSize: 10,
     fontWeight: '900',

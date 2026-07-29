@@ -12,6 +12,11 @@ import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const shouldRenderSearch = store => {
+  const configs = store?.getters?.configs || {};
+
+  if (configs.showSearch === true) return true;
+  if (configs.showSearch === false) return false;
+
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
 
   return columns.some(column =>
@@ -45,22 +50,38 @@ const useSearchState = storeName => {
 };
 
 export const DefaultTableCompactSearch = ({ storeName }) => {
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
   const { renders, rendersCompactTotal } = useSearchState(storeName);
 
   return renders && rendersCompactTotal ? (
-    <DefaultSearch compact storeName={storeName} />
+    <DefaultSearch
+      compact
+      placeholder={configs.searchPlaceholder}
+      searchKey={configs.searchKey || 'search'}
+      storeName={storeName}
+    />
   ) : null;
 };
 
 export const DefaultTableInlineSearch = ({ storeName }) => {
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
   const { collapses, renders, rendersCompactTotal } = useSearchState(storeName);
 
   return renders && !rendersCompactTotal && !collapses ? (
-    <DefaultSearch compact storeName={storeName} />
+    <DefaultSearch
+      compact
+      placeholder={configs.searchPlaceholder}
+      searchKey={configs.searchKey || 'search'}
+      storeName={storeName}
+    />
   ) : null;
 };
 
 export const DefaultTableCollapsedSearch = ({ storeName }) => {
+  const store = useStore(storeName);
+  const configs = store?.getters?.configs || {};
   const { collapses, renders, rendersCompactTotal } = useSearchState(storeName);
   const { tableButtonColors } = useDefaultTableTheme();
 
@@ -89,9 +110,11 @@ export const DefaultTableCollapsedSearch = ({ storeName }) => {
       )}
     >
       {({ close, isOpen }) => (
-        <DefaultSearchModal
-          storeName={storeName}
-          visible={isOpen}
+          <DefaultSearchModal
+            searchKey={configs.searchKey || 'search'}
+            searchPlaceholder={configs.searchPlaceholder}
+            storeName={storeName}
+            visible={isOpen}
           onClose={close}
         />
       )}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { NavigationRouteContext, useIsFocused } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
@@ -52,9 +52,13 @@ const DefaultTable = ({
   accentColor = null,
   actions = {},
   add = null,
+  addButtonPlacement = 'toolbar',
+  addLabel = '',
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
+  cardListProps = {},
   columns = [],
   data = undefined,
+  defaultColor = '',
   filters = {},
   footerComponent = null,
   forceCardsOnCompact = true,
@@ -79,7 +83,10 @@ const DefaultTable = ({
   rowActionsComponent = null,
   rowActionsWidth = null,
   rowStyle = null,
+  searchKey = 'search',
+  searchPlaceholder = '',
   showColumnFiltersButton = true,
+  showSearch = null,
   showRowActions = true,
   showToolbar = true,
   showTotalItemsInCompactToolbar = false,
@@ -131,10 +138,21 @@ const DefaultTable = ({
   const currentConfigs = store?.getters?.configs || {};
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const addConfig = store?.getters?.add;
-  const shouldRenderFloatingAddButton =
-    showToolbar === false &&
+  const normalizedAddButtonPlacement = normalizeText(addButtonPlacement) || 'toolbar';
+  const hasAddAction =
     (addConfig === true || add === true) &&
     (typeof onAdd === 'function' || typeof store?.actions?.save === 'function');
+  const shouldRenderFloatingAddButton =
+    hasAddAction &&
+    (normalizedAddButtonPlacement === 'floating' || showToolbar === false);
+  const shouldRenderBottomAddButton =
+    hasAddAction &&
+    showToolbar !== false &&
+    normalizedAddButtonPlacement === 'bottom';
+  const resolvedAddLabel =
+    normalizeText(addLabel) ||
+    normalizeText(global.t?.t(storeName, 'button', 'add')) ||
+    'Adicionar';
 
   if (storeColumns.length === 0 && Array.isArray(columns) && columns.length > 0) {
     assignGetterValue(store, 'columns', columns);
@@ -199,8 +217,12 @@ const DefaultTable = ({
   const defaultTableConfigs = useMemo(
     () => ({
       add,
+      addButtonPlacement: normalizedAddButtonPlacement,
+      addLabel: resolvedAddLabel,
+      cardListProps,
       compactBreakpoint,
       debugFallbackParameters,
+      defaultColor,
       effectiveViewMode,
       filters,
       footerComponent,
@@ -224,7 +246,10 @@ const DefaultTable = ({
       rowActionsComponent,
       rowActionsWidth,
       rowStyle,
+      searchKey,
+      searchPlaceholder,
       showColumnFiltersButton,
+      showSearch,
       showRowActions,
       showToolbar,
       showTotalItemsInCompactToolbar,
@@ -239,8 +264,12 @@ const DefaultTable = ({
     }),
     [
       add,
+      normalizedAddButtonPlacement,
+      resolvedAddLabel,
+      cardListProps,
       compactBreakpoint,
       debugFallbackParameters,
+      defaultColor,
       effectiveViewMode,
       filters,
       footerComponent,
@@ -264,7 +293,10 @@ const DefaultTable = ({
       rowActionsComponent,
       rowActionsWidth,
       rowStyle,
+      searchKey,
+      searchPlaceholder,
       showColumnFiltersButton,
+      showSearch,
       showRowActions,
       showToolbar,
       showTotalItemsInCompactToolbar,
@@ -281,7 +313,11 @@ const DefaultTable = ({
     () =>
       stableSerialize({
         add,
+        addButtonPlacement: normalizedAddButtonPlacement,
+        addLabel: resolvedAddLabel,
+        cardListProps,
         compactBreakpoint,
+        defaultColor,
         effectiveViewMode,
         filters,
         forceCardsOnCompact,
@@ -290,7 +326,10 @@ const DefaultTable = ({
         rowActionsComponentType: rowActionsComponent ? typeof rowActionsComponent : '',
         rowActionsWidth,
         resolvedSort,
+        searchKey,
+        searchPlaceholder,
         showColumnFiltersButton,
+        showSearch,
         showRowActions,
         showToolbar,
         showTotalItemsInCompactToolbar,
@@ -302,7 +341,11 @@ const DefaultTable = ({
       }),
     [
       add,
+      normalizedAddButtonPlacement,
+      resolvedAddLabel,
+      cardListProps,
       compactBreakpoint,
+      defaultColor,
       debugFallbackParameters,
       effectiveViewMode,
       filters,
@@ -312,7 +355,10 @@ const DefaultTable = ({
       rowActionsComponent,
       rowActionsWidth,
       resolvedSort,
+      searchKey,
+      searchPlaceholder,
       showColumnFiltersButton,
+      showSearch,
       showRowActions,
       showToolbar,
       showTotalItemsInCompactToolbar,
@@ -416,10 +462,29 @@ const DefaultTable = ({
       {showToolbar !== false ? <DefaultTableToolbar storeName={storeName} /> : null}
       <DefaultTableBody storeName={storeName} />
       <DefaultTableFooter storeName={storeName} />
+      {shouldRenderBottomAddButton ? (
+        <View style={styles.bottomAddBar}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={resolvedAddLabel}
+            activeOpacity={0.84}
+            style={[
+              styles.bottomAddButton,
+              { backgroundColor: floatingAddBackgroundColor },
+            ]}
+            onPress={() => onAdd?.()}
+          >
+            <Icon name="plus" size={18} color={floatingAddIconColor} />
+            <Text style={[styles.bottomAddText, { color: floatingAddIconColor }]}>
+              {resolvedAddLabel}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       {shouldRenderFloatingAddButton ? (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={global.t?.t(storeName, 'button', 'add') || 'Adicionar'}
+          accessibilityLabel={resolvedAddLabel}
           activeOpacity={0.84}
           style={[
             styles.floatingAddButton,

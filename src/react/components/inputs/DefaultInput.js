@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DefaultExtraData from '../extra-data/DefaultExtraData';
 import Icon from 'react-native-vector-icons/Feather';
 import {
   buildReadPresentationStyles,
   getColumnKey,
+  isColorColumn,
   isDateLikeColumn,
   isEditableColumn,
   isValidFeatherIcon,
@@ -12,6 +14,7 @@ import {
   resolveCellText,
   resolveEditValue,
 } from './defaultInputUtils';
+import DefaultColorInput from './DefaultColorInput';
 import DefaultDateInput from './DefaultDateInput';
 import DefaultSelect from './DefaultSelect';
 import styles from './DefaultInput.styles';
@@ -24,6 +27,7 @@ const DefaultInput = ({
   columns = [],
   containerStyle = null,
   displayValue,
+  defaultColor = '',
   editing = false,
   getOptionsForColumn = null,
   inputStyle = null,
@@ -44,6 +48,9 @@ const DefaultInput = ({
   variant = 'cell',
 }) => {
   const fieldName = getColumnKey(column);
+  const isExtraDataField = ['extradata', 'extra_data'].includes(
+    normalizeText(fieldName).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase(),
+  );
   const isForm = variant === 'form';
   const canEdit = isEditableColumn(column) && typeof onStartEditing === 'function';
   const editValue = useMemo(
@@ -88,6 +95,32 @@ const DefaultInput = ({
         onSave={onSave}
         onStartEditing={onStartEditing}
         readTextStyle={readTextStyle}
+        row={row}
+        saving={saving}
+        showLabel={showLabel}
+        storeName={storeName}
+        value={value}
+        variant={variant}
+      />
+    );
+  }
+
+  if (isColorColumn(column)) {
+    return (
+      <DefaultColorInput
+        accentColor={accentColor}
+        autoFocus={autoFocus}
+        autoSave={autoSave}
+        column={column}
+        containerStyle={containerStyle}
+        defaultColor={defaultColor}
+        editing={editing}
+        inputStyle={inputStyle}
+        label={label}
+        onCancelEditing={onCancelEditing}
+        onChangeValue={onChangeValue}
+        onSave={onSave}
+        onStartEditing={onStartEditing}
         row={row}
         saving={saving}
         showLabel={showLabel}
@@ -143,6 +176,15 @@ const DefaultInput = ({
   };
 
   if (!editing && !isForm) {
+    if (isExtraDataField) {
+      return (
+        <View style={[styles.wrap, containerStyle]}>
+          {showLabel ? <Text style={styles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
+          <DefaultExtraData value={value ?? row?.[fieldName]} />
+        </View>
+      );
+    }
+
     const readIconName = isValidFeatherIcon(readPresentation.icon)
       ? readPresentation.icon
       : '';

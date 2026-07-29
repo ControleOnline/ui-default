@@ -104,6 +104,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     backgroundColor: '#FFFFFF',
   },
+  colorInput: {
+    fontFamily: 'monospace',
+    textTransform: 'uppercase',
+  },
+  invalidColorInput: {
+    borderColor: '#DC2626',
+  },
+  colorPreview: {
+    width: 18,
+    height: 18,
+    flexShrink: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 5,
+  },
+  colorDefaultButton: {
+    width: 28,
+    height: 28,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+  },
   formInput: {
     height: 34,
     borderColor: '#CBD5E1',

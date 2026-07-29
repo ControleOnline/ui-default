@@ -31,6 +31,16 @@ const DefaultTableCards = ({ storeName }) => {
     liveItems: store?.getters?.items,
     sortedData: configs.sortedData,
   });
+  const cardListProps =
+    configs.cardListProps && typeof configs.cardListProps === 'object'
+      ? configs.cardListProps
+      : {};
+  const {
+    contentContainerStyle,
+    key: cardListKey,
+    listKey,
+    ...flatListProps
+  } = cardListProps;
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading')
@@ -159,11 +169,13 @@ const DefaultTableCards = ({ storeName }) => {
 
   return (
     <FlatList
+      key={listKey || cardListKey || `cards-${flatListProps.numColumns || 1}`}
+      {...flatListProps}
       data={sortedData}
       keyExtractor={getRowKey}
       renderItem={({ item, index }) => renderCardItem(item, index)}
       style={styles.cardsScroll}
-      contentContainerStyle={styles.cardsGrid}
+      contentContainerStyle={[styles.cardsGrid, contentContainerStyle]}
       ListEmptyComponent={(
         <DefaultTableEmptyState
           emptyStateLabel={emptyStateLabel}

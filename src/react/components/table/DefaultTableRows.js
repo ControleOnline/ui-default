@@ -14,6 +14,7 @@ import DefaultTableRowActions, {
 import {
   END_REACHED_THRESHOLD,
   getColumnStyle,
+  getColumnMinWidth,
   getRowKey,
   getSortField,
   isSortableColumn,
@@ -60,6 +61,14 @@ const DefaultTableRows = ({ storeName }) => {
     configs.showColumnFiltersButton !== false &&
     configs.tableFiltersVisible === true;
   const actionsCellWidth = hasRowActions ? resolveDefaultTableRowActionsWidth(configs) : 0;
+  const tableMinWidth = useMemo(
+    () =>
+      tableColumns.reduce(
+        (totalWidth, column) => totalWidth + getColumnMinWidth(column),
+        actionsCellWidth,
+      ),
+    [actionsCellWidth, tableColumns],
+  );
   const [horizontalMetrics, setHorizontalMetrics] = useState({
     contentWidth: 0,
     viewportWidth: 0,
@@ -115,6 +124,10 @@ const DefaultTableRows = ({ storeName }) => {
       configs.onEndReached?.();
     }
   };
+  const tableWidth = Math.max(
+    tableMinWidth,
+    Number(horizontalMetrics.viewportWidth || 0),
+  );
 
   const renderTableItem = ({ item: row, index }) => {
     const RowComponent = hasRowPress ? TouchableOpacity : View;
@@ -137,6 +150,8 @@ const DefaultTableRows = ({ storeName }) => {
             backgroundColor: rowBackgroundColor,
             borderBottomColor: tableBorderColor,
             borderBottomWidth: tableBorderColor ? 1 : 0,
+            minWidth: tableWidth,
+            width: tableWidth,
           },
           rowStyleValue,
         ]}
@@ -220,7 +235,7 @@ const DefaultTableRows = ({ storeName }) => {
         style={styles.scroll}
         contentContainerStyle={styles.horizontalScrollContent}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, { minWidth: tableWidth, width: tableWidth }]}>
           <View
             style={[
               styles.headerRow,
@@ -228,6 +243,8 @@ const DefaultTableRows = ({ storeName }) => {
                 backgroundColor: tableHeaderColor,
                 borderBottomColor: tableHeaderBorderColor,
                 borderBottomWidth: tableHeaderBorderColor ? 1 : 0,
+                minWidth: tableWidth,
+                width: tableWidth,
               },
             ]}
           >
