@@ -197,6 +197,8 @@ const DefaultTableCards = ({ storeName }) => {
       onScrollBeginDrag={configs.onScrollBeginDrag || undefined}
       onEndReached={configs.onEndReached}
       onEndReachedThreshold={END_REACHED_THRESHOLD}
+      onRefresh={configs.onRefresh}
+      refreshing={Boolean(configs.refreshing)}
       scrollEventThrottle={120}
       showsVerticalScrollIndicator={false}
     />

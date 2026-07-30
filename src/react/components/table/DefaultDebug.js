@@ -86,6 +86,7 @@ const DefaultDebug = ({
     () => formatDebugValue(debugParameters),
     [debugParameters],
   );
+  const hasDebugParameters = debugParametersText !== '';
   const debugCopyText = useMemo(
     () =>
       [
@@ -118,7 +119,7 @@ const DefaultDebug = ({
     [showError, showSuccess],
   );
 
-  if (!hasDebugQuery) {
+  if (!hasDebugQuery && !hasDebugParameters && !debugFilledQuery) {
     return null;
   }
 
@@ -176,35 +177,41 @@ const DefaultDebug = ({
               </View>
 
               <ScrollView style={styles.debugModalBody} contentContainerStyle={styles.debugModalContent}>
-                <DebugSection
-                  borderColor={borderColor}
-                  copyText={debugQuery}
-                  onCopy={requestCopyText}
-                  textColor={textColor}
-                  title="Query"
-                >
-                  {debugQuery}
-                </DebugSection>
+                {hasDebugQuery ? (
+                  <DebugSection
+                    borderColor={borderColor}
+                    copyText={debugQuery}
+                    onCopy={requestCopyText}
+                    textColor={textColor}
+                    title="Query"
+                  >
+                    {debugQuery}
+                  </DebugSection>
+                ) : null}
 
-                <DebugSection
-                  borderColor={borderColor}
-                  copyText={debugParametersText}
-                  onCopy={requestCopyText}
-                  textColor={textColor}
-                  title="Parametros"
-                >
-                  {debugParametersText}
-                </DebugSection>
+                {hasDebugParameters ? (
+                  <DebugSection
+                    borderColor={borderColor}
+                    copyText={debugParametersText}
+                    onCopy={requestCopyText}
+                    textColor={textColor}
+                    title="Parametros"
+                  >
+                    {debugParametersText}
+                  </DebugSection>
+                ) : null}
 
-                <DebugSection
-                  borderColor={borderColor}
-                  copyText={debugFilledQuery}
-                  onCopy={requestCopyText}
-                  textColor={textColor}
-                  title="Query preenchida"
-                >
-                  {debugFilledQuery}
-                </DebugSection>
+                {debugFilledQuery ? (
+                  <DebugSection
+                    borderColor={borderColor}
+                    copyText={debugFilledQuery}
+                    onCopy={requestCopyText}
+                    textColor={textColor}
+                    title="Query preenchida"
+                  >
+                    {debugFilledQuery}
+                  </DebugSection>
+                ) : null}
               </ScrollView>
 
               <View style={[styles.modalActions, { borderTopColor: borderColor }]}>

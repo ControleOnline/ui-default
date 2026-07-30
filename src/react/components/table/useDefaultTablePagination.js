@@ -79,6 +79,7 @@ const useAutoPageLoader = ({
   const [autoHasLoaded, setAutoHasLoaded] = useState(false);
   const [autoLoading, setAutoLoading] = useState(false);
   const [autoLoadingMore, setAutoLoadingMore] = useState(false);
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
   const [autoLastPageCount, setAutoLastPageCount] = useState(0);
   const autoRequestIdRef = useRef(0);
   const autoLoadedQueryKeyRef = useRef('');
@@ -86,7 +87,7 @@ const useAutoPageLoader = ({
   const autoPageRef = useRef(0);
 
   const loadAutoPage = useCallback(
-    (page, { append = false } = {}) => {
+    (page, { append = false, refresh = false } = {}) => {
       if (!autoMode || typeof resolvedActions.getItems !== 'function') {
         return Promise.resolve([]);
       }
@@ -94,7 +95,10 @@ const useAutoPageLoader = ({
       const requestId = autoRequestIdRef.current + 1;
       autoRequestIdRef.current = requestId;
 
-      if (append) {
+      if (refresh) {
+        setAutoRefreshing(true);
+        autoPageRef.current = 0;
+      } else if (append) {
         setAutoLoadingMore(true);
       } else {
         setAutoLoading(true);
@@ -133,6 +137,7 @@ const useAutoPageLoader = ({
           if (autoRequestIdRef.current === requestId) {
             setAutoLoading(false);
             setAutoLoadingMore(false);
+            setAutoRefreshing(false);
             endReachedLockRef.current = false;
           }
         });
@@ -155,6 +160,7 @@ const useAutoPageLoader = ({
     autoLoadedQueryKeyRef,
     autoLoading,
     autoLoadingMore,
+    autoRefreshing,
     autoPageRef,
     loadAutoPage,
     pageSizeNumber,
@@ -209,6 +215,7 @@ export const useDefaultTablePagination = ({
   hasMore,
   isFocused,
   isLoading,
+  onRefresh,
   onEndReached,
   pageSize,
   requestParams,
@@ -257,6 +264,7 @@ export const useDefaultTablePagination = ({
     autoLoadedQueryKeyRef,
     autoLoading,
     autoLoadingMore,
+    autoRefreshing,
     autoPageRef,
     loadAutoPage,
   } = useAutoPageLoader({
@@ -286,6 +294,9 @@ export const useDefaultTablePagination = ({
   const resolvedIsLoading = autoMode
     ? (autoLoading || autoLoadingMore)
     : Boolean(isLoading);
+  const resolvedIsRefreshing = autoMode
+    ? autoRefreshing
+    : false;
   const resolvedData = autoMode
     ? (autoHasLoaded && Array.isArray(store?.getters?.items) ? store.getters.items : [])
     : (Array.isArray(data) ? data : []);
@@ -358,13 +369,29 @@ export const useDefaultTablePagination = ({
     resolvedIsLoading,
   ]);
 
+  const handleRefresh = useCallback(() => {
+    endReachedLockRef.current = false;
+
+    if (autoMode) {
+      return loadAutoPage(1, { append: false, refresh: true });
+    }
+
+    if (typeof onRefresh === 'function') {
+      return Promise.resolve(onRefresh());
+    }
+
+    return Promise.resolve([]);
+  }, [autoMode, loadAutoPage, onRefresh]);
+
   return {
     buildRequestQuery,
     currentPage: autoPageRef.current,
     handleEndReached,
+    handleRefresh,
     pageSizeNumber,
     resolvedData,
     resolvedHasMore,
+    resolvedIsRefreshing,
     resolvedIsLoading,
   };
 };
