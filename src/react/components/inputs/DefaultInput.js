@@ -9,6 +9,7 @@ import {
   isColorColumn,
   isDateLikeColumn,
   isEditableColumn,
+  isExtraDataColumn,
   isFileColumn,
   isValidFeatherIcon,
   normalizeText,
@@ -50,7 +51,7 @@ const DefaultInput = ({
   variant = 'cell',
 }) => {
   const fieldName = getColumnKey(column);
-  const isExtraDataField = ['extradata', 'extra_data'].includes(
+  const isExtraDataField = isExtraDataColumn(column) || ['extradata', 'extra_data'].includes(
     normalizeText(fieldName).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase(),
   );
   const isForm = variant === 'form';
@@ -182,7 +183,12 @@ const DefaultInput = ({
       return (
         <View style={[styles.wrap, containerStyle]}>
           {showLabel ? <Text style={styles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
-          <DefaultExtraData value={value ?? row?.[fieldName]} />
+          <DefaultExtraData
+            column={column}
+            row={row}
+            value={value ?? row?.[fieldName]}
+            variant={variant}
+          />
         </View>
       );
     }

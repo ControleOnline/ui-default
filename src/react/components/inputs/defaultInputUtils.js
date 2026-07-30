@@ -68,6 +68,9 @@ export const isFileColumn = column => {
   ].includes(inputType);
 };
 
+export const isExtraDataColumn = column =>
+  normalizeColumnKey(column?.inputType || column?.type) === 'extradata';
+
 const normalizeColumnKey = value =>
   normalizeText(value)
     .replace(/[^a-zA-Z0-9]/g, '')
@@ -225,18 +228,8 @@ export const mapOptions = (column, items = [], storeName = '') => {
     const formattedMeta = normalizeObject(formatted);
     const itemMeta = normalizeObject(item);
     const color = formattedMeta.color ?? itemMeta.color;
-    const icon =
-      formattedMeta.icon ??
-      formattedMeta.iconName ??
-      itemMeta.icon ??
-      itemMeta.iconName;
-    const image =
-      formattedMeta.image ??
-      formattedMeta.logo ??
-      formattedMeta.source ??
-      itemMeta.image ??
-      itemMeta.logo ??
-      itemMeta.source;
+    const icon = formattedMeta.icon ?? itemMeta.icon;
+    const image = formattedMeta.image ?? itemMeta.image;
 
     options.push({
       ...(color ? { color } : {}),
@@ -337,12 +330,8 @@ export const resolveCellPresentation = ({
     backgroundColor:
       formattedValueMeta.backgroundColor ??
       formattedMeta.backgroundColor ??
-      formattedValueMeta.bgColor ??
-      formattedMeta.bgColor ??
       rawMeta.backgroundColor ??
-      rawMeta.bgColor ??
-      styleMeta.backgroundColor ??
-      styleMeta.bgColor,
+      styleMeta.backgroundColor,
     borderColor:
       formattedValueMeta.borderColor ??
       formattedMeta.borderColor ??
@@ -352,31 +341,17 @@ export const resolveCellPresentation = ({
       formattedValueMeta.color ??
       formattedMeta.color ??
       rawMeta.color ??
-      rawMeta.statusColor ??
-      rawMeta.categoryColor ??
       styleMeta.color,
     icon:
       formattedValueMeta.icon ??
-      formattedValueMeta.iconName ??
       formattedMeta.icon ??
-      formattedMeta.iconName ??
       rawMeta.icon ??
-      rawMeta.iconName ??
-      styleMeta.icon ??
-      styleMeta.iconName,
+      styleMeta.icon,
     image:
       formattedValueMeta.image ??
-      formattedValueMeta.logo ??
-      formattedValueMeta.source ??
       formattedMeta.image ??
-      formattedMeta.logo ??
-      formattedMeta.source ??
       rawMeta.image ??
-      rawMeta.logo ??
-      rawMeta.source ??
-      styleMeta.image ??
-      styleMeta.logo ??
-      styleMeta.source,
+      styleMeta.image,
     label,
   };
 };

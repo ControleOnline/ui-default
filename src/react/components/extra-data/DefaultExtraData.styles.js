@@ -7,6 +7,11 @@ const styles = StyleSheet.create({
     gap: 6,
     minWidth: 0,
   },
+  cardWrap: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+  },
   item: {
     maxWidth: 180,
     minHeight: 24,
@@ -16,6 +21,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  cardItem: {
+    maxWidth: '100%',
+    width: '100%',
+  },
+  children: {
+    gap: 4,
+    marginTop: 6,
+    paddingLeft: 8,
+    borderLeftWidth: 1,
+    borderLeftColor: '#CBD5E1',
   },
   key: {
     color: '#64748B',
