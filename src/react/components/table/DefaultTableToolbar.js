@@ -1,7 +1,8 @@
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { useStore } from '@store';
 import DefaultTableControls from './DefaultTableControls';
+import DefaultTableImportModal from './DefaultTableImportModal';
 import {
   DefaultTableCollapsedSearch,
   DefaultTableCompactSearch,
@@ -11,8 +12,31 @@ import DefaultToolbarAction from './DefaultToolbarAction';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
+const translateConfigKey = key => {
+  if (!Array.isArray(key) || key.length < 3) {
+    return '';
+  }
+
+  return String(global.t?.t?.(key[0], key[1], key[2]) ?? '').trim();
+};
+
+const resolveConfiguredLabel = config => {
+  const literalLabel = String(config?.label ?? '').trim();
+  if (literalLabel) {
+    return literalLabel;
+  }
+
+  const configuredLabel = translateConfigKey(config?.labelKey);
+  if (configuredLabel) {
+    return configuredLabel;
+  }
+
+  return global.t?.t?.('defaultTable', 'button', 'import');
+};
+
 const DefaultTableToolbar = ({ storeName }) => {
   const store = useStore(storeName);
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const { width } = useWindowDimensions();
   const configs = store?.getters?.configs || {};
   const compactBreakpoint = Number(configs.compactBreakpoint || 768);
@@ -20,6 +44,61 @@ const DefaultTableToolbar = ({ storeName }) => {
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
   const toolbarActions = Array.isArray(configs.toolbarActions) ? configs.toolbarActions : [];
+  const buildTransferAction = (action, fallback) => {
+    if (!action) return null;
+
+    if (typeof action === 'function') {
+      return {
+        ...fallback,
+        onPress: action,
+      };
+    }
+
+    if (typeof action === 'object') {
+      return {
+        ...fallback,
+        ...action,
+      };
+    }
+
+    return null;
+  };
+  const importConfig = configs.import || null;
+  const genericImportAction = useMemo(() => {
+    if (!importConfig || importConfig.enabled === false || !importConfig.importType) {
+      return null;
+    }
+
+    return {
+      key: 'default-table-import',
+      icon: importConfig.icon || 'upload',
+      label: resolveConfiguredLabel(importConfig),
+      onPress: () => setIsImportModalVisible(true),
+    };
+  }, [importConfig]);
+  const importTableAction =
+    genericImportAction ||
+    buildTransferAction(
+      configs.importAction || configs.onImport,
+      {
+        key: 'default-table-import',
+        icon: 'upload',
+        label: global.t?.t?.('defaultTable', 'button', 'import'),
+      },
+    );
+  const exportTableAction = buildTransferAction(
+    configs.exportAction || configs.onExport,
+    {
+      key: 'default-table-export',
+      icon: 'download',
+      label: global.t?.t?.('defaultTable', 'button', 'export'),
+    },
+  );
+  const resolvedToolbarActions = [
+    importTableAction,
+    exportTableAction,
+    ...toolbarActions,
+  ].filter(Boolean);
   const { tableBorderColors, toolbarColors } = useDefaultTableTheme();
   const {
     backgroundColor: toolbarBackgroundColor,
@@ -49,9 +128,9 @@ const DefaultTableToolbar = ({ storeName }) => {
       ? `${totalItemsNumber} ${global.t?.t(storeName, 'label', 'items')}`
       : '';
   const renderToolbarActions = () =>
-    Array.isArray(toolbarActions) && toolbarActions.length > 0 ? (
+    resolvedToolbarActions.length > 0 ? (
       <View style={styles.toolbarActionGroup}>
-        {toolbarActions.map(action => (
+        {resolvedToolbarActions.map(action => (
           <DefaultToolbarAction
             key={action?.key || action?.icon || action?.label}
             action={action}
@@ -97,6 +176,11 @@ const DefaultTableToolbar = ({ storeName }) => {
           <DefaultTableControls storeName={storeName} />
         </View>
       </View>
+      <DefaultTableImportModal
+        onClose={() => setIsImportModalVisible(false)}
+        storeName={storeName}
+        visible={isImportModalVisible}
+      />
     </View>
   );
 };

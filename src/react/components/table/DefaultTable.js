@@ -64,13 +64,17 @@ const DefaultTable = ({
   forceCardsOnCompact = true,
   getOptionsForColumn = null,
   hasMore = null,
+  importAction = null,
   initialViewMode = 'table',
   isLoading = false,
+  exportAction = null,
   onAdd = null,
   onDataLoaded = null,
   onEditRow = null,
   onEndReached = null,
+  onExport = null,
   onFilterChange = null,
+  onImport = null,
   onMomentumScrollBegin = null,
   onRefresh = null,
   onRowPress = null,
@@ -104,6 +108,7 @@ const DefaultTable = ({
   const store = useStore(storeName);
   const isFocused = useIsFocused();
   const configsSignatureRef = useRef('');
+  const storeDeclaredConfigsRef = useRef(null);
   const { showError } = useMessage() || {};
   const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor);
   const tablePanelBorderColor = tableBorderColors.containerBorderColor;
@@ -136,7 +141,17 @@ const DefaultTable = ({
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
   const resolvedTotalItems = store?.getters?.totalItems;
-  const currentConfigs = store?.getters?.configs || {};
+  if (storeDeclaredConfigsRef.current === null) {
+    storeDeclaredConfigsRef.current = isObject(store?.getters?.configs)
+      ? store.getters.configs
+      : {};
+  }
+
+  const storeDeclaredConfigs = storeDeclaredConfigsRef.current || {};
+  const currentConfigs = {
+    ...storeDeclaredConfigs,
+    ...(store?.getters?.configs || {}),
+  };
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const addConfig = store?.getters?.add;
   const normalizedAddButtonPlacement = normalizeText(addButtonPlacement) || 'toolbar';
@@ -220,6 +235,7 @@ const DefaultTable = ({
   const tableFiltersVisible = Boolean(currentConfigs.tableFiltersVisible);
   const defaultTableConfigs = useMemo(
     () => ({
+      ...storeDeclaredConfigs,
       add,
       addButtonPlacement: normalizedAddButtonPlacement,
       addLabel: resolvedAddLabel,
@@ -232,12 +248,17 @@ const DefaultTable = ({
       footerComponent,
       forceCardsOnCompact,
       getOptionsForColumn,
+      import: storeDeclaredConfigs.import,
+      importAction,
       initialViewMode,
+      exportAction,
       onAdd,
       onDataLoaded,
       onEditRow,
       onEndReached: handleEndReached,
+      onExport,
       onFilterChange,
+      onImport,
       onMomentumScrollBegin,
       onRefresh: handleRefresh,
       onRowPress,
@@ -283,11 +304,16 @@ const DefaultTable = ({
       getOptionsForColumn,
       handleEndReached,
       handleRefresh,
+      storeDeclaredConfigs,
+      importAction,
       initialViewMode,
+      exportAction,
       onAdd,
       onDataLoaded,
       onEditRow,
+      onExport,
       onFilterChange,
+      onImport,
       onMomentumScrollBegin,
       onRefresh,
       onRowPress,
@@ -321,6 +347,7 @@ const DefaultTable = ({
   const defaultTableConfigsSignature = useMemo(
     () =>
       stableSerialize({
+        configuredImport: storeDeclaredConfigs.import || null,
         add,
         addButtonPlacement: normalizedAddButtonPlacement,
         addLabel: resolvedAddLabel,
@@ -330,6 +357,8 @@ const DefaultTable = ({
         effectiveViewMode,
         filters,
         forceCardsOnCompact,
+        hasExportAction: Boolean(exportAction || onExport),
+        hasImportAction: Boolean(storeDeclaredConfigs.import || importAction || onImport),
         initialViewMode,
         pinRowActions,
         rowActionsComponentType: rowActionsComponent ? typeof rowActionsComponent : '',
@@ -360,7 +389,12 @@ const DefaultTable = ({
       effectiveViewMode,
       filters,
       forceCardsOnCompact,
+      storeDeclaredConfigs,
+      exportAction,
+      importAction,
       initialViewMode,
+      onExport,
+      onImport,
       pinRowActions,
       rowActionsComponent,
       rowActionsWidth,

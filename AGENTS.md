@@ -22,6 +22,7 @@
 - `pageSize` so deve ser usado quando o contrato externo exigir e com justificativa clara no modulo.
 - `summary` e `totalItems` vem do backend/store e pertencem ao rodape interno do `DefaultTable`.
 - `add: true` abre o `DefaultForm` quando a tela nao prover `onAdd`.
+- Importacao generica pertence ao `DefaultTable`: o store declara `configs.import` com `importType` e chaves de traducao, e a tela nao deve criar botao ou modal local para CSV.
 - `rowActionsComponent` e o slot canonico para acoes por linha quando a tela precisa renderizar mais do que o botao padrao de edicao. Ele pode ser componente, funcao ou elemento React, recebe `row`, `storeName`, `openEdit`, `openRow` e `helpers`, e a largura da coluna deve ser ajustada com `rowActionsWidth` quando houver mais de uma acao.
 - O modo controlado continua existindo apenas para excecoes reais de integracao; o padrao do sistema e o modo store-driven.
 - Loadings e erros devem seguir o fluxo central do sistema, sem banners ou estados paralelos na tela.
