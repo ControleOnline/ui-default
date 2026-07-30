@@ -54,6 +54,20 @@ export const isColorColumn = column => {
   );
 };
 
+export const isFileColumn = column => {
+  const inputType = normalizeColumnKey(column?.inputType || column?.type);
+
+  return [
+    'document',
+    'documents',
+    'file',
+    'files',
+    'image',
+    'images',
+    'pdf',
+  ].includes(inputType);
+};
+
 const normalizeColumnKey = value =>
   normalizeText(value)
     .replace(/[^a-zA-Z0-9]/g, '')
@@ -88,7 +102,7 @@ export const isEditableColumn = column =>
   column?.editable !== false &&
   !column?.isIdentity &&
   column?.inputType !== 'increase' &&
-  column?.inputType !== 'image' &&
+  !isFileColumn(column) &&
   !String(getColumnKey(column)).includes('.');
 
 export const normalizeOptionKey = option => {

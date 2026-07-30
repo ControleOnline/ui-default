@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DefaultExtraData from '../extra-data/DefaultExtraData';
+import DefaultFileColumn from '../files/DefaultFileColumn';
 import Icon from 'react-native-vector-icons/Feather';
 import {
   buildReadPresentationStyles,
@@ -8,6 +9,7 @@ import {
   isColorColumn,
   isDateLikeColumn,
   isEditableColumn,
+  isFileColumn,
   isValidFeatherIcon,
   normalizeText,
   resolveCellPresentation,
@@ -181,6 +183,20 @@ const DefaultInput = ({
         <View style={[styles.wrap, containerStyle]}>
           {showLabel ? <Text style={styles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
           <DefaultExtraData value={value ?? row?.[fieldName]} />
+        </View>
+      );
+    }
+
+    if (isFileColumn(column)) {
+      return (
+        <View style={[styles.wrap, containerStyle]}>
+          {showLabel ? <Text style={styles.fieldLabel}>{label || column?.label || fieldName}</Text> : null}
+          <DefaultFileColumn
+            column={column}
+            row={row}
+            value={value}
+            variant={variant}
+          />
         </View>
       );
     }
