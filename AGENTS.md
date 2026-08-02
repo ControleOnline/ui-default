@@ -44,6 +44,14 @@
 - Quando a fonte for um arquivo de download do backend, o componente deve resolver a URL com o dominio no path (`/{dominio}/files/{id}/download`) quando nao for possivel enviar header e enviar o mesmo valor em `headers` quando a plataforma permitir.
 - Telas que exibem logo, fundo, avatar, banner ou qualquer arquivo de empresa devem preferir `DefaultFile` em vez de `Image` direto quando o contrato vier do backend.
 - Colunas de listagem com arquivos devem declarar `inputType: "files"` ou variantes especificas como `images`, `pdf` ou `documents`; o renderer decide preview/icone pelo `fileType` e `extension` do arquivo, usando `column.fileType` apenas quando a celula trouxer somente ID.
+- `DefaultUpload` e o gerenciador compartilhado para anexar, listar, vincular e remover arquivos por contexto.
+- A tela deve passar o contrato do relacionamento via `relationStoreName`, `relationField`, `relationResource`, `entityId`, `companyId`, `context` e, quando houver, `libraryContexts`, `coverRelationId` e `onCoverChanged`.
+- O componente usa o store de arquivos e o store de relacionamento para carregar a biblioteca, anexar itens existentes, subir novos arquivos e manter o backend como ponto unico de upload.
+- Botoes especificos de tela, como camera de avatar ou importacao CSV, devem usar `renderTrigger` e `showInlineContent={false}`; o trigger nunca deve abrir seletor de arquivo direto, apenas o gerenciador.
+- Contextos cujo vinculo e gerenciado pelo pai devem usar `onUploadFile`, `onAttachFile`, `onRemoveAttachment` e, quando o upload ja persistir o vinculo, `uploadResultAlreadyAttached`.
+- `requireEntity={false}` e excecao para fluxos sem entidade persistida, como importacao, e deve continuar passando pelo gerenciador compartilhado.
+- Sempre que existir mini gerenciador local com o mesmo comportamento, a primeira opcao e migrar para `DefaultUpload` em vez de copiar a logica.
+- `DefaultFile` continua sendo o renderer preferencial dentro do `DefaultUpload` para previews de arquivos oriundos do backend.
 
 ## Regra de uso
 
