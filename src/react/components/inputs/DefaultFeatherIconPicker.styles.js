@@ -42,7 +42,7 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     maxHeight: '82%',
-    maxWidth: 280,
+    maxWidth: 320,
     padding: 14,
     width: '100%',
   },
