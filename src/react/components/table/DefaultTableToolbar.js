@@ -64,18 +64,23 @@ const DefaultTableToolbar = ({ storeName }) => {
     return null;
   };
   const importConfig = configs.import || null;
+  const importActionOverrides =
+    configs.importAction && typeof configs.importAction === 'object'
+      ? configs.importAction
+      : null;
   const genericImportAction = useMemo(() => {
     if (!importConfig || importConfig.enabled === false || !importConfig.importType) {
       return null;
     }
 
     return {
+      ...(importActionOverrides || {}),
       key: 'default-table-import',
       icon: importConfig.icon || 'upload',
       label: resolveConfiguredLabel(importConfig),
       onPress: () => setIsImportModalVisible(true),
     };
-  }, [importConfig]);
+  }, [importActionOverrides, importConfig]);
   const importTableAction =
     genericImportAction ||
     buildTransferAction(
