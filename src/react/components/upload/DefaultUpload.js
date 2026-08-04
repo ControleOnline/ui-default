@@ -14,8 +14,6 @@ import DefaultFile from '@controleonline/ui-default/src/react/components/files/D
 import {selectFile, uploadFileToApi, toFileIri, extractFileId} from './fileUpload';
 import {
   defaultUploadStyles as styles,
-  getAttachmentCoverButtonStyle,
-  getAttachmentCoverTextStyle,
 } from './DefaultUpload.styles';
 
 const DEFAULT_LIBRARY_CONTEXTS = ['products', 'products-category'];
@@ -95,8 +93,39 @@ const DefaultUpload = ({
 }) => {
   const relationStore = useStore(relationStoreName);
   const fileStore = useStore(fileStoreName);
+  const themeStore = useStore('theme');
   const relationActions = relationStore?.actions || {};
   const fileActions = fileStore?.actions || {};
+  const themeColors = themeStore?.getters?.colors || {};
+
+  const buttonPalette = useMemo(
+    () => ({
+      buttonBackground: themeColors.buttonBackground,
+      buttonBorder: themeColors.buttonBorder,
+      buttonText: themeColors.buttonText,
+      buttonIcon: themeColors.buttonIcon || themeColors.buttonText,
+      buttonBackgroundSecondary: themeColors.buttonBackgroundSecondary,
+      buttonBorderSecondary: themeColors.buttonBorderSecondary,
+      buttonTextSecondary: themeColors.buttonTextSecondary,
+      buttonIconSecondary: themeColors.buttonIconSecondary || themeColors.buttonTextSecondary,
+      iconSuccess: themeColors.iconSuccess,
+      iconDanger: themeColors.iconDanger,
+      textDanger: themeColors.textDanger,
+    }),
+    [
+      themeColors.buttonBackground,
+      themeColors.buttonBackgroundSecondary,
+      themeColors.buttonBorder,
+      themeColors.buttonBorderSecondary,
+      themeColors.buttonIcon,
+      themeColors.buttonIconSecondary,
+      themeColors.buttonText,
+      themeColors.buttonTextSecondary,
+      themeColors.iconDanger,
+      themeColors.iconSuccess,
+      themeColors.textDanger,
+    ],
+  );
 
   const attachmentRows = Array.isArray(attachments) ? attachments : [];
   const libraryContextList = useMemo(
@@ -431,10 +460,18 @@ const DefaultUpload = ({
         <TouchableOpacity
           onPress={openManager}
           disabled={uploading}
-          style={[styles.attachmentsTrigger, uploading && styles.disabledButton]}>
+          style={[
+            styles.attachmentsTrigger,
+            {
+              backgroundColor: buttonPalette.buttonBackground,
+              borderColor: buttonPalette.buttonBorder,
+              borderWidth: 1,
+            },
+            uploading && styles.disabledButton,
+          ]}>
           <View style={styles.headerButtonContent}>
-            <MaterialCommunityIcons name="folder-image" size={16} color="#fff" />
-            <Text style={styles.attachmentsTriggerText}>{uploading ? 'Enviando...' : triggerLabel}</Text>
+            <MaterialCommunityIcons name="folder-image" size={16} color={buttonPalette.buttonIcon} />
+            <Text style={[styles.attachmentsTriggerText, {color: buttonPalette.buttonText}]}>{uploading ? 'Enviando...' : triggerLabel}</Text>
           </View>
         </TouchableOpacity>
       );
@@ -448,7 +485,7 @@ const DefaultUpload = ({
             <Text style={styles.modalSubtitle}>{context}</Text>
           </View>
           <TouchableOpacity onPress={() => setManagerOpen(false)} style={styles.iconButton}>
-            <MaterialCommunityIcons name="close" size={22} color="#64748B" />
+            <MaterialCommunityIcons name="close" size={22} color={buttonPalette.buttonIconSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -471,18 +508,35 @@ const DefaultUpload = ({
           <TouchableOpacity
             onPress={handleUpload}
             disabled={uploading}
-            style={[styles.uploadButton, uploading && styles.disabledButton]}>
+            style={[
+              styles.uploadButton,
+              {
+                backgroundColor: buttonPalette.buttonBackground,
+                borderColor: buttonPalette.buttonBorder,
+                borderWidth: 1,
+              },
+              uploading && styles.disabledButton,
+            ]}>
             {uploading ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={buttonPalette.buttonIcon} />
             ) : (
-              <MaterialCommunityIcons name="cloud-upload-outline" size={18} color="#fff" />
+              <MaterialCommunityIcons name="cloud-upload-outline" size={18} color={buttonPalette.buttonIcon} />
             )}
-            <Text style={styles.uploadButtonText}>
+            <Text style={[styles.uploadButtonText, {color: buttonPalette.buttonText}]}>
               {uploading ? 'Enviando' : uploadButtonLabel}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={loadLibrary} disabled={libraryLoading} style={styles.refreshButton}>
-            <MaterialCommunityIcons name="refresh" size={19} color="#334155" />
+          <TouchableOpacity
+            onPress={loadLibrary}
+            disabled={libraryLoading}
+            style={[
+              styles.refreshButton,
+              {
+                backgroundColor: buttonPalette.buttonBackgroundSecondary,
+                borderColor: buttonPalette.buttonBorderSecondary,
+              },
+            ]}>
+            <MaterialCommunityIcons name="refresh" size={19} color={buttonPalette.buttonIconSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -533,7 +587,7 @@ const DefaultUpload = ({
                         <MaterialCommunityIcons
                           name={isAttached ? 'check-circle' : 'plus-circle-outline'}
                           size={22}
-                          color={isAttached ? '#15803D' : '#0F172A'}
+                          color={isAttached ? buttonPalette.iconSuccess : buttonPalette.buttonIconSecondary}
                         />
                       )}
                     </View>
@@ -582,14 +636,46 @@ const DefaultUpload = ({
                   </View>
                   <TouchableOpacity
                     onPress={() => handleSetCover(row)}
-                    style={getAttachmentCoverButtonStyle(coverId, row)}
+                    style={{
+                      backgroundColor:
+                        String(coverId) === String(row.id)
+                          ? buttonPalette.buttonBackground
+                          : buttonPalette.buttonBackgroundSecondary,
+                      borderColor:
+                        String(coverId) === String(row.id)
+                          ? buttonPalette.buttonBorder
+                          : buttonPalette.buttonBorderSecondary,
+                      borderWidth: 1,
+                      paddingVertical: 6,
+                      borderRadius: 4,
+                      marginBottom: 6,
+                    }}
                   >
-                    <Text style={getAttachmentCoverTextStyle(coverId, row)}>
+                    <Text
+                      style={{
+                        textAlign: 'center',
+                        color:
+                          String(coverId) === String(row.id)
+                            ? buttonPalette.buttonText
+                            : buttonPalette.buttonTextSecondary,
+                        fontSize: 12,
+                      }}
+                    >
                       {String(coverId) === String(row.id) ? 'Capa selecionada' : 'Definir como capa'}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleRemove(row)} style={styles.attachmentRemoveButton}>
-                    <Text style={styles.attachmentRemoveText}>Remover</Text>
+                  <TouchableOpacity
+                    onPress={() => handleRemove(row)}
+                    style={[
+                      styles.attachmentRemoveButton,
+                      {
+                        backgroundColor: buttonPalette.buttonBackgroundSecondary,
+                        borderColor: buttonPalette.buttonBorderSecondary,
+                        borderWidth: 1,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.attachmentRemoveText, {color: buttonPalette.textDanger}]}>Remover</Text>
                   </TouchableOpacity>
                 </View>
               );
