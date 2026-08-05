@@ -106,6 +106,7 @@ const DefaultTable = ({
   const { width } = useWindowDimensions();
   const route = React.useContext(NavigationRouteContext);
   const store = useStore(storeName);
+  const peopleStore = useStore('people');
   const isFocused = useIsFocused();
   const configsSignatureRef = useRef('');
   const storeDeclaredConfigsRef = useRef(null);
@@ -115,14 +116,16 @@ const DefaultTable = ({
   const floatingAddBackgroundColor =
     themeColors.buttonBackground || themeColors.primary || accentColor;
   const floatingAddIconColor = themeColors.buttonText;
+  const currentCompanyId = peopleStore?.getters?.currentCompany?.id;
   const tablePreferenceScope = useMemo(
     () =>
       resolveDefaultTablePreferenceScope({
+        companyId: currentCompanyId,
         preferenceKey: visibleColumnsPreferenceKey,
         route,
         storeName,
       }),
-    [route?.key, route?.name, storeName, visibleColumnsPreferenceKey],
+    [currentCompanyId, route?.key, route?.name, storeName, visibleColumnsPreferenceKey],
   );
   const storedViewMode = useMemo(
     () => resolveStoredTableViewModePreference(tablePreferenceScope, null),
