@@ -9,6 +9,7 @@ let consoleErrorSpy = null;
 let mockStores = {};
 let mockWindowDimensions = {width: 480, height: 800};
 let mockCapturedColumnFilterProps = [];
+let mockCapturedDefaultFormProps = [];
 let mockCapturedDefaultInputProps = [];
 
 const createLocalStorageMock = () => {
@@ -27,6 +28,8 @@ const createLocalStorageMock = () => {
     },
   };
 };
+
+global.localStorage = createLocalStorageMock();
 
 jest.mock('@store', () => ({
   getAllStores: jest.fn(() => ({})),
@@ -98,9 +101,15 @@ jest.mock('../../../../react/components/filters/DefaultSearch', () => props => {
   return React.createElement('DefaultSearch', props);
 });
 
-jest.mock('../../../../react/components/form/DefaultForm', () => () => {
+jest.mock('../../../../react/components/table/DefaultTableImportModal', () => props => {
   const React = require('react');
-  return React.createElement('DefaultForm');
+  return React.createElement('DefaultTableImportModal', props);
+});
+
+jest.mock('../../../../react/components/form/DefaultForm', () => props => {
+  const React = require('react');
+  mockCapturedDefaultFormProps.push(props);
+  return React.createElement('DefaultForm', props);
 });
 
 jest.mock('../../../../react/components/inputs/DefaultInput', () => props => {
@@ -230,6 +239,7 @@ describe('DefaultTable', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockWindowDimensions = {width: 480, height: 800};
     mockCapturedColumnFilterProps = [];
+    mockCapturedDefaultFormProps = [];
     mockCapturedDefaultInputProps = [];
     getAllStores.mockImplementation(() => ({}));
     global.localStorage = createLocalStorageMock();
@@ -612,6 +622,47 @@ describe('DefaultTable', () => {
     renderer.act(() => addButton.props.onPress());
 
     expect(onAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the default create form when add has no custom handler', () => {
+    mockWindowDimensions = {width: 430, height: 932};
+    const save = jest.fn(() => Promise.resolve({id: 10}));
+    mockStores.invoice = {
+      actions: {save},
+      getters: {
+        add: true,
+        columns: [{key: 'payer', label: 'Pagador', editable: true}],
+      },
+    };
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          requestParams: {receiver: 21},
+          showToolbar: false,
+          storeName: 'invoice',
+        }),
+      );
+    });
+
+    const addButton = tree.root
+      .findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('icon').some(icon => icon.props.name === 'plus'));
+
+    expect(tree.root.findAllByType('Modal').some(node => node.props.visible)).toBe(false);
+
+    renderer.act(() => addButton.props.onPress());
+
+    expect(tree.root.findAllByType('Modal').some(node => node.props.visible)).toBe(true);
+    expect(mockCapturedDefaultFormProps[mockCapturedDefaultFormProps.length - 1]).toEqual(
+      expect.objectContaining({
+        actions: expect.objectContaining({save}),
+        mode: 'create',
+        row: {receiver: 21},
+        storeName: 'invoice',
+      }),
+    );
   });
 
   it('collapses search into an icon on narrow toolbars and opens the search modal', () => {

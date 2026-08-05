@@ -54,6 +54,18 @@ const buildDraft = (columns, row) =>
     return draft;
   }, {});
 
+const resolveCreatePayloadColumns = (columns, formColumns) => {
+  const formColumnKeys = new Set(formColumns.map(column => getColumnKey(column)));
+
+  return [
+    ...formColumns,
+    ...columns.filter(column => {
+      const fieldName = getColumnKey(column);
+      return fieldName && column?.createPayload === true && !formColumnKeys.has(fieldName);
+    }),
+  ];
+};
+
 const EMPTY_ROW = {};
 
 const DefaultForm = ({
@@ -88,8 +100,13 @@ const DefaultForm = ({
     () => columns.filter(column => shouldIncludeColumn(column, row, mode)),
     [columns, mode, row],
   );
+  const createPayloadColumns = useMemo(
+    () => resolveCreatePayloadColumns(columns, formColumns),
+    [columns, formColumns],
+  );
   const [draft, setDraft] = useState(() => buildDraft(formColumns, row));
   const [isSaving, setIsSaving] = useState(false);
+  const formRow = useMemo(() => ({ ...row, ...draft }), [draft, row]);
 
   useEffect(() => {
     setDraft(buildDraft(formColumns, row));
@@ -106,20 +123,23 @@ const DefaultForm = ({
       ? {}
       : { id: normalizeId(row?.['@id'] || row?.id) };
 
-    formColumns.forEach(column => {
+    const payloadColumns = isCreate ? createPayloadColumns : formColumns;
+
+    payloadColumns.forEach(column => {
       const fieldName = getColumnKey(column);
-      const nextValue = draft[fieldName];
+      const defaultValue = resolveDefaultValue(column, row);
+      const nextValue = draft[fieldName] ?? resolveEditValue(column, row, defaultValue);
 
       if (isCreate) {
         if (hasValue(nextValue)) {
-          payload[fieldName] = formatSaveValue(column, nextValue, row);
+          payload[fieldName] = formatSaveValue(column, nextValue, formRow);
         }
         return;
       }
 
       const currentValue = resolveEditValue(column, row);
       if (normalizeText(currentValue) !== normalizeText(nextValue)) {
-        payload[fieldName] = formatSaveValue(column, nextValue, row);
+        payload[fieldName] = formatSaveValue(column, nextValue, formRow);
       }
     });
 
@@ -143,7 +163,7 @@ const DefaultForm = ({
       .finally(() => {
         setIsSaving(false);
       });
-  }, [actions, draft, formColumns, mode, onCancel, onSaved, row]);
+  }, [actions, createPayloadColumns, draft, formColumns, formRow, mode, onCancel, onSaved, row]);
 
   return (
     <>
@@ -152,7 +172,7 @@ const DefaultForm = ({
           <View style={styles.formGrid}>
             {formColumns.map(column => {
               const fieldName = getColumnKey(column);
-              const label = formatStoreColumnLabel({
+              const label = column?.formLabel || formatStoreColumnLabel({
                 columns,
                 fieldName,
                 fallbackLabel: column?.label || fieldName,
@@ -172,7 +192,7 @@ const DefaultForm = ({
                     label={label}
                     onBeforeOpen={onBeforeOpen ? () => onBeforeOpen(column) : null}
                     onChangeValue={value => setDraft(prev => ({ ...prev, [fieldName]: value }))}
-                    row={row}
+                    row={formRow}
                     showLabel
                     storeName={storeName}
                     value={draft[fieldName]}
