@@ -18,6 +18,7 @@ const normalizePreferenceSegment = value =>
     .replace(/-+/g, '-');
 
 export const resolveDefaultTablePreferenceScope = ({
+  companyId = '',
   preferenceKey = '',
   route = null,
   storeName = '',
@@ -30,11 +31,13 @@ export const resolveDefaultTablePreferenceScope = ({
     'unknown-route';
 
   /*
-   * @agents DefaultTable preferences are saved as [store][route].
-   * The same store can back different screens, so filters, sort, view mode,
-   * and column visibility must never be keyed only by store or only by route.
+   * @agents DefaultTable preferences are saved as [company][store][route].
+   * The same store can back different screens, and the same user can switch
+   * companies, so filters, sort, view mode, and column visibility must be
+   * keyed by company, store and route together.
    */
   return {
+    companyKey: normalizePreferenceSegment(companyId),
     routeKey: routeName,
     storeKey: normalizePreferenceSegment(storeName) || 'unknown-store',
   };
@@ -45,10 +48,13 @@ const normalizePreferenceScope = scope => {
     return null;
   }
 
+  const companyKey = normalizePreferenceSegment(scope.companyKey);
   const storeKey = normalizePreferenceSegment(scope.storeKey);
   const routeKey = normalizePreferenceSegment(scope.routeKey);
 
-  return storeKey && routeKey ? {storeKey, routeKey} : null;
+  return companyKey && storeKey && routeKey
+    ? {companyKey, storeKey, routeKey}
+    : null;
 };
 
 const readStoredPreferences = () => {
@@ -86,7 +92,10 @@ const readScopedPreference = scope => {
   }
 
   const storedPreferences = readStoredPreferences();
-  const storePreferences = storedPreferences[resolvedScope.storeKey];
+  const companyPreferences = storedPreferences[resolvedScope.companyKey];
+  const storePreferences = isPlainObject(companyPreferences)
+    ? companyPreferences[resolvedScope.storeKey]
+    : null;
   const routePreferences = isPlainObject(storePreferences)
     ? storePreferences[resolvedScope.routeKey]
     : null;
@@ -101,8 +110,13 @@ const writeScopedPreference = (scope, nextValues = {}) => {
   }
 
   const storedPreferences = readStoredPreferences();
-  const storePreferences = isPlainObject(storedPreferences[resolvedScope.storeKey])
-    ? storedPreferences[resolvedScope.storeKey]
+  const companyPreferences = isPlainObject(
+    storedPreferences[resolvedScope.companyKey],
+  )
+    ? storedPreferences[resolvedScope.companyKey]
+    : {};
+  const storePreferences = isPlainObject(companyPreferences[resolvedScope.storeKey])
+    ? companyPreferences[resolvedScope.storeKey]
     : {};
   const routePreferences = isPlainObject(storePreferences[resolvedScope.routeKey])
     ? storePreferences[resolvedScope.routeKey]
@@ -110,11 +124,14 @@ const writeScopedPreference = (scope, nextValues = {}) => {
 
   writeStoredPreferences({
     ...storedPreferences,
-    [resolvedScope.storeKey]: {
-      ...storePreferences,
-      [resolvedScope.routeKey]: {
-        ...routePreferences,
-        ...nextValues,
+    [resolvedScope.companyKey]: {
+      ...companyPreferences,
+      [resolvedScope.storeKey]: {
+        ...storePreferences,
+        [resolvedScope.routeKey]: {
+          ...routePreferences,
+          ...nextValues,
+        },
       },
     },
   });
