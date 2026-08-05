@@ -10,7 +10,7 @@ Componente orquestrador de listagens genéricas em React Native / RN Web.
 1. Resolver **colunas** (store ou prop).
 2. Em **autoMode** (`data === undefined` e `storeName` preenchido), paginar/ordenar/filtrar via `store.actions`.
 3. Publicar um objeto **`configs`** no store para filhos lerem sem prop-drilling.
-4. Persistir preferências (colunas visíveis, filtros, view mode, sort) por escopo empresa/rota/store.
+4. Persistir preferências (colunas visíveis, filtros, view mode, sort) por escopo **empresa / store / rota**.
 
 ## Auto mode vs dados controlados
 
@@ -86,16 +86,40 @@ O table monta `defaultTableConfigs` e grava em `store.getters.configs`, incluind
 
 `DefaultTableBody` escolhe `DefaultTableRows` vs `DefaultTableCards`.
 
-## Preferências persistidas
+## Preferências persistidas (escopo por empresa)
 
-Escopo via `resolveDefaultTablePreferenceScope({ companyId, preferenceKey, route, storeName })`:
+Escopo via `resolveDefaultTablePreferenceScope({ companyId, preferenceKey, route, storeName })`.
 
-- colunas visíveis
-- filtros de tabela
-- view mode
-- sort (via sorting hooks)
+Estrutura no `localStorage` (chave raiz `default-table`):
 
-Sanitização com `sanitizeVisibleColumnsPreference` / `sanitizeTableFiltersPreference`.
+```text
+default-table[companyKey][storeKey][routeKey] = {
+  visibleColumns,
+  filters,
+  viewMode,
+  sort
+}
+```
+
+- `companyKey` = identificador estável da empresa ativa (normalizado).
+- `storeKey` = nome do store (`storeName`).
+- `routeKey` = `preferenceKey` explícito, pathname, `route.name` ou `route.key`.
+
+**O que é persistido:** colunas visíveis, filtros de tabela, view mode e sort.
+
+**Sanitização:** `sanitizeVisibleColumnsPreference` / `sanitizeTableFiltersPreference` (só campos de colunas filtráveis + `search`; ignora chaves desconhecidas ou bloqueadas com `filter: false`).
+
+### Comportamento na troca de empresa
+
+1. O escopo muda (`companyKey` novo).
+2. Filtros, colunas, sort e view mode da empresa anterior **não** são reutilizados.
+3. O table hidrata as preferências salvas para a nova empresa (ou defaults se não houver).
+4. Listas/opções de filtros (selects de coluna e filtros externos) devem ser **recarregadas** no contexto da empresa ativa — não reutilizar opções carregadas para a empresa anterior.
+5. Stores e rotas diferentes continuam isolados entre si.
+
+**Compatibilidade com formato legado:** preferências antigas no formato `default-table[store][route]` (sem `companyKey`) **não** são copiadas automaticamente para todas as empresas. Escopos sem `companyKey` são ignorados na leitura/gravação (ver testes em `tableVisibleColumnsPreferences.test.js`).
+
+Referência de implementação: `src/react/utils/tableVisibleColumnsPreferences.js`.
 
 ## Paginação e sort
 
@@ -167,7 +191,7 @@ Com colunas só via prop (store ainda sem columns):
 ## Limites e cuidados
 
 - Filhos dependem de `configs` no store: não renderize Body isolado sem o orquestrador.
-- Preferências são por empresa + rota: mudou rota, escopo muda.
+- Preferências são por **empresa + store + rota**: mudou empresa ou rota, o escopo muda.
 - `stableSerialize` evita loops de `setConfigs`.
 - List stores com escopo de empresa (`categories`, `paymentType`, `wallet`) recebem `company`/`people` automaticamente nos loads de select/coluna.
 
@@ -176,3 +200,4 @@ Com colunas só via prop (store ainda sem columns):
 - `DefaultTable.js`, `DefaultTable.utils.js`, `DefaultTable.styles.js`
 - Hooks: `useDefaultTablePagination.js`, `useDefaultTableSorting.js`, `useDefaultTableTheme.js`
 - Preferências: `src/react/utils/tableVisibleColumnsPreferences`
+- Testes: `src/tests/react/utils/tableVisibleColumnsPreferences.test.js`
