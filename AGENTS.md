@@ -27,3 +27,20 @@ Cópias versionadas: `docs/technical/*.md`
 ### Visão deste módulo
 
 `ui-default` é a **biblioteca de UI genérica** (tabela, form, inputs, filtros, upload, mapa) consumida pelos submódulos do `app-community`. Não carrega regra de domínio de um `APP_TYPE` específico; o domínio entra via `storeName` + `columns`.
+
+### DefaultUpload (app-community#296)
+
+| Página / arquivo | O que documenta |
+| --- | --- |
+| `src/react/components/upload/DefaultUpload.js` | Mini gerenciador de arquivos por **contexto** (biblioteca + anexos da entidade) |
+| `DefaultUploadManagerModal.js` | Modal de biblioteca / upload / attach |
+| `DefaultUploadAttachmentsList.js` | Lista inline de anexos + capa |
+| `defaultUploadHelpers.js` / `defaultUploadLibrary.js` / `fileUpload.js` | Helpers puros e fetch da biblioteca |
+
+**Contrato de uso**
+
+- Props principais: `context` (obrigatório — escopo dos arquivos), `companyId` / people da empresa, `entityId` + `relationResource` / `relationField` para vínculo, `fileActions` / `relationActions` (stores), `fileType`, `maxFiles`, `attachmentRows`, callbacks `onChanged` / `onCoverChanged` / `onAttachFile` / `onUploadFile`.
+- Todo upload abre o mini gerenciador já limitado ao `context` (e `people` da company quando informado).
+- Listagem da biblioteca chama `fileActions.getItems({ context, people, ... })` — o backend aplica `FileService::securityFilter` (company-scoped).
+- Não chamar API de files diretamente nas telas consumidoras; usar stores/actions.
+- Reutilizar `DefaultFile` para preview/download.
