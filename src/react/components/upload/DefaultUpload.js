@@ -13,7 +13,6 @@ import AnimatedModal from '@controleonline/ui-common/src/react/components/Animat
 import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
 import {selectFile, uploadFileToApi, toFileIri, extractFileId} from './fileUpload';
 import {
-import {
   DEFAULT_LIBRARY_CONTEXTS,
   normalizeCollection,
   getEntityId,
