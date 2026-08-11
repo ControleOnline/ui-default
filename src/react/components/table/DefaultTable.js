@@ -8,11 +8,7 @@ import { normalizeText } from '../inputs/defaultInputUtils';
 import { DEFAULT_COMPACT_BREAKPOINT, isObject, stableSerialize } from './DefaultTable.utils';
 import {
   resolveDefaultTablePreferenceScope,
-  resolveStoredTableFiltersPreference,
   resolveStoredTableViewModePreference,
-  resolveStoredVisibleColumnsPreference,
-  sanitizeTableFiltersPreference,
-  sanitizeVisibleColumnsPreference,
 } from '../../utils/tableVisibleColumnsPreferences';
 import DefaultTableBody from './DefaultTableBody';
 import DefaultTableFooter from './DefaultTableFooter';
@@ -26,28 +22,16 @@ import {
 } from './useDefaultTableSorting';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
+import {
+  assignGetterValue,
+  useDefaultTableStoreSync,
+} from './useDefaultTableStoreSync';
+
 export {
   mergeSortedDataWithLiveItems,
   resolveColumnListLoadParams,
   shouldTriggerEndReachedFromScroll,
 } from './DefaultTable.utils';
-
-const publishStoreValue = (store, actionName, value, getterName) => {
-  if (typeof store?.actions?.[actionName] === 'function') {
-    store.actions[actionName](value);
-    return;
-  }
-
-  if (store?.getters) {
-    store.getters[getterName] = value;
-  }
-};
-
-const assignGetterValue = (store, getterName, value) => {
-  if (store?.getters) {
-    store.getters[getterName] = value;
-  }
-};
 
 const DefaultTable = ({
   accentColor = null,
@@ -110,7 +94,6 @@ const DefaultTable = ({
   const store = useStore(storeName);
   const peopleStore = useStore('people');
   const isFocused = useIsFocused();
-  const configsSignatureRef = useRef('');
   const storeDeclaredConfigsRef = useRef(null);
   const { showError } = useMessage() || {};
   const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor);
@@ -449,75 +432,18 @@ const DefaultTable = ({
     assignGetterValue(store, 'configs', defaultTableConfigs);
   }
 
-  useEffect(() => {
-    if (storeColumns.length > 0 || !Array.isArray(columns) || columns.length === 0) {
-      return;
-    }
-
-    publishStoreValue(store, 'setColumns', columns, 'columns');
-  }, [columns, store, storeColumns.length]);
-
-  useEffect(() => {
-    if (data === undefined || !Array.isArray(data)) {
-      return;
-    }
-
-    publishStoreValue(store, 'setItems', data, 'items');
-  }, [data, store]);
-
-  useEffect(() => {
-    if (!columnsForTable.length) {
-      return;
-    }
-
-    const storedVisibleColumns = resolveStoredVisibleColumnsPreference(tablePreferenceScope);
-    if (!storedVisibleColumns) {
-      return;
-    }
-
-    const nextVisibleColumns = sanitizeVisibleColumnsPreference({
-      columns: columnsForTable,
-      visibleColumns: storedVisibleColumns,
-    });
-    const currentVisibleColumns = store?.getters?.visibleColumns || {};
-
-    if (stableSerialize(currentVisibleColumns) === stableSerialize(nextVisibleColumns)) {
-      return;
-    }
-
-    publishStoreValue(store, 'setVisibleColumns', nextVisibleColumns, 'visibleColumns');
-  }, [columnsForTable, store, tablePreferenceScope]);
-
-  useEffect(() => {
-    if (!columnsForTable.length || Object.keys(storeFilters).length > 0) {
-      return;
-    }
-
-    const storedFilters = resolveStoredTableFiltersPreference(tablePreferenceScope);
-    if (!storedFilters) {
-      return;
-    }
-
-    const nextFilters = sanitizeTableFiltersPreference({
-      columns: columnsForTable,
-      filters: storedFilters,
-    });
-
-    if (Object.keys(nextFilters).length === 0) {
-      return;
-    }
-
-    publishStoreValue(store, 'setFilters', nextFilters, 'filters');
-  }, [columnsForTable, store, storeFilters, tablePreferenceScope]);
-
-  useEffect(() => {
-    if (configsSignatureRef.current === defaultTableConfigsSignature) {
-      return;
-    }
-
-    configsSignatureRef.current = defaultTableConfigsSignature;
-    publishStoreValue(store, 'setConfigs', defaultTableConfigs, 'configs');
-  }, [defaultTableConfigs, defaultTableConfigsSignature, store]);
+  useDefaultTableStoreSync({
+    columns,
+    columnsForTable,
+    data,
+    defaultTableConfigs,
+    defaultTableConfigsSignature,
+    store,
+    storeColumnsLength: storeColumns.length,
+    storeFilters,
+    storeName,
+    tablePreferenceScope,
+  });
 
   useEffect(() => {
     onDataLoaded?.(sortedData);
