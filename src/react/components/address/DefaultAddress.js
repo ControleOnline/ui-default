@@ -35,6 +35,7 @@ const emptyForm = {
   mapStaticUrl: null,
   facadeUrl: null,
   provider: null,
+  categories: [],
 };
 
 const hydrateFromRow = row => {
@@ -61,6 +62,11 @@ const hydrateFromRow = row => {
     countryName: countryEntity?.countryname || countryEntity?.name || 'Brazil',
     latitude: row?.latitude ?? null,
     longitude: row?.longitude ?? null,
+    categories: Array.isArray(row?.categories)
+      ? row.categories
+      : Array.isArray(row?.category)
+        ? row.category
+        : [],
   };
 };
 
