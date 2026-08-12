@@ -254,4 +254,33 @@ describe('DefaultSelect', () => {
       ]),
     );
   });
+
+  it('uses the resolved form label as the modal search placeholder', async () => {
+    let tree;
+
+    await renderer.act(async () => {
+      tree = renderer.create(
+        React.createElement(DefaultSelect, {
+          column: {
+            key: 'paymentType',
+            label: 'Payment Type.payment Type',
+            list: 'walletPaymentType/getItems',
+            searchParam: 'paymentType.paymentType',
+          },
+          editing: true,
+          label: 'Tipo de pagamento',
+          row: {},
+          storeName: 'invoice',
+          variant: 'form',
+        }),
+      );
+    });
+
+    await renderer.act(async () => {
+      await tree.root.findAllByType('TouchableOpacity')[0].props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(tree.root.findByType('TextInput').props.placeholder).toBe('Tipo de pagamento');
+  });
 });

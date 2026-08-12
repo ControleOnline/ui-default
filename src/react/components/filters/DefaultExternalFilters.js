@@ -179,6 +179,7 @@ const DefaultExternalFilters = ({
     });
   const themeStore = useStore('theme');
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const [loadedListItemsByColumn, setLoadedListItemsByColumn] = useState({});
   const loadedListStoresRef = useRef(new Set());
   const { currentCompany } = peopleStore.getters || {};
   const { colors: themeColors } = themeStore.getters;
@@ -264,6 +265,7 @@ const DefaultExternalFilters = ({
 
   useEffect(() => {
     loadedListStoresRef.current.clear();
+    setLoadedListItemsByColumn({});
   }, [currentCompany?.id]);
 
   const loadListOptionsForColumn = useCallback((column, searchValue = '') => {
@@ -290,18 +292,14 @@ const DefaultExternalFilters = ({
     });
     const hasScopedParams = Object.keys(listLoadParams).length > 0;
 
-    if (
-      !normalizeText(searchValue) &&
-      !hasScopedParams &&
-      Array.isArray(listStore?.getters?.items) &&
-      listStore.getters.items.length > 0
-    ) {
-      return Promise.resolve(listStore.getters.items);
-    }
-
     const loadKey = `${getColumnKey(column)}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
-    if (loadedListStoresRef.current.has(loadKey)) {
-      return Promise.resolve(listStore?.getters?.items || []);
+    const columnKey = getColumnKey(column);
+    if (
+      loadedListStoresRef.current.has(loadKey) &&
+      columnKey &&
+      Array.isArray(loadedListItemsByColumn[columnKey])
+    ) {
+      return Promise.resolve(loadedListItemsByColumn[columnKey]);
     }
 
     loadedListStoresRef.current.add(loadKey);
@@ -313,11 +311,29 @@ const DefaultExternalFilters = ({
           skipSystemError: true,
         },
       }),
-    ).catch(error => {
-      loadedListStoresRef.current.delete(loadKey);
-      throw error;
-    });
-  }, [currentCompany?.id, getOptionsForColumn, requestParams]);
+    )
+      .then(response => {
+        const items = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.member)
+            ? response.member
+            : Array.isArray(response?.['hydra:member'])
+              ? response['hydra:member']
+              : listStore?.getters?.items || [];
+        const resolvedColumnKey = getColumnKey(column);
+        if (resolvedColumnKey) {
+          setLoadedListItemsByColumn(current => ({
+            ...current,
+            [resolvedColumnKey]: items,
+          }));
+        }
+        return items;
+      })
+      .catch(error => {
+        loadedListStoresRef.current.delete(loadKey);
+        throw error;
+      });
+  }, [currentCompany?.id, getOptionsForColumn, loadedListItemsByColumn, requestParams]);
 
   if (filterColumns.length === 0) return null;
 
@@ -372,6 +388,16 @@ const DefaultExternalFilters = ({
 
     if (column.list) {
       const listStoreName = resolveStoreNameFromList(column?.list);
+      const columnKey = getColumnKey(column);
+      const explicitOptions = getOptionsForColumn?.(column);
+      const loadedItems = loadedListItemsByColumn[columnKey] || [];
+      /*
+       * @agents Do not read shared store items here — only options loaded on
+       * modal open (or explicitly provided) so company-scoped lists stay correct.
+       */
+      const listSource = Array.isArray(explicitOptions) && explicitOptions.length > 0
+        ? explicitOptions
+        : loadedItems;
       const options = [
         {
           key: '',
@@ -381,7 +407,11 @@ const DefaultExternalFilters = ({
               : null) ||
             global.t?.t(storeName || 'invoice', 'label', 'select'),
         },
-        ...buildOptionsFromColumn(column, getOptionsForColumn, storeName),
+        ...buildOptionsFromColumn(
+          column,
+          () => listSource,
+          storeName,
+        ),
       ];
       const selectedKey = normalizeFilterValue(filters[key]);
       const selectedLabel =

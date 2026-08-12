@@ -1,7 +1,7 @@
 import React from 'react';
 import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
-import DefaultFile from '@controleonline/ui-default/src/react/components/DefaultFile';
-import styles from './DefaultUpload.styles';
+import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
+import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 
 /** Inline attachment cards for DefaultUpload (app-community#296). */
 export default function DefaultUploadAttachmentsList({

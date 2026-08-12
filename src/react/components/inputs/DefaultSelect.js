@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Image,
@@ -71,11 +71,13 @@ const resolveColumnListLoadParams = ({
   column,
   currentCompanyId,
   requestParams = {},
+  row = {},
   searchValue = '',
+  variant = 'cell',
 }) => {
   const listStoreName = resolveStoreNameFromList(column?.list);
   const resolvedCustomParams = typeof column?.listRequestParams === 'function'
-    ? column.listRequestParams({ currentCompanyId, requestParams })
+    ? column.listRequestParams({ currentCompanyId, requestParams, row, variant })
     : column?.listRequestParams;
   const customParams =
     resolvedCustomParams &&
@@ -144,6 +146,7 @@ const DefaultSelect = ({
     ];
   }, [column, getOptionsForColumn, loadedItems, storeName]);
   const selected = options.find(option => option.key === selectedKey);
+  const resolvedFieldLabel = label || column?.formLabel || column?.label || fieldName;
   const resolvedLabel =
     displayValue ??
     selected?.label ??
@@ -187,6 +190,12 @@ const DefaultSelect = ({
     }
   }, []);
 
+  useEffect(() => {
+    loadedListKeysRef.current.clear();
+    setLoadedItems([]);
+    setSearchText('');
+  }, [currentCompanyId, fieldName, row]);
+
   const loadRemoteOptions = useCallback((searchValue = '') => {
     const listStoreName = resolveStoreNameFromList(column?.list);
     const actionName = resolveListActionName(column?.list);
@@ -202,7 +211,9 @@ const DefaultSelect = ({
       column,
       currentCompanyId,
       requestParams,
+      row,
       searchValue,
+      variant,
     });
     const loadKey = `${getColumnKey(column)}:${listStoreName}:${actionName}:${stableSerialize(listLoadParams)}`;
 
@@ -235,7 +246,7 @@ const DefaultSelect = ({
         loadedListKeysRef.current.delete(loadKey);
         throw error;
       });
-  }, [applyLoadedItems, column, currentCompanyId, loadedItems, requestParams]);
+  }, [applyLoadedItems, column, currentCompanyId, loadedItems, requestParams, row, variant]);
 
   const handleSearchChange = useCallback(value => {
     setSearchText(value);
@@ -368,7 +379,7 @@ const DefaultSelect = ({
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle} numberOfLines={1}>
-                {label || column?.label || fieldName}
+                {resolvedFieldLabel}
               </Text>
               <TouchableOpacity style={inputStyles.cancelButton} onPress={close}>
                 <Icon name="x" size={16} color="#64748B" />
@@ -379,7 +390,7 @@ const DefaultSelect = ({
               <TextInput
                 style={[inputStyles.input, inputStyles.formInput]}
                 value={searchText}
-                placeholder={global.t?.t(storeName, 'input', column?.searchParam || 'search')}
+                placeholder={resolvedFieldLabel || global.t?.t(storeName, 'input', column?.searchParam || 'search')}
                 onChangeText={handleSearchChange}
               />
             </View>
