@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AnimatedModal from '@controleonline/ui-common/src/react/components/AnimatedModal';
+import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
 import {extractFileId} from './fileUpload';
 import {getFileName, getContextLabel} from './defaultUploadHelpers';
-import styles from './DefaultUpload.styles';
+import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 
 /** File manager modal for DefaultUpload (app-community#296 modularization). */
 export default function DefaultUploadManagerModal(props) {
@@ -131,5 +132,51 @@ export default function DefaultUploadManagerModal(props) {
                 const fileId = extractFileId(file);
                 const isAttached = fileId && attachedFileIds.has(String(fileId));
                 const isSaving = String(savingFileId || '') === String(fileId || getFileName(file));
+                return (
+                  <View
+                    key={fileId || getFileName(file)}
+                    style={[styles.fileCard, isAttached && styles.fileCardAttached]}
+                  >
+                    <View style={styles.fileThumb}>
+                      <DefaultFile file={file} resizeMode="cover" style={styles.fileImage} />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleAttachExisting(file)}
+                      disabled={isAttached || isSaving}
+                      style={styles.fileAction}
+                    >
+                      {isSaving ? (
+                        <ActivityIndicator size="small" color="#0F172A" />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name={isAttached ? 'check' : 'plus'}
+                          size={18}
+                          color={isAttached ? '#15803D' : '#0F172A'}
+                        />
+                      )}
+                    </TouchableOpacity>
+                    <View style={styles.fileInfo}>
+                      <Text numberOfLines={2} style={styles.fileName}>
+                        {getFileName(file)}
+                      </Text>
+                      <View style={styles.fileMetaRow}>
+                        <Text style={styles.contextBadge}>{getContextLabel(file)}</Text>
+                        {isAttached && <Text style={styles.attachedBadge}>{attachLabel}</Text>}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
+        )}
+
+        {attachmentRows.length === 0 && (
+          <Text style={styles.emptyText}>{emptyAttachmentsLabel}</Text>
+        )}
+        {!!status && <Text style={styles.attachmentsStatus}>{status}</Text>}
+        {!!error && <Text style={styles.attachmentsError}>{error}</Text>}
+      </View>
+    </AnimatedModal>
   );
 }

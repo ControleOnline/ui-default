@@ -11,8 +11,10 @@ import {MaterialCommunityIcons} from '@expo/vector-icons';
 import {useStore} from '@store';
 import AnimatedModal from '@controleonline/ui-common/src/react/components/AnimatedModal';
 import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
+import DefaultUploadAttachmentsList from './DefaultUploadAttachmentsList';
+import DefaultUploadManagerModal from './DefaultUploadManagerModal';
+import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 import {selectFile, uploadFileToApi, toFileIri, extractFileId} from './fileUpload';
-import {
 import {
   DEFAULT_LIBRARY_CONTEXTS,
   normalizeCollection,
@@ -420,7 +422,7 @@ const DefaultUpload = ({
       uploadButtonLabel={uploadButtonLabel}
       libraryLoading={libraryLoading}
       loadLibrary={loadLibrary}
-      attachLabel={attachLabel}
+      attachLabel={attachedLabel}
       savingFileId={savingFileId}
       loadingText={loadingText}
       libraryError={libraryError}
@@ -433,7 +435,7 @@ const DefaultUpload = ({
       handleSetCover={handleSetCover}
       handleRemove={handleRemove}
       emptyLibraryLabel={emptyLibraryLabel}
-      emptyAttachmentsLabel={emptyAttachmentsLabel}
+      emptyAttachmentsLabel={emptyAttachmentLabel}
       status={status}
       error={error}
     />
