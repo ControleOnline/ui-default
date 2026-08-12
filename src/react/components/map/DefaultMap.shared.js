@@ -602,6 +602,7 @@ export const buildOpenStreetMapHtml = ({
           }
 
           if (L.Icon && L.Icon.Default && typeof L.Icon.Default.mergeOptions === 'function') {
+            delete L.Icon.Default.prototype._getIconUrl;
             L.Icon.Default.mergeOptions({
               iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
               iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
