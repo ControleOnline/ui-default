@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Modal, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { NavigationRouteContext, useIsFocused } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
@@ -13,6 +13,7 @@ import {
 import DefaultTableBody from './DefaultTableBody';
 import DefaultTableFooter from './DefaultTableFooter';
 import DefaultTableToolbar from './DefaultTableToolbar';
+import DefaultForm from '../form/DefaultForm';
 import styles from './DefaultTable.styles';
 import { useDefaultTablePagination } from './useDefaultTablePagination';
 import {
@@ -87,6 +88,7 @@ const DefaultTable = ({
   toolbarActions = [],
   visibleColumnsPreferenceKey = '',
 }) => {
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const { width } = useWindowDimensions();
   const route = React.useContext(NavigationRouteContext);
   const store = useStore(storeName);
@@ -141,16 +143,6 @@ const DefaultTable = ({
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const addConfig = store?.getters?.add;
   const normalizedAddButtonPlacement = normalizeText(addButtonPlacement) || 'toolbar';
-  const hasAddAction =
-    (addConfig === true || add === true) &&
-    (typeof onAdd === 'function' || typeof store?.actions?.save === 'function');
-  const shouldRenderFloatingAddButton =
-    hasAddAction &&
-    (normalizedAddButtonPlacement === 'floating' || showToolbar === false);
-  const shouldRenderBottomAddButton =
-    hasAddAction &&
-    showToolbar !== false &&
-    normalizedAddButtonPlacement === 'bottom';
   const resolvedAddLabel =
     normalizeText(addLabel) ||
     normalizeText(global.t?.t(storeName, 'button', 'add')) ||
@@ -203,6 +195,41 @@ const DefaultTable = ({
     storeName,
     tableColumns: columnsForTable,
   });
+  const closeCreateForm = useCallback(() => setIsCreateFormOpen(false), []);
+  const canUseDefaultCreateForm = typeof resolvedActions?.save === 'function';
+  const handleAdd = useCallback(() => {
+    if (typeof onAdd === 'function') {
+      return onAdd();
+    }
+
+    if (!canUseDefaultCreateForm) {
+      return null;
+    }
+
+    setIsCreateFormOpen(true);
+    return null;
+  }, [canUseDefaultCreateForm, onAdd]);
+  const resolvedOnAdd = typeof onAdd === 'function' || canUseDefaultCreateForm
+    ? handleAdd
+    : null;
+  const hasAddAction =
+    (addConfig === true || add === true) &&
+    typeof resolvedOnAdd === 'function';
+  const shouldRenderFloatingAddButton =
+    hasAddAction &&
+    (normalizedAddButtonPlacement === 'floating' || showToolbar === false);
+  const shouldRenderBottomAddButton =
+    hasAddAction &&
+    showToolbar !== false &&
+    normalizedAddButtonPlacement === 'bottom';
+  const handleDefaultCreateSaved = useCallback(
+    savedItem => {
+      closeCreateForm();
+      onSaved?.(savedItem, null);
+      handleRefresh?.();
+    },
+    [closeCreateForm, handleRefresh, onSaved],
+  );
   const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
       return buildRequestQuery(currentPage || 1, false);
@@ -238,7 +265,7 @@ const DefaultTable = ({
       importAction,
       initialViewMode,
       exportAction,
-      onAdd,
+      onAdd: resolvedOnAdd,
       onDataLoaded,
       onEditRow,
       onEndReached: handleEndReached,
@@ -290,11 +317,11 @@ const DefaultTable = ({
       getOptionsForColumn,
       handleEndReached,
       handleRefresh,
+      resolvedOnAdd,
       storeDeclaredConfigs,
       importAction,
       initialViewMode,
       exportAction,
-      onAdd,
       onDataLoaded,
       onEditRow,
       onExport,
@@ -446,7 +473,7 @@ const DefaultTable = ({
               styles.bottomAddButton,
               { backgroundColor: floatingAddBackgroundColor },
             ]}
-            onPress={() => onAdd?.()}
+            onPress={resolvedOnAdd}
           >
             <Icon name="plus" size={18} color={floatingAddIconColor} />
             <Text style={[styles.bottomAddText, { color: floatingAddIconColor }]}>
@@ -464,11 +491,43 @@ const DefaultTable = ({
             styles.floatingAddButton,
             { backgroundColor: floatingAddBackgroundColor },
           ]}
-          onPress={() => onAdd?.()}
+          onPress={resolvedOnAdd}
         >
           <Icon name="plus" size={24} color={floatingAddIconColor} />
         </TouchableOpacity>
       ) : null}
+      <Modal
+        animationType="fade"
+        onRequestClose={closeCreateForm}
+        transparent
+        visible={isCreateFormOpen}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{resolvedAddLabel}</Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={global.t?.t(storeName, 'button', 'cancel') || 'Cancelar'}
+                onPress={closeCreateForm}
+                style={styles.modalCloseButton}
+              >
+                <Icon name="x" size={16} color={themeColors.textPrimary || '#0F172A'} />
+              </TouchableOpacity>
+            </View>
+            <DefaultForm
+              actions={resolvedActions}
+              columns={columnsForTable}
+              getOptionsForColumn={getOptionsForColumn}
+              mode="create"
+              onCancel={closeCreateForm}
+              onSaved={handleDefaultCreateSaved}
+              row={requestParamsSeed}
+              storeName={storeName}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

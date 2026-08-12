@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { getAllStores, useStore } from '@store';
 import {
@@ -46,6 +46,12 @@ const DefaultColumnFilter = ({
   const [loadedKey, setLoadedKey] = useState('');
   const fieldName = getColumnKey(column);
   const currentCompanyId = peopleStore?.getters?.currentCompany?.id;
+
+  useEffect(() => {
+    setLoadedItems([]);
+    setLoadedKey('');
+  }, [currentCompanyId]);
+
   const requestChange = useCallback(
     (nextFieldName, value) => {
       if (typeof onChange === 'function') {
@@ -67,7 +73,10 @@ const DefaultColumnFilter = ({
       const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
       const tablePreferenceScope =
         configs.tablePreferenceScope ||
-        resolveDefaultTablePreferenceScope({ storeName });
+        resolveDefaultTablePreferenceScope({
+          companyId: currentCompanyId,
+          storeName,
+        });
       const persistedFilters = sanitizeTableFiltersPreference({
         columns,
         filters: nextFilters,
@@ -83,7 +92,7 @@ const DefaultColumnFilter = ({
 
       configs.onFilterChange?.(nextFilters);
     },
-    [configs, onChange, store, storeName],
+    [configs, currentCompanyId, onChange, store, storeName],
   );
   const resolveOptions = useCallback(
     targetColumn => {
@@ -184,9 +193,15 @@ const DefaultColumnFilter = ({
   }
 
   if (column?.list) {
-    const rawOptions = loadedItems.length > 0
-      ? mapOptions(column, loadedItems, storeName)
-      : buildOptionsFromColumn(column, resolveOptions, storeName);
+    /*
+     * @agents List options for filters must load only when the modal opens
+     * (onBeforeOpen). Falling back to the shared store items would show
+     * another company's payment types / wallets / categories.
+     */
+    const explicitOptions = resolveOptions(column);
+    const rawOptions = Array.isArray(explicitOptions)
+      ? mapOptions(column, explicitOptions, storeName)
+      : mapOptions(column, loadedItems, storeName);
     const options = [
       { key: '', label: global.t?.t(storeName, 'label', 'select') },
       ...rawOptions,

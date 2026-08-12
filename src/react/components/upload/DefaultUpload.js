@@ -11,47 +11,20 @@ import {MaterialCommunityIcons} from '@expo/vector-icons';
 import {useStore} from '@store';
 import AnimatedModal from '@controleonline/ui-common/src/react/components/AnimatedModal';
 import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
+import DefaultUploadAttachmentsList from './DefaultUploadAttachmentsList';
+import DefaultUploadManagerModal from './DefaultUploadManagerModal';
+import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 import {selectFile, uploadFileToApi, toFileIri, extractFileId} from './fileUpload';
 import {
-  defaultUploadStyles as styles,
-} from './DefaultUpload.styles';
-
-const DEFAULT_LIBRARY_CONTEXTS = ['products', 'products-category'];
-
-const normalizeCollection = response => {
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.member)) return response.member;
-  if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
-  return [];
-};
-
-const getEntityId = relation => {
-  const value = relation?.id || relation?.['@id'] || relation;
-  const match = String(value || '').match(/(\d+)$/);
-  return match ? match[1] : null;
-};
-
-const getRelationFileId = relation => extractFileId(relation?.file);
-
-const getFileName = file => {
-  const id = extractFileId(file);
-  return file?.fileName || file?.name || file?.originalName || (id ? `Arquivo ${id}` : 'Arquivo');
-};
-
-const getContextLabel = context => {
-  if (!context) return 'sem contexto';
-  return String(context).trim();
-};
-
-const dedupeFiles = files => {
-  const seen = new Set();
-  return files.filter(file => {
-    const id = extractFileId(file);
-    if (!id || seen.has(String(id))) return false;
-    seen.add(String(id));
-    return true;
-  });
-};
+  DEFAULT_LIBRARY_CONTEXTS,
+  normalizeCollection,
+  getEntityId,
+  getRelationFileId,
+  getFileName,
+  getContextLabel,
+  dedupeFiles,
+} from './defaultUploadHelpers';
+import {fetchLibraryFiles} from './defaultUploadLibrary';
 
 const DefaultUpload = ({
   relationStoreName,
@@ -188,66 +161,24 @@ const DefaultUpload = ({
   }, [coverRelationId]);
 
   const loadLibrary = useCallback(async () => {
-    if (typeof fileActions.getItems !== 'function') {
-      setLibraryFiles([]);
-      return;
-    }
-
     setLibraryLoading(true);
     setLibraryError('');
-
-    const peopleIri = getEntityId(companyId) ? `/people/${getEntityId(companyId)}` : null;
-
     try {
-      const pageSize = 500;
-      const maxPages = 10;
-
-      const fetchContextFiles = async fileContext => {
-        const contextFiles = [];
-
-        for (let page = 1; page <= maxPages; page += 1) {
-          const params = {
-            context: fileContext,
-            page,
-            'order[fileName]': 'ASC',
-          };
-
-          if (fileType) params.fileType = fileType;
-          if (peopleIri) params.people = peopleIri;
-
-          const response = await fileActions.getItems(params);
-          const pageItems = normalizeCollection(response);
-          contextFiles.push(...pageItems);
-
-          if (pageItems.length < pageSize) break;
-        }
-
-        return contextFiles;
-      };
-
-      const responses = await Promise.all(
-        libraryContextList.map(fileContext => fetchContextFiles(fileContext).catch(fetchError => ({fetchError}))),
-      );
-
-      const files = responses
-        .filter(response => !response?.fetchError)
-        .flatMap(normalizeCollection)
-        .filter(file => {
-          if (!fileType) return true;
-          return !file?.fileType || String(file.fileType).toLowerCase() === String(fileType).toLowerCase();
-        });
-
-      const firstError = responses.find(response => response?.fetchError)?.fetchError;
-      if (files.length === 0 && firstError) throw firstError;
-
-      setLibraryFiles(dedupeFiles(files));
+      const files = await fetchLibraryFiles({
+        fileActions,
+        companyId,
+        fileType,
+        libraryContexts: libraryContexts || DEFAULT_LIBRARY_CONTEXTS,
+      });
+      setLibraryFiles(files);
     } catch (e) {
+      setLibraryError(e?.message || 'Falha ao carregar biblioteca de arquivos.');
       setLibraryFiles([]);
-      setLibraryError(e?.message || 'Falha ao carregar arquivos.');
     } finally {
       setLibraryLoading(false);
     }
-  }, [companyId, fileActions, fileType, libraryContextList]);
+  }, [companyId, fileActions, fileType, libraryContexts]);
+
 
   useEffect(() => {
     if (managerOpen) {
@@ -477,128 +408,37 @@ const DefaultUpload = ({
       );
 
   const managerModal = (
-    <AnimatedModal visible={managerOpen} onRequestClose={() => setManagerOpen(false)}>
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <View>
-            <Text style={styles.modalTitle}>{managerTitle}</Text>
-            <Text style={styles.modalSubtitle}>{context}</Text>
-          </View>
-          <TouchableOpacity onPress={() => setManagerOpen(false)} style={styles.iconButton}>
-            <MaterialCommunityIcons name="close" size={22} color={buttonPalette.buttonIconSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.toolbar}>
-          <View style={styles.searchBox}>
-            <MaterialCommunityIcons name="magnify" size={18} color="#94A3B8" />
-            <TextInput
-              value={librarySearch}
-              onChangeText={setLibrarySearch}
-              placeholder={searchPlaceholder}
-              placeholderTextColor="#94A3B8"
-              style={styles.searchInput}
-            />
-            {!!librarySearch && (
-              <TouchableOpacity onPress={() => setLibrarySearch('')}>
-                <MaterialCommunityIcons name="close-circle" size={18} color="#94A3B8" />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={handleUpload}
-            disabled={uploading}
-            style={[
-              styles.uploadButton,
-              {
-                backgroundColor: buttonPalette.buttonBackground,
-                borderColor: buttonPalette.buttonBorder,
-                borderWidth: 1,
-              },
-              uploading && styles.disabledButton,
-            ]}>
-            {uploading ? (
-              <ActivityIndicator size="small" color={buttonPalette.buttonIcon} />
-            ) : (
-              <MaterialCommunityIcons name="cloud-upload-outline" size={18} color={buttonPalette.buttonIcon} />
-            )}
-            <Text style={[styles.uploadButtonText, {color: buttonPalette.buttonText}]}>
-              {uploading ? 'Enviando' : uploadButtonLabel}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={loadLibrary}
-            disabled={libraryLoading}
-            style={[
-              styles.refreshButton,
-              {
-                backgroundColor: buttonPalette.buttonBackgroundSecondary,
-                borderColor: buttonPalette.buttonBorderSecondary,
-              },
-            ]}>
-            <MaterialCommunityIcons name="refresh" size={19} color={buttonPalette.buttonIconSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        {!!libraryError && <Text style={styles.modalError}>{libraryError}</Text>}
-
-        {libraryLoading ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator size="small" color="#0F172A" />
-            <Text style={styles.loadingText}>{loadingText}</Text>
-          </View>
-        ) : filteredLibraryFiles.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="file-search-outline" size={34} color="#CBD5E1" />
-            <Text style={styles.emptyText}>{emptyLibraryLabel}</Text>
-          </View>
-        ) : (
-          <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-            <View style={styles.libraryGrid}>
-              {filteredLibraryFiles.map(file => {
-                const fileId = extractFileId(file);
-                const isAttached = fileId && attachedFileIds.has(String(fileId));
-                const isSaving = String(savingFileId || '') === String(fileId || getFileName(file));
-
-                return (
-                  <TouchableOpacity
-                    key={fileId || file?.['@id'] || getFileName(file)}
-                    style={[styles.fileCard, isAttached && styles.fileCardAttached]}
-                    activeOpacity={0.82}
-                    disabled={isSaving || isAttached}
-                    onPress={() => handleAttachExisting(file)}
-                  >
-                    <View style={styles.fileThumb}>
-                      <DefaultFile file={file} resizeMode="cover" style={styles.fileImage} />
-                    </View>
-                    <View style={styles.fileInfo}>
-                      <Text style={styles.fileName} numberOfLines={2}>
-                        {getFileName(file)}
-                      </Text>
-                      <View style={styles.fileMetaRow}>
-                        <Text style={styles.contextBadge}>{getContextLabel(file?.context)}</Text>
-                        {isAttached && <Text style={styles.attachedBadge}>{attachedLabel}</Text>}
-                      </View>
-                    </View>
-                    <View style={styles.fileAction}>
-                      {isSaving ? (
-                        <ActivityIndicator size="small" color="#0F172A" />
-                      ) : (
-                        <MaterialCommunityIcons
-                          name={isAttached ? 'check-circle' : 'plus-circle-outline'}
-                          size={22}
-                          color={isAttached ? buttonPalette.iconSuccess : buttonPalette.buttonIconSecondary}
-                        />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-        )}
-      </View>
-    </AnimatedModal>
+    <DefaultUploadManagerModal
+      visible={managerOpen}
+      onClose={() => setManagerOpen(false)}
+      managerTitle={managerTitle}
+      context={context}
+      buttonPalette={buttonPalette}
+      librarySearch={librarySearch}
+      setLibrarySearch={setLibrarySearch}
+      searchPlaceholder={searchPlaceholder}
+      handleUpload={handleUpload}
+      uploading={uploading}
+      uploadButtonLabel={uploadButtonLabel}
+      libraryLoading={libraryLoading}
+      loadLibrary={loadLibrary}
+      attachLabel={attachedLabel}
+      savingFileId={savingFileId}
+      loadingText={loadingText}
+      libraryError={libraryError}
+      filteredLibraryFiles={filteredLibraryFiles}
+      attachedFileIds={attachedFileIds}
+      handleAttachExisting={handleAttachExisting}
+      attachmentRows={attachmentRows}
+      sortedAttachments={sortedAttachments}
+      coverId={coverId}
+      handleSetCover={handleSetCover}
+      handleRemove={handleRemove}
+      emptyLibraryLabel={emptyLibraryLabel}
+      emptyAttachmentsLabel={emptyAttachmentLabel}
+      status={status}
+      error={error}
+    />
   );
 
   if (!showInlineContent) {
@@ -611,81 +451,19 @@ const DefaultUpload = ({
   }
 
   return (
-    <View style={styles.attachmentsTitleRow}>
-      <View style={styles.attachmentsHeader}>
-        <Text style={styles.attachmentsTitle}>{title}</Text>
-        {triggerContent}
-      </View>
-
-      {!!status && <Text style={styles.attachmentsStatus}>{status}</Text>}
-      {!!error && <Text style={styles.attachmentsError}>{error}</Text>}
-
-      {sortedAttachments.length === 0 ? (
-        <View style={styles.attachmentsEmpty}>
-          <Text style={styles.attachmentsEmptyText}>{emptyAttachmentLabel}</Text>
-        </View>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.attachmentsList}>
-            {sortedAttachments.map((row, index) => {
-              const file = row?.file || row;
-              return (
-                <View key={row.id || file?.id || index} style={styles.attachmentCard}>
-                  <View style={styles.attachmentThumb}>
-                    <DefaultFile file={file} resizeMode="cover" style={styles.attachmentImage} />
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => handleSetCover(row)}
-                    style={{
-                      backgroundColor:
-                        String(coverId) === String(row.id)
-                          ? buttonPalette.buttonBackground
-                          : buttonPalette.buttonBackgroundSecondary,
-                      borderColor:
-                        String(coverId) === String(row.id)
-                          ? buttonPalette.buttonBorder
-                          : buttonPalette.buttonBorderSecondary,
-                      borderWidth: 1,
-                      paddingVertical: 6,
-                      borderRadius: 4,
-                      marginBottom: 6,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        textAlign: 'center',
-                        color:
-                          String(coverId) === String(row.id)
-                            ? buttonPalette.buttonText
-                            : buttonPalette.buttonTextSecondary,
-                        fontSize: 12,
-                      }}
-                    >
-                      {String(coverId) === String(row.id) ? 'Capa selecionada' : 'Definir como capa'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleRemove(row)}
-                    style={[
-                      styles.attachmentRemoveButton,
-                      {
-                        backgroundColor: buttonPalette.buttonBackgroundSecondary,
-                        borderColor: buttonPalette.buttonBorderSecondary,
-                        borderWidth: 1,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.attachmentRemoveText, {color: buttonPalette.textDanger}]}>Remover</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      )}
-
-      {managerModal}
-    </View>
+    <DefaultUploadAttachmentsList
+      title={title}
+      triggerContent={triggerContent}
+      status={status}
+      error={error}
+      sortedAttachments={sortedAttachments}
+      emptyAttachmentLabel={emptyAttachmentLabel}
+      coverId={coverId}
+      handleSetCover={handleSetCover}
+      handleRemove={handleRemove}
+      buttonPalette={buttonPalette}
+      managerModal={managerModal}
+    />
   );
 };
 
