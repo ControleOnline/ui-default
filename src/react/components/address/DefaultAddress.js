@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import {
   buildAddressSavePayload,
@@ -80,6 +81,8 @@ export default function DefaultAddress({
   hideActions = false,
   submitLabel = 'Salvar',
 }) {
+  const {width} = useWindowDimensions();
+  const isDesktop = width >= 900;
   const [form, setForm] = useState(() => hydrateFromRow(row));
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
@@ -231,156 +234,179 @@ export default function DefaultAddress({
     [form.stateName, form.uf],
   );
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {form.provider ? (
-        <Text style={styles.hint}>CEP via: {form.provider}</Text>
-      ) : null}
-
-      <Field label="Apelido">
-        <TextInput
-          style={styles.input}
-          value={form.nickname}
-          onChangeText={v => onChange('nickname', v)}
-          placeholder="Apelido do endereço"
-        />
-      </Field>
-
-      <Field label="CEP">
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.flex]}
-            value={form.cep}
-            onChangeText={v => onChange('cep', v)}
-            onBlur={onCepBlur}
-            keyboardType="number-pad"
-            maxLength={9}
-            placeholder="00000-000"
-          />
-          {loadingCep ? <ActivityIndicator style={styles.loader} /> : null}
-        </View>
-      </Field>
-
-      <Field label="País">
-        <TouchableOpacity
-          style={styles.select}
-          onPress={() => setShowCountryList(s => !s)}
-          disabled={loadingMeta}>
-          <Text>{countryLabel}</Text>
-        </TouchableOpacity>
-        {showCountryList ? (
-          <View style={styles.dropdown}>
-            {countries.map(item => (
-              <TouchableOpacity
-                key={item.id || item.code}
-                style={styles.option}
-                onPress={() => onSelectCountry(item)}>
-                <Text>
-                  {item.name} ({item.code})
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
-      </Field>
-
-      <Field label="Estado">
-        <TouchableOpacity
-          style={styles.select}
-          onPress={() => setShowStateList(s => !s)}
-          disabled={loadingMeta}>
-          <Text>{stateLabel}</Text>
-        </TouchableOpacity>
-        {showStateList ? (
-          <View style={styles.dropdown}>
-            {states.map(item => (
-              <TouchableOpacity
-                key={item.id || item.uf}
-                style={styles.option}
-                onPress={() => onSelectState(item)}>
-                <Text>
-                  {item.name} ({item.uf})
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
-      </Field>
-
-      <Field label="Cidade">
-        <TextInput
-          style={styles.input}
-          value={form.city}
-          onChangeText={v => onChange('city', v)}
-        />
-      </Field>
-      <Field label="Bairro">
-        <TextInput
-          style={styles.input}
-          value={form.district}
-          onChangeText={v => onChange('district', v)}
-        />
-      </Field>
-      <Field label="Logradouro">
-        <TextInput
-          style={styles.input}
-          value={form.street}
-          onChangeText={v => onChange('street', v)}
-        />
-      </Field>
-      <Field label="Número">
-        <TextInput
-          style={styles.input}
-          value={form.number}
-          onChangeText={v => onChange('number', v)}
-          keyboardType="number-pad"
-        />
-      </Field>
-      <Field label="Complemento">
-        <TextInput
-          style={styles.input}
-          value={form.complement}
-          onChangeText={v => onChange('complement', v)}
-        />
-      </Field>
-
+  const mapPanel = (
+    <View style={[styles.mapPane, isDesktop && styles.mapPaneDesktop]}>
+      <Text style={styles.mapPaneTitle}>Mapa</Text>
       {form.mapStaticUrl ? (
-        <View style={styles.mapBox}>
-          <Text style={styles.mapTitle}>Mapa</Text>
-          <Image
-            source={{uri: form.mapStaticUrl}}
-            style={styles.mapImage}
-            resizeMode="cover"
-          />
+        <Image
+          source={{uri: form.mapStaticUrl}}
+          style={[styles.mapImage, isDesktop && styles.mapImageDesktop]}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.mapPlaceholder, isDesktop && styles.mapImageDesktop]}>
+          <Text style={styles.mapPlaceholderTitle}>Mapa indisponível</Text>
+          <Text style={styles.mapPlaceholderText}>
+            Consulte um CEP para carregar a localização quando a API retornar a imagem.
+          </Text>
         </View>
-      ) : null}
-      {form.facadeUrl ? (
-        <View style={styles.mapBox}>
-          <Text style={styles.mapTitle}>Fachada</Text>
-          <Image
-            source={{uri: form.facadeUrl}}
-            style={styles.mapImage}
-            resizeMode="cover"
-          />
-        </View>
-      ) : null}
+      )}
 
-      {!hideActions ? (
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
-            <Text>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.btnPrimary}
-            onPress={handleSave}
-            disabled={saving}>
-            <Text style={styles.btnPrimaryText}>
-              {saving ? 'Salvando…' : submitLabel}
-            </Text>
-          </TouchableOpacity>
+      <Text style={styles.mapPaneTitle}>Fachada</Text>
+      {form.facadeUrl ? (
+        <Image
+          source={{uri: form.facadeUrl}}
+          style={styles.facadeImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.facadePlaceholder}>
+          <Text style={styles.mapPlaceholderText}>
+            Fachada disponível quando houver chave Maps e retorno do provedor.
+          </Text>
         </View>
-      ) : null}
+      )}
+    </View>
+  );
+
+  return (
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[
+        styles.container,
+        isDesktop && styles.containerDesktop,
+      ]}>
+      <View style={[styles.formPane, isDesktop && styles.formPaneDesktop]}>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {form.provider ? (
+          <Text style={styles.hint}>CEP via: {form.provider}</Text>
+        ) : null}
+
+        <Field label="Apelido">
+          <TextInput
+            style={styles.input}
+            value={form.nickname}
+            onChangeText={v => onChange('nickname', v)}
+            placeholder="Apelido do endereço"
+          />
+        </Field>
+
+        <Field label="CEP">
+          <View style={styles.row}>
+            <TextInput
+              style={[styles.input, styles.flex]}
+              value={form.cep}
+              onChangeText={v => onChange('cep', v)}
+              onBlur={onCepBlur}
+              keyboardType="number-pad"
+              maxLength={9}
+              placeholder="00000-000"
+            />
+            {loadingCep ? <ActivityIndicator style={styles.loader} /> : null}
+          </View>
+        </Field>
+
+        <Field label="País">
+          <TouchableOpacity
+            style={styles.select}
+            onPress={() => setShowCountryList(s => !s)}
+            disabled={loadingMeta}>
+            <Text>{countryLabel}</Text>
+          </TouchableOpacity>
+          {showCountryList ? (
+            <View style={styles.dropdown}>
+              {countries.map(item => (
+                <TouchableOpacity
+                  key={item.id || item.code}
+                  style={styles.option}
+                  onPress={() => onSelectCountry(item)}>
+                  <Text>
+                    {item.name} ({item.code})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+        </Field>
+
+        <Field label="Estado">
+          <TouchableOpacity
+            style={styles.select}
+            onPress={() => setShowStateList(s => !s)}
+            disabled={loadingMeta}>
+            <Text>{stateLabel}</Text>
+          </TouchableOpacity>
+          {showStateList ? (
+            <View style={styles.dropdown}>
+              {states.map(item => (
+                <TouchableOpacity
+                  key={item.id || item.uf}
+                  style={styles.option}
+                  onPress={() => onSelectState(item)}>
+                  <Text>
+                    {item.name} ({item.uf})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+        </Field>
+
+        <Field label="Cidade">
+          <TextInput
+            style={styles.input}
+            value={form.city}
+            onChangeText={v => onChange('city', v)}
+          />
+        </Field>
+        <Field label="Bairro">
+          <TextInput
+            style={styles.input}
+            value={form.district}
+            onChangeText={v => onChange('district', v)}
+          />
+        </Field>
+        <Field label="Logradouro">
+          <TextInput
+            style={styles.input}
+            value={form.street}
+            onChangeText={v => onChange('street', v)}
+          />
+        </Field>
+        <Field label="Número">
+          <TextInput
+            style={styles.input}
+            value={form.number}
+            onChangeText={v => onChange('number', v)}
+            keyboardType="number-pad"
+          />
+        </Field>
+        <Field label="Complemento">
+          <TextInput
+            style={styles.input}
+            value={form.complement}
+            onChangeText={v => onChange('complement', v)}
+          />
+        </Field>
+
+        {!hideActions ? (
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
+              <Text>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnPrimary}
+              onPress={handleSave}
+              disabled={saving}>
+              <Text style={styles.btnPrimaryText}>
+                {saving ? 'Salvando...' : submitLabel}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
+
+      {mapPanel}
     </ScrollView>
   );
 }
@@ -395,7 +421,20 @@ function Field({label, children}) {
 }
 
 const styles = StyleSheet.create({
-  container: {padding: 16, gap: 8},
+  scroll: {flex: 1, width: '100%'},
+  container: {padding: 16, gap: 16},
+  containerDesktop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 1280,
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    gap: 24,
+  },
+  formPane: {width: '100%'},
+  formPaneDesktop: {flex: 1, maxWidth: 560},
   field: {marginBottom: 10},
   label: {fontSize: 13, fontWeight: '600', marginBottom: 4, color: '#334155'},
   input: {
@@ -428,9 +467,57 @@ const styles = StyleSheet.create({
   loader: {marginLeft: 8},
   error: {color: '#B91C1C', marginBottom: 8},
   hint: {color: '#64748B', marginBottom: 8, fontSize: 12},
-  mapBox: {marginVertical: 10},
-  mapTitle: {fontWeight: '600', marginBottom: 6},
-  mapImage: {width: '100%', height: 180, borderRadius: 8, backgroundColor: '#E2E8F0'},
+  mapPane: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    gap: 12,
+  },
+  mapPaneDesktop: {flex: 1, minHeight: 560},
+  mapPaneTitle: {fontWeight: '700', fontSize: 15, color: '#0F172A'},
+  mapImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+  },
+  mapImageDesktop: {height: 360},
+  facadeImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+  },
+  mapPlaceholder: {
+    height: 220,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  facadePlaceholder: {
+    minHeight: 120,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  mapPlaceholderTitle: {
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  mapPlaceholderText: {
+    color: '#64748B',
+    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 18,
+  },
   actions: {flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16},
   btnSecondary: {paddingHorizontal: 16, paddingVertical: 12},
   btnPrimary: {
