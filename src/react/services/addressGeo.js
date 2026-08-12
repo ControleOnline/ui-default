@@ -7,14 +7,7 @@ export async function lookupPostalCode(cep) {
   if (digits.length !== 8) {
     throw new Error('CEP deve ter 8 dígitos');
   }
-  return api.fetch(`postal-codes/${digits}`, {
-    method: 'GET',
-    params: {
-      coordinates: true,
-      withCoordinates: true,
-      include: 'coordinates,map,facade',
-    },
-  });
+  return api.fetch(`postal-codes/${digits}`, {method: 'GET'});
 }
 
 export async function listCountries(q = '') {
