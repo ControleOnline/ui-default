@@ -16,6 +16,7 @@ import {
   listStates,
   lookupPostalCode,
 } from '../../services/addressGeo';
+import DefaultMap from '../map/DefaultMap';
 
 const emptyForm = {
   nickname: '',
@@ -62,6 +63,76 @@ const hydrateFromRow = row => {
     longitude: row?.longitude ?? null,
   };
 };
+
+const onlyDigits = value => String(value || '').replace(/\D+/g, '');
+
+const hasAddressText = form =>
+  [
+    form?.street,
+    form?.number,
+    form?.district,
+    form?.city,
+    form?.uf,
+    form?.cep,
+  ].some(value => String(value || '').trim().length > 0);
+
+const hasCoordinates = form =>
+  Number.isFinite(Number(form?.latitude)) && Number.isFinite(Number(form?.longitude));
+
+const mergePostalCodeData = (prev, data, {preserveFilledFields = false} = {}) => {
+  const keep = (key, nextValue) =>
+    preserveFilledFields && String(prev[key] || '').trim()
+      ? prev[key]
+      : nextValue || prev[key];
+
+  return {
+    ...prev,
+    cep: onlyDigits(data.cep || prev.cep),
+    street: keep('street', data.street),
+    district: keep('district', data.district),
+    city: keep('city', data.city),
+    uf: keep('uf', data.uf || data.state),
+    stateName: keep('stateName', data.state),
+    countryCode:
+      data.country === 'Brasil' || data.country === 'Brazil'
+        ? 'BR'
+        : data.country || prev.countryCode,
+    countryName:
+      data.country === 'Brasil' ? 'Brazil' : data.country || prev.countryName,
+    latitude: data.latitude ?? data.map?.latitude ?? prev.latitude,
+    longitude: data.longitude ?? data.map?.longitude ?? prev.longitude,
+    mapStaticUrl: data.map?.staticUrl || prev.mapStaticUrl || null,
+    facadeUrl: data.facade?.streetViewUrl || prev.facadeUrl || null,
+    provider: data.provider || prev.provider || null,
+  };
+};
+
+const getCurrentCoordinates = () =>
+  new Promise(resolve => {
+    const geolocation =
+      typeof navigator !== 'undefined' ? navigator.geolocation : null;
+
+    if (!geolocation?.getCurrentPosition) {
+      resolve(null);
+      return;
+    }
+
+    geolocation.getCurrentPosition(
+      position => {
+        const latitude = Number(position?.coords?.latitude);
+        const longitude = Number(position?.coords?.longitude);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          resolve(null);
+          return;
+        }
+
+        resolve({latitude, longitude});
+      },
+      () => resolve(null),
+      {enableHighAccuracy: true, timeout: 8000, maximumAge: 60000},
+    );
+  });
 
 /**
  * DefaultAddress — único componente de formulário de endereço do ecossistema.
@@ -121,6 +192,61 @@ export default function DefaultAddress({
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const initial = hydrateFromRow(row);
+    const digits = onlyDigits(initial.cep);
+
+    (async () => {
+      if (digits.length === 8) {
+        try {
+          const data = await lookupPostalCode(digits);
+          if (cancelled) {
+            return;
+          }
+
+          setForm(prev => {
+            const next = mergePostalCodeData(prev, data, {
+              preserveFilledFields: true,
+            });
+            onFormChange?.(next);
+            return next;
+          });
+        } catch {
+          // Existing address data should still be editable if the map provider fails.
+        }
+        return;
+      }
+
+      if (mode !== 'create' || hasCoordinates(initial)) {
+        return;
+      }
+
+      const coordinates = await getCurrentCoordinates();
+      if (cancelled || !coordinates) {
+        return;
+      }
+
+      setForm(prev => {
+        if (hasCoordinates(prev)) {
+          return prev;
+        }
+
+        const next = {
+          ...prev,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+        };
+        onFormChange?.(next);
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, onFormChange, row]);
+
   const onChange = useCallback((key, value) => {
     setForm(prev => {
       const next = {...prev, [key]: value};
@@ -163,26 +289,10 @@ export default function DefaultAddress({
     try {
       const data = await lookupPostalCode(digits);
       setForm(prev => {
-        const next = {
-          ...prev,
-          cep: digits,
-          street: data.street || prev.street,
-          district: data.district || prev.district,
-          city: data.city || prev.city,
-          uf: data.uf || data.state || prev.uf,
-          stateName: data.state || prev.stateName,
-          countryCode:
-            data.country === 'Brasil' || data.country === 'Brazil'
-              ? 'BR'
-              : data.country || prev.countryCode,
-          countryName:
-            data.country === 'Brasil' ? 'Brazil' : data.country || prev.countryName,
-          latitude: data.latitude ?? data.map?.latitude ?? prev.latitude,
-          longitude: data.longitude ?? data.map?.longitude ?? prev.longitude,
-          mapStaticUrl: data.map?.staticUrl || null,
-          facadeUrl: data.facade?.streetViewUrl || null,
-          provider: data.provider || null,
-        };
+        const next = mergePostalCodeData(
+          {...prev, cep: digits},
+          data,
+        );
         onFormChange?.(next);
         return next;
       });
@@ -234,10 +344,55 @@ export default function DefaultAddress({
     [form.stateName, form.uf],
   );
 
+  const mapMarkerPayload = useMemo(() => {
+    if (!hasAddressText(form) && !hasCoordinates(form)) {
+      return null;
+    }
+
+    const addressLine = [form.street, form.number].filter(Boolean).join(', ');
+    const addressExtra = [
+      form.district,
+      [form.city, form.uf].filter(Boolean).join(' - '),
+      form.countryName || form.countryCode,
+      form.cep,
+    ]
+      .filter(Boolean)
+      .join(' • ');
+
+    return {
+      id: 'default-address-preview',
+      title: form.nickname || 'Endereco',
+      addressLine: addressLine || addressExtra || 'Endereco',
+      addressExtra,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      geocodeQuery: [
+        addressLine,
+        form.district,
+        [form.city, form.uf].filter(Boolean).join(' - '),
+        form.countryName || form.countryCode,
+        form.cep,
+      ]
+        .filter(Boolean)
+        .join(', '),
+    };
+  }, [form]);
+
+  const mapUserCoordinates = hasCoordinates(form)
+    ? {latitude: Number(form.latitude), longitude: Number(form.longitude)}
+    : null;
+
   const mapPanel = (
     <View style={[styles.mapPane, isDesktop && styles.mapPaneDesktop]}>
       <Text style={styles.mapPaneTitle}>Mapa</Text>
-      {form.mapStaticUrl ? (
+      {hasCoordinates(form) || mapMarkerPayload ? (
+        <View style={[styles.liveMap, isDesktop && styles.liveMapDesktop]}>
+          <DefaultMap
+            markerPayloads={mapMarkerPayload ? [mapMarkerPayload] : []}
+            userCoordinates={mapUserCoordinates}
+          />
+        </View>
+      ) : form.mapStaticUrl ? (
         <Image
           source={{uri: form.mapStaticUrl}}
           style={[styles.mapImage, isDesktop && styles.mapImageDesktop]}
@@ -485,6 +640,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   mapImageDesktop: {height: 360},
+  liveMap: {
+    width: '100%',
+    height: 220,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#E2E8F0',
+  },
+  liveMapDesktop: {height: 360},
   facadeImage: {
     width: '100%',
     height: 180,
