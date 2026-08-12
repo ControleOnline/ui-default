@@ -479,15 +479,42 @@ export const buildOpenStreetMapHtml = ({
           errorElement.style.display = 'flex';
         }
 
+        function normalizeCoordinate(value) {
+          return Number(String(value == null ? '' : value).replace(',', '.'));
+        }
+
+        function hasGeocodeQuery(item) {
+          return Boolean(item && String(item.geocodeQuery || '').trim());
+        }
+
+        function isValidPoint(latitude, longitude) {
+          return (
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude) &&
+            latitude >= -85 &&
+            latitude <= 85 &&
+            longitude >= -180 &&
+            longitude <= 180
+          );
+        }
+
         function toPoint(item) {
           if (!item) {
             return null;
           }
 
-          var latitude = Number(item.latitude);
-          var longitude = Number(item.longitude);
+          var latitude = normalizeCoordinate(item.latitude);
+          var longitude = normalizeCoordinate(item.longitude);
 
-          if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          if (!isValidPoint(latitude, longitude)) {
+            return null;
+          }
+
+          if (
+            hasGeocodeQuery(item) &&
+            Math.abs(latitude) < 0.000001 &&
+            Math.abs(longitude) < 0.000001
+          ) {
             return null;
           }
 
@@ -495,6 +522,53 @@ export const buildOpenStreetMapHtml = ({
             lat: latitude,
             lng: longitude,
           };
+        }
+
+        function geocodePoint(item) {
+          var query = item && item.geocodeQuery ? String(item.geocodeQuery).trim() : '';
+
+          if (!query) {
+            return Promise.resolve(null);
+          }
+
+          return fetch(
+            'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
+              encodeURIComponent(query),
+          )
+            .then(function (response) {
+              if (!response || !response.ok) {
+                return null;
+              }
+
+              return response.json();
+            })
+            .then(function (payload) {
+              var first = Array.isArray(payload) ? payload[0] : null;
+              var latitude = normalizeCoordinate(first && first.lat);
+              var longitude = normalizeCoordinate(first && first.lon);
+
+              if (!isValidPoint(latitude, longitude)) {
+                return null;
+              }
+
+              return {
+                lat: latitude,
+                lng: longitude,
+              };
+            })
+            .catch(function () {
+              return null;
+            });
+        }
+
+        function resolvePoint(item) {
+          var point = toPoint(item);
+
+          if (point) {
+            return Promise.resolve(point);
+          }
+
+          return geocodePoint(item);
         }
 
         function buildPopupContent(item) {
@@ -627,12 +701,14 @@ export const buildOpenStreetMapHtml = ({
 
           if (
             userCoordinates &&
-            Number.isFinite(userCoordinates.latitude) &&
-            Number.isFinite(userCoordinates.longitude)
+            isValidPoint(
+              normalizeCoordinate(userCoordinates.latitude),
+              normalizeCoordinate(userCoordinates.longitude),
+            )
           ) {
             var userPoint = {
-              lat: Number(userCoordinates.latitude),
-              lng: Number(userCoordinates.longitude),
+              lat: normalizeCoordinate(userCoordinates.latitude),
+              lng: normalizeCoordinate(userCoordinates.longitude),
             };
             var userMarker = createCircleMarker(map, userPoint, {__mapRole: 'user'}, '#0ea5e9');
             userMarker.bindPopup('<div class="marker-popup"><div class="marker-popup-title">Sua localização</div></div>');
@@ -641,74 +717,82 @@ export const buildOpenStreetMapHtml = ({
 
           Promise.all(
             markers.map(function (item) {
-              var point = toPoint(item);
+              return resolvePoint(item).then(function (point) {
+                if (!point) {
+                  return null;
+                }
 
-              if (!point) {
-                return Promise.resolve(null);
-              }
+                var color = resolveCircleColor(item, '#64748b');
 
-              var color = resolveCircleColor(item, '#64748b');
-
-              return createMapMarker(map, point, item, color).then(function (marker) {
-                marker.bindPopup(buildPopupContent(item));
-                addPointToBounds(bounds, point);
-                return marker;
+                return createMapMarker(map, point, item, color).then(function (marker) {
+                  marker.bindPopup(buildPopupContent(item));
+                  addPointToBounds(bounds, point);
+                  return marker;
+                });
               });
             }),
           ).then(function () {
             function resolveRouteCoordinates(path) {
-              var from = toPoint(path && (path.from || path.origin || path.start));
-              var to = toPoint(path && (path.to || path.destination || path.end));
+              var fromSource = path && (path.from || path.origin || path.start);
+              var toSource = path && (path.to || path.destination || path.end);
 
-              if (!from || !to) {
-                return Promise.resolve(null);
-              }
+              return Promise.all([
+                resolvePoint(fromSource),
+                resolvePoint(toSource),
+              ]).then(function (points) {
+                var from = points[0];
+                var to = points[1];
 
-              var routeUrl =
-                'https://router.project-osrm.org/route/v1/driving/' +
-                from.lng +
-                ',' +
-                from.lat +
-                ';' +
-                to.lng +
-                ',' +
-                to.lat +
-                '?overview=full&geometries=geojson&steps=false';
+                if (!from || !to) {
+                  return null;
+                }
 
-              return fetch(routeUrl)
-                .then(function (response) {
-                  if (!response || !response.ok) {
-                    throw new Error('route-unavailable');
-                  }
+                var routeUrl =
+                  'https://router.project-osrm.org/route/v1/driving/' +
+                  from.lng +
+                  ',' +
+                  from.lat +
+                  ';' +
+                  to.lng +
+                  ',' +
+                  to.lat +
+                  '?overview=full&geometries=geojson&steps=false';
 
-                  return response.json();
-                })
-                .then(function (payload) {
-                  var geometry = payload && payload.routes && payload.routes[0] && payload.routes[0].geometry;
-                  var coordinates = geometry && Array.isArray(geometry.coordinates)
-                    ? geometry.coordinates
-                        .map(function (pair) {
-                          return {
-                            lat: Number(pair && pair[1]),
-                            lng: Number(pair && pair[0]),
-                          };
-                        })
-                        .filter(function (point) {
-                          return Number.isFinite(point.lat) && Number.isFinite(point.lng);
-                        })
-                    : [];
+                return fetch(routeUrl)
+                  .then(function (response) {
+                    if (!response || !response.ok) {
+                      throw new Error('route-unavailable');
+                    }
 
-                  return {
-                    path: path,
-                    coordinates: coordinates.length > 1 ? coordinates : [from, to],
-                  };
-                })
-                .catch(function () {
-                  return {
-                    path: path,
-                    coordinates: [from, to],
-                  };
-                });
+                    return response.json();
+                  })
+                  .then(function (payload) {
+                    var geometry = payload && payload.routes && payload.routes[0] && payload.routes[0].geometry;
+                    var coordinates = geometry && Array.isArray(geometry.coordinates)
+                      ? geometry.coordinates
+                          .map(function (pair) {
+                            return {
+                              lat: normalizeCoordinate(pair && pair[1]),
+                              lng: normalizeCoordinate(pair && pair[0]),
+                            };
+                          })
+                          .filter(function (point) {
+                            return isValidPoint(point.lat, point.lng);
+                          })
+                      : [];
+
+                    return {
+                      path: path,
+                      coordinates: coordinates.length > 1 ? coordinates : [from, to],
+                    };
+                  })
+                  .catch(function () {
+                    return {
+                      path: path,
+                      coordinates: [from, to],
+                    };
+                  });
+              });
             }
 
             Promise.all(routes.map(resolveRouteCoordinates)).then(function (resolvedRoutes) {

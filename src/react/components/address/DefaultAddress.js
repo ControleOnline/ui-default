@@ -281,6 +281,16 @@ export default function DefaultAddress({
     setShowStateList(false);
   }, []);
 
+  const toggleCountryList = useCallback(() => {
+    setShowStateList(false);
+    setShowCountryList(open => !open);
+  }, []);
+
+  const toggleStateList = useCallback(() => {
+    setShowCountryList(false);
+    setShowStateList(open => !open);
+  }, []);
+
   const onCepBlur = useCallback(async () => {
     const digits = String(form.cep || '').replace(/\D+/g, '');
     if (digits.length !== 8) return;
@@ -461,12 +471,12 @@ export default function DefaultAddress({
           </View>
         </Field>
 
-        <Field label="País">
+        <Field label="País" style={showCountryList ? styles.fieldRaised : null}>
           <TouchableOpacity
             style={styles.select}
-            onPress={() => setShowCountryList(s => !s)}
+            onPress={toggleCountryList}
             disabled={loadingMeta}>
-            <Text>{countryLabel}</Text>
+            <Text numberOfLines={1}>{countryLabel}</Text>
           </TouchableOpacity>
           {showCountryList ? (
             <View style={styles.dropdown}>
@@ -475,7 +485,7 @@ export default function DefaultAddress({
                   key={item.id || item.code}
                   style={styles.option}
                   onPress={() => onSelectCountry(item)}>
-                  <Text>
+                  <Text numberOfLines={1}>
                     {item.name} ({item.code})
                   </Text>
                 </TouchableOpacity>
@@ -484,12 +494,12 @@ export default function DefaultAddress({
           ) : null}
         </Field>
 
-        <Field label="Estado">
+        <Field label="Estado" style={showStateList ? styles.fieldRaised : null}>
           <TouchableOpacity
             style={styles.select}
-            onPress={() => setShowStateList(s => !s)}
+            onPress={toggleStateList}
             disabled={loadingMeta}>
-            <Text>{stateLabel}</Text>
+            <Text numberOfLines={1}>{stateLabel}</Text>
           </TouchableOpacity>
           {showStateList ? (
             <View style={styles.dropdown}>
@@ -498,7 +508,7 @@ export default function DefaultAddress({
                   key={item.id || item.uf}
                   style={styles.option}
                   onPress={() => onSelectState(item)}>
-                  <Text>
+                  <Text numberOfLines={1}>
                     {item.name} ({item.uf})
                   </Text>
                 </TouchableOpacity>
@@ -566,9 +576,9 @@ export default function DefaultAddress({
   );
 }
 
-function Field({label, children}) {
+function Field({label, children, style = null}) {
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, style]}>
       <Text style={styles.label}>{label}</Text>
       {children}
     </View>
@@ -590,7 +600,8 @@ const styles = StyleSheet.create({
   },
   formPane: {width: '100%'},
   formPaneDesktop: {flex: 1, maxWidth: 560},
-  field: {marginBottom: 10},
+  field: {marginBottom: 10, position: 'relative', zIndex: 1},
+  fieldRaised: {zIndex: 30, elevation: 8},
   label: {fontSize: 13, fontWeight: '600', marginBottom: 4, color: '#334155'},
   input: {
     borderWidth: 1,
@@ -615,6 +626,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 4,
     backgroundColor: '#fff',
+    overflow: 'hidden',
+    zIndex: 40,
+    elevation: 8,
   },
   option: {paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9'},
   row: {flexDirection: 'row', alignItems: 'center'},
