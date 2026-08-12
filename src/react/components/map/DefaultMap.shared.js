@@ -524,51 +524,8 @@ export const buildOpenStreetMapHtml = ({
           };
         }
 
-        function geocodePoint(item) {
-          var query = item && item.geocodeQuery ? String(item.geocodeQuery).trim() : '';
-
-          if (!query) {
-            return Promise.resolve(null);
-          }
-
-          return fetch(
-            'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
-              encodeURIComponent(query),
-          )
-            .then(function (response) {
-              if (!response || !response.ok) {
-                return null;
-              }
-
-              return response.json();
-            })
-            .then(function (payload) {
-              var first = Array.isArray(payload) ? payload[0] : null;
-              var latitude = normalizeCoordinate(first && first.lat);
-              var longitude = normalizeCoordinate(first && first.lon);
-
-              if (!isValidPoint(latitude, longitude)) {
-                return null;
-              }
-
-              return {
-                lat: latitude,
-                lng: longitude,
-              };
-            })
-            .catch(function () {
-              return null;
-            });
-        }
-
         function resolvePoint(item) {
-          var point = toPoint(item);
-
-          if (point) {
-            return Promise.resolve(point);
-          }
-
-          return geocodePoint(item);
+          return Promise.resolve(toPoint(item));
         }
 
         function buildPopupContent(item) {
