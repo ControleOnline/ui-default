@@ -1,6 +1,6 @@
 import {StyleSheet} from 'react-native';
 
-const styles = StyleSheet.create({
+const createStyles = palette => StyleSheet.create({
   button: {
     alignItems: 'center',
     borderRadius: 999,
@@ -16,15 +16,16 @@ const styles = StyleSheet.create({
   },
   overlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: palette.modalOverlay,
     flex: 1,
     justifyContent: 'center',
     padding: 18,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: palette.modalBackground,
     borderRadius: 16,
     borderWidth: 1,
+    borderColor: palette.modalBorder,
     maxWidth: 420,
     padding: 16,
     width: '100%',
@@ -40,22 +41,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '800',
+    color: palette.modalHeaderText,
   },
   message: {
-    color: '#334155',
+    color: palette.modalText,
     fontSize: 13,
     lineHeight: 19,
   },
   closeButton: {
+    alignItems: 'center',
+    backgroundColor: palette.buttonBackground,
+    borderColor: palette.buttonBorder,
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  closeButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
   },
 });
 
-export default styles;
+export default createStyles;
