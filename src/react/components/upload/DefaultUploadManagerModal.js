@@ -160,7 +160,7 @@ export default function DefaultUploadManagerModal(props) {
                         {getFileName(file)}
                       </Text>
                       <View style={styles.fileMetaRow}>
-                        <Text style={styles.contextBadge}>{getContextLabel(file)}</Text>
+                        <Text style={styles.contextBadge}>{getContextLabel(file?.context)}</Text>
                         {isAttached && <Text style={styles.attachedBadge}>{attachLabel}</Text>}
                       </View>
                     </View>

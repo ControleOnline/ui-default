@@ -22,12 +22,23 @@ const getRelationFileId = relation => extractFileId(relation?.file);
 
 const getFileName = file => {
   const id = extractFileId(file);
-  return file?.fileName || file?.name || file?.originalName || (id ? `Arquivo ${id}` : 'Arquivo');
+  const raw = file?.fileName || file?.name || file?.originalName;
+  if (raw && typeof raw === 'string') return raw;
+  if (raw && typeof raw === 'object') {
+    const nested = raw.fileName || raw.name || raw.originalName;
+    if (nested && typeof nested === 'string') return nested;
+  }
+  return id ? `Arquivo ${id}` : 'Arquivo';
 };
 
 const getContextLabel = context => {
   if (!context) return 'sem contexto';
-  return String(context).trim();
+  if (typeof context === 'object') {
+    const nested = context.context || context.label || context.name;
+    if (nested && typeof nested === 'string') return nested.trim() || 'sem contexto';
+    return 'sem contexto';
+  }
+  return String(context).trim() || 'sem contexto';
 };
 
 const dedupeFiles = files => {

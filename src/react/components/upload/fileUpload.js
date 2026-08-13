@@ -25,6 +25,12 @@ export const uploadFileToApi = async ({file, context = 'products', peopleId, ent
   const formData = new FormData();
 
   if (Platform.OS === 'web') {
+    if (!file || (typeof Blob !== 'undefined' && !(file instanceof Blob) && !(typeof File !== 'undefined' && file instanceof File))) {
+      throw new Error('Arquivo invalido para upload.');
+    }
+    if (typeof file.size === 'number' && file.size <= 0) {
+      throw new Error('Arquivo vazio.');
+    }
     formData.append('file', file);
   } else {
     formData.append('file', {
