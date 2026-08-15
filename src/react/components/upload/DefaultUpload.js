@@ -83,7 +83,10 @@ const DefaultUpload = ({
       buttonIconSecondary: themeColors.buttonIconSecondary || themeColors.buttonTextSecondary,
       iconSuccess: themeColors.iconSuccess,
       iconDanger: themeColors.iconDanger,
+      iconActive: themeColors.iconActive,
       textDanger: themeColors.textDanger,
+      cardBackground: themeColors.cardBackground,
+      cardBorder: themeColors.cardBorder,
     }),
     [
       themeColors.buttonBackground,
@@ -94,9 +97,12 @@ const DefaultUpload = ({
       themeColors.buttonIconSecondary,
       themeColors.buttonText,
       themeColors.buttonTextSecondary,
+      themeColors.iconActive,
       themeColors.iconDanger,
       themeColors.iconSuccess,
       themeColors.textDanger,
+      themeColors.cardBackground,
+      themeColors.cardBorder,
     ],
   );
 
