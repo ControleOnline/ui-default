@@ -54,6 +54,10 @@ jest.mock(
   {virtual: true},
 );
 
+jest.mock('react-native-vector-icons/Feather', () => props =>
+  React.createElement('feathericon', props, props.children),
+);
+
 jest.mock('@controleonline/ui-common/src/react/components/AnimatedModal', () => {
   return props => (props.visible ? React.createElement('modal', props, props.children) : null);
 });
@@ -98,6 +102,9 @@ const collectText = node =>
 
 const findButtonByLabel = (root, label) =>
   root.findAllByType('touchableopacity').find(button => collectText(button).includes(label));
+
+const findButtonByAccessibilityLabel = (root, label) =>
+  root.findAllByType('touchableopacity').find(button => button.props.accessibilityLabel === label);
 
 describe('DefaultUpload', () => {
   beforeEach(() => {
@@ -223,8 +230,11 @@ describe('DefaultUpload', () => {
     expect(relationActions.save).not.toHaveBeenCalled();
     expect(onChanged).toHaveBeenCalled();
 
+    const removeButton = findButtonByAccessibilityLabel(tree.root, 'Remover');
+    expect(removeButton).toBeTruthy();
+
     await renderer.act(async () => {
-      await findButtonByLabel(tree.root, 'Remover').props.onPress();
+      await removeButton.props.onPress();
       await flush();
     });
 
@@ -232,6 +242,42 @@ describe('DefaultUpload', () => {
       expect.objectContaining({file: expect.objectContaining({id: 91})}),
     );
     expect(relationActions.remove).not.toHaveBeenCalled();
+  });
+
+  it('normaliza o identificador da relacao antes da remocao customizada', async () => {
+    const onRemoveAttachment = jest.fn().mockResolvedValue({});
+
+    let tree;
+
+    await renderer.act(async () => {
+      tree = renderer.create(
+        React.createElement(DefaultUpload, {
+          relationStoreName: 'people',
+          relationField: 'people',
+          relationResource: 'people',
+          entityId: 30,
+          companyId: 30,
+          attachments: [{mediaId: '/people_media/44', file: {id: 91, fileName: 'avatar.png'}}],
+          context: 'people_media',
+          title: 'avatar',
+          triggerLabel: 'Gerenciar avatar',
+          onRemoveAttachment,
+        }),
+      );
+    });
+
+    await renderer.act(async () => {
+      await findButtonByAccessibilityLabel(tree.root, 'Remover').props.onPress();
+      await flush();
+    });
+
+    expect(onRemoveAttachment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '44',
+        mediaId: '/people_media/44',
+        file: expect.objectContaining({id: 91}),
+      }),
+    );
   });
 
   it('renderiza apenas o gatilho customizado quando o conteudo inline fica desativado', async () => {
