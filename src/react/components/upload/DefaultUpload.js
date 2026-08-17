@@ -19,6 +19,7 @@ import {
   DEFAULT_LIBRARY_CONTEXTS,
   normalizeCollection,
   getEntityId,
+  normalizeAttachmentRelation,
   getRelationFileId,
   getFileName,
   getContextLabel,
@@ -349,16 +350,17 @@ const DefaultUpload = ({
       try {
         setError('');
         setStatus('');
+        const attachmentRelation = normalizeAttachmentRelation(relation);
         if (typeof onRemoveAttachment === 'function') {
-          await onRemoveAttachment(relation);
-          const relationId = getEntityId(relation);
+          await onRemoveAttachment(attachmentRelation);
+          const relationId = getEntityId(attachmentRelation);
           if (String(coverId) === String(relationId)) setCoverId(null);
           setStatus(removeSuccessMessage);
           if (onChanged) await onChanged();
           return;
         }
 
-        const relationId = getEntityId(relation);
+        const relationId = getEntityId(attachmentRelation);
         if (!relationId) throw new Error('Anexo sem identificador para remocao.');
 
         if (typeof relationActions.remove !== 'function') {
