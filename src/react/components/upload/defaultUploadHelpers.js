@@ -13,9 +13,30 @@ const normalizeCollection = response => {
 };
 
 const getEntityId = relation => {
-  const value = relation?.id || relation?.['@id'] || relation;
+  const value =
+    relation?.id ||
+    relation?.['@id'] ||
+    relation?.mediaId ||
+    relation?.media?.id ||
+    relation?.media?.['@id'] ||
+    relation?.peopleMedia?.id ||
+    relation?.peopleMedia?.['@id'] ||
+    relation;
   const match = String(value || '').match(/(\d+)$/);
   return match ? match[1] : null;
+};
+
+const normalizeAttachmentRelation = relation => {
+  const relationId = getEntityId(relation);
+
+  if (!relation || typeof relation !== 'object' || relation?.id || !relationId) {
+    return relation;
+  }
+
+  return {
+    ...relation,
+    id: relationId,
+  };
 };
 
 const getRelationFileId = relation => extractFileId(relation?.file);
@@ -45,6 +66,7 @@ module.exports = {
   DEFAULT_LIBRARY_CONTEXTS,
   normalizeCollection,
   getEntityId,
+  normalizeAttachmentRelation,
   getRelationFileId,
   getFileName,
   getContextLabel,
