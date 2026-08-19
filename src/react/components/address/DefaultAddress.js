@@ -1,9 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,130 +14,21 @@ import {
   listStates,
   lookupPostalCode,
 } from '../../services/addressGeo';
-import DefaultMap from '../map/DefaultMap';
-
-const emptyForm = {
-  nickname: '',
-  cep: '',
-  street: '',
-  number: '',
-  complement: '',
-  district: '',
-  city: '',
-  uf: '',
-  stateName: '',
-  countryCode: 'BR',
-  countryName: 'Brazil',
-  latitude: null,
-  longitude: null,
-  mapStaticUrl: null,
-  facadeUrl: null,
-  provider: null,
-};
-
-const hydrateFromRow = row => {
-  if (!row || typeof row !== 'object') {
-    return {...emptyForm};
-  }
-  const street = row?.street?.street || row?.street || '';
-  const district = row?.street?.district?.district || row?.district || '';
-  const city = row?.street?.district?.city?.city || row?.city || '';
-  const stateEntity = row?.street?.district?.city?.state || row?.state;
-  const countryEntity = stateEntity?.country || row?.country;
-  return {
-    ...emptyForm,
-    nickname: row?.nickname || '',
-    cep: String(row?.street?.cep?.cep || row?.cep || row?.postal_code || ''),
-    street: typeof street === 'string' ? street : '',
-    number: row?.number != null ? String(row.number) : '',
-    complement: row?.complement || '',
-    district,
-    city,
-    uf: stateEntity?.uf || row?.uf || '',
-    stateName: stateEntity?.state || '',
-    countryCode: countryEntity?.countrycode || countryEntity?.code || 'BR',
-    countryName: countryEntity?.countryname || countryEntity?.name || 'Brazil',
-    latitude: row?.latitude ?? null,
-    longitude: row?.longitude ?? null,
-  };
-};
-
-const onlyDigits = value => String(value || '').replace(/\D+/g, '');
-
-const hasAddressText = form =>
-  [
-    form?.street,
-    form?.number,
-    form?.district,
-    form?.city,
-    form?.uf,
-    form?.cep,
-  ].some(value => String(value || '').trim().length > 0);
-
-const hasCoordinates = form =>
-  Number.isFinite(Number(form?.latitude)) && Number.isFinite(Number(form?.longitude));
-
-const mergePostalCodeData = (prev, data, {preserveFilledFields = false} = {}) => {
-  const keep = (key, nextValue) =>
-    preserveFilledFields && String(prev[key] || '').trim()
-      ? prev[key]
-      : nextValue || prev[key];
-
-  return {
-    ...prev,
-    cep: onlyDigits(data.cep || prev.cep),
-    street: keep('street', data.street),
-    district: keep('district', data.district),
-    city: keep('city', data.city),
-    uf: keep('uf', data.uf || data.state),
-    stateName: keep('stateName', data.state),
-    countryCode:
-      data.country === 'Brasil' || data.country === 'Brazil'
-        ? 'BR'
-        : data.country || prev.countryCode,
-    countryName:
-      data.country === 'Brasil' ? 'Brazil' : data.country || prev.countryName,
-    latitude: data.latitude ?? data.map?.latitude ?? prev.latitude,
-    longitude: data.longitude ?? data.map?.longitude ?? prev.longitude,
-    mapStaticUrl: data.map?.staticUrl || prev.mapStaticUrl || null,
-    facadeUrl: data.facade?.streetViewUrl || prev.facadeUrl || null,
-    provider: data.provider || prev.provider || null,
-  };
-};
-
-const getCurrentCoordinates = () =>
-  new Promise(resolve => {
-    const geolocation =
-      typeof navigator !== 'undefined' ? navigator.geolocation : null;
-
-    if (!geolocation?.getCurrentPosition) {
-      resolve(null);
-      return;
-    }
-
-    geolocation.getCurrentPosition(
-      position => {
-        const latitude = Number(position?.coords?.latitude);
-        const longitude = Number(position?.coords?.longitude);
-
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-          resolve(null);
-          return;
-        }
-
-        resolve({latitude, longitude});
-      },
-      () => resolve(null),
-      {enableHighAccuracy: true, timeout: 8000, maximumAge: 60000},
-    );
-  });
+import DefaultAddressMapPane from './DefaultAddressMapPane';
+import {
+  buildMapMarkerPayload,
+  getCurrentCoordinates,
+  hasCoordinates,
+  hydrateFromRow,
+  mergePostalCodeData,
+  onlyDigits,
+  parseOptionalCoordinate,
+} from './defaultAddressHelpers';
+import {styles} from './defaultAddressStyles';
 
 /**
- * DefaultAddress — único componente de formulário de endereço do ecossistema.
- * País/estado em dropdown, CEP via balanceador (Postmon→ViaCEP→Maps),
- * mapa/fachada quando houver GMAPS_KEY.
- *
- * Não criar formulários paralelos de endereço; reutilizar este componente.
+ * DefaultAddress — canonical address form (CEP balancer, map, optional lat/lng).
+ * app-community#283: auto coords via Google Maps on CEP; optional manual fields.
  */
 export default function DefaultAddress({
   row = null,
@@ -164,10 +53,6 @@ export default function DefaultAddress({
   const [showCountryList, setShowCountryList] = useState(false);
   const [showStateList, setShowStateList] = useState(false);
 
-  function hydrateFromProps(r) {
-    return hydrateFromRow(r);
-  }
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -190,6 +75,7 @@ export default function DefaultAddress({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -201,10 +87,7 @@ export default function DefaultAddress({
       if (digits.length === 8) {
         try {
           const data = await lookupPostalCode(digits);
-          if (cancelled) {
-            return;
-          }
-
+          if (cancelled) return;
           setForm(prev => {
             const next = mergePostalCodeData(prev, data, {
               preserveFilledFields: true,
@@ -213,25 +96,18 @@ export default function DefaultAddress({
             return next;
           });
         } catch {
-          // Existing address data should still be editable if the map provider fails.
+          // keep existing row editable if provider fails
         }
         return;
       }
 
-      if (mode !== 'create' || hasCoordinates(initial)) {
-        return;
-      }
+      if (mode !== 'create' || hasCoordinates(initial)) return;
 
       const coordinates = await getCurrentCoordinates();
-      if (cancelled || !coordinates) {
-        return;
-      }
+      if (cancelled || !coordinates) return;
 
       setForm(prev => {
-        if (hasCoordinates(prev)) {
-          return prev;
-        }
-
+        if (hasCoordinates(prev)) return prev;
         const next = {
           ...prev,
           latitude: coordinates.latitude,
@@ -247,13 +123,28 @@ export default function DefaultAddress({
     };
   }, [mode, onFormChange, row]);
 
-  const onChange = useCallback((key, value) => {
-    setForm(prev => {
-      const next = {...prev, [key]: value};
-      onFormChange?.(next);
-      return next;
-    });
-  }, [onFormChange]);
+  const onChange = useCallback(
+    (key, value) => {
+      setForm(prev => {
+        const next = {...prev, [key]: value};
+        onFormChange?.(next);
+        return next;
+      });
+    },
+    [onFormChange],
+  );
+
+  const onCoordinateChange = useCallback(
+    (key, raw) => {
+      const parsed = parseOptionalCoordinate(raw);
+      setForm(prev => {
+        const next = {...prev, [key]: parsed};
+        onFormChange?.(next);
+        return next;
+      });
+    },
+    [onFormChange],
+  );
 
   const onSelectCountry = useCallback(async item => {
     setForm(prev => ({
@@ -265,19 +156,14 @@ export default function DefaultAddress({
     }));
     setShowCountryList(false);
     try {
-      const s = await listStates(item.code);
-      setStates(s);
+      setStates(await listStates(item.code));
     } catch (e) {
       setError(e?.message || 'Falha ao carregar estados');
     }
   }, []);
 
   const onSelectState = useCallback(item => {
-    setForm(prev => ({
-      ...prev,
-      uf: item.uf,
-      stateName: item.name,
-    }));
+    setForm(prev => ({...prev, uf: item.uf, stateName: item.name}));
     setShowStateList(false);
   }, []);
 
@@ -299,27 +185,25 @@ export default function DefaultAddress({
     try {
       const data = await lookupPostalCode(digits);
       setForm(prev => {
-        const next = mergePostalCodeData(
-          {...prev, cep: digits},
-          data,
-        );
+        const next = mergePostalCodeData({...prev, cep: digits}, data);
         onFormChange?.(next);
         return next;
       });
       if (data.uf || data.state) {
-        const s = await listStates(
-          data.country === 'Brasil' || data.country === 'Brazil'
-            ? 'BR'
-            : data.country || 'BR',
+        setStates(
+          await listStates(
+            data.country === 'Brasil' || data.country === 'Brazil'
+              ? 'BR'
+              : data.country || 'BR',
+          ),
         );
-        setStates(s);
       }
     } catch (e) {
       setError(e?.message || 'Falha ao consultar CEP');
     } finally {
       setLoadingCep(false);
     }
-  }, [form.cep]);
+  }, [form.cep, onFormChange]);
 
   const handleSave = useCallback(async () => {
     if (!peopleIri && mode === 'create') {
@@ -333,8 +217,7 @@ export default function DefaultAddress({
       if (mode === 'edit' && row) {
         payload.id = row['@id'] || row.id;
       }
-      const saved = await saveAction(payload);
-      onSaved?.(saved);
+      onSaved?.(await saveAction(payload));
     } catch (e) {
       setError(e?.message || 'Falha ao salvar endereço');
     } finally {
@@ -354,83 +237,15 @@ export default function DefaultAddress({
     [form.stateName, form.uf],
   );
 
-  const mapMarkerPayload = useMemo(() => {
-    if (!hasAddressText(form) && !hasCoordinates(form)) {
-      return null;
-    }
-
-    const addressLine = [form.street, form.number].filter(Boolean).join(', ');
-    const addressExtra = [
-      form.district,
-      [form.city, form.uf].filter(Boolean).join(' - '),
-      form.countryName || form.countryCode,
-      form.cep,
-    ]
-      .filter(Boolean)
-      .join(' • ');
-
-    return {
-      id: 'default-address-preview',
-      title: form.nickname || 'Endereco',
-      addressLine: addressLine || addressExtra || 'Endereco',
-      addressExtra,
-      latitude: form.latitude,
-      longitude: form.longitude,
-      geocodeQuery: [
-        addressLine,
-        form.district,
-        [form.city, form.uf].filter(Boolean).join(' - '),
-        form.countryName || form.countryCode,
-        form.cep,
-      ]
-        .filter(Boolean)
-        .join(', '),
-    };
-  }, [form]);
-
+  const mapMarkerPayload = useMemo(() => buildMapMarkerPayload(form), [form]);
   const mapUserCoordinates = hasCoordinates(form)
     ? {latitude: Number(form.latitude), longitude: Number(form.longitude)}
     : null;
 
-  const mapPanel = (
-    <View style={[styles.mapPane, isDesktop && styles.mapPaneDesktop]}>
-      <Text style={styles.mapPaneTitle}>Mapa</Text>
-      {hasCoordinates(form) || mapMarkerPayload ? (
-        <View style={[styles.liveMap, isDesktop && styles.liveMapDesktop]}>
-          <DefaultMap
-            markerPayloads={mapMarkerPayload ? [mapMarkerPayload] : []}
-            userCoordinates={mapUserCoordinates}
-          />
-        </View>
-      ) : form.mapStaticUrl ? (
-        <Image
-          source={{uri: form.mapStaticUrl}}
-          style={[styles.mapImage, isDesktop && styles.mapImageDesktop]}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[styles.mapPlaceholder, isDesktop && styles.mapImageDesktop]}>
-          <Text style={styles.mapPlaceholderTitle}>Mapa indisponível</Text>
-          <Text style={styles.mapPlaceholderText}>
-            Consulte um CEP para carregar a localização quando a API retornar a imagem.
-          </Text>
-        </View>
-      )}
-
-      <Text style={styles.mapPaneTitle}>Fachada</Text>
-      {form.facadeUrl ? (
-        <Image
-          source={{uri: form.facadeUrl}}
-          style={styles.facadeImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.facadePlaceholder}>
-          <Text style={styles.mapPlaceholderText}>
-            Fachada disponível quando houver chave Maps e retorno do provedor.
-          </Text>
-        </View>
-      )}
+  const Field = ({label, children, style}) => (
+    <View style={[styles.field, style]}>
+      <Text style={styles.label}>{label}</Text>
+      {children}
     </View>
   );
 
@@ -476,20 +291,22 @@ export default function DefaultAddress({
             style={styles.select}
             onPress={toggleCountryList}
             disabled={loadingMeta}>
-            <Text numberOfLines={1}>{countryLabel}</Text>
+            <Text>{countryLabel}</Text>
           </TouchableOpacity>
           {showCountryList ? (
             <View style={styles.dropdown}>
-              {countries.map(item => (
-                <TouchableOpacity
-                  key={item.id || item.code}
-                  style={styles.option}
-                  onPress={() => onSelectCountry(item)}>
-                  <Text numberOfLines={1}>
-                    {item.name} ({item.code})
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <ScrollView nestedScrollEnabled>
+                {countries.map(item => (
+                  <TouchableOpacity
+                    key={item.code || item.id}
+                    style={styles.option}
+                    onPress={() => onSelectCountry(item)}>
+                    <Text>
+                      {item.name} ({item.code})
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           ) : null}
         </Field>
@@ -499,20 +316,22 @@ export default function DefaultAddress({
             style={styles.select}
             onPress={toggleStateList}
             disabled={loadingMeta}>
-            <Text numberOfLines={1}>{stateLabel}</Text>
+            <Text>{stateLabel}</Text>
           </TouchableOpacity>
           {showStateList ? (
             <View style={styles.dropdown}>
-              {states.map(item => (
-                <TouchableOpacity
-                  key={item.id || item.uf}
-                  style={styles.option}
-                  onPress={() => onSelectState(item)}>
-                  <Text numberOfLines={1}>
-                    {item.name} ({item.uf})
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <ScrollView nestedScrollEnabled>
+                {states.map(item => (
+                  <TouchableOpacity
+                    key={item.uf || item.id}
+                    style={styles.option}
+                    onPress={() => onSelectState(item)}>
+                    <Text>
+                      {item.name} ({item.uf})
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           ) : null}
         </Field>
@@ -522,186 +341,103 @@ export default function DefaultAddress({
             style={styles.input}
             value={form.city}
             onChangeText={v => onChange('city', v)}
+            placeholder="Cidade"
           />
         </Field>
+
         <Field label="Bairro">
           <TextInput
             style={styles.input}
             value={form.district}
             onChangeText={v => onChange('district', v)}
+            placeholder="Bairro"
           />
         </Field>
-        <Field label="Logradouro">
+
+        <Field label="Rua">
           <TextInput
             style={styles.input}
             value={form.street}
             onChangeText={v => onChange('street', v)}
-          />
-        </Field>
-        <Field label="Número">
-          <TextInput
-            style={styles.input}
-            value={form.number}
-            onChangeText={v => onChange('number', v)}
-            keyboardType="number-pad"
-          />
-        </Field>
-        <Field label="Complemento">
-          <TextInput
-            style={styles.input}
-            value={form.complement}
-            onChangeText={v => onChange('complement', v)}
+            placeholder="Logradouro"
           />
         </Field>
 
+        <View style={[styles.row, styles.gap8]}>
+          <Field label="Número" style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={form.number}
+              onChangeText={v => onChange('number', v)}
+              placeholder="Nº"
+            />
+          </Field>
+          <Field label="Complemento" style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={form.complement}
+              onChangeText={v => onChange('complement', v)}
+              placeholder="Apto, sala..."
+            />
+          </Field>
+        </View>
+
+        <Text style={styles.hint}>
+          Latitude/longitude: auto via CEP (Google Maps) ou dispositivo. Campos
+          opcionais para ajuste manual (franquia sem endereço).
+        </Text>
+        <View style={[styles.row, styles.gap8]}>
+          <Field label="Latitude (opcional)" style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={
+                form.latitude == null ? '' : String(form.latitude)
+              }
+              onChangeText={v => onCoordinateChange('latitude', v)}
+              keyboardType="decimal-pad"
+              placeholder="-23.5505"
+            />
+          </Field>
+          <Field label="Longitude (opcional)" style={styles.half}>
+            <TextInput
+              style={styles.input}
+              value={
+                form.longitude == null ? '' : String(form.longitude)
+              }
+              onChangeText={v => onCoordinateChange('longitude', v)}
+              keyboardType="decimal-pad"
+              placeholder="-46.6333"
+            />
+          </Field>
+        </View>
+
         {!hideActions ? (
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
-              <Text>Cancelar</Text>
-            </TouchableOpacity>
+            {onCancel ? (
+              <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
+                <Text style={styles.btnSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
-              style={styles.btnPrimary}
+              style={[styles.btnPrimary, saving && styles.btnDisabled]}
               onPress={handleSave}
               disabled={saving}>
-              <Text style={styles.btnPrimaryText}>
-                {saving ? 'Salvando...' : submitLabel}
-              </Text>
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.btnPrimaryText}>{submitLabel}</Text>
+              )}
             </TouchableOpacity>
           </View>
         ) : null}
       </View>
 
-      {mapPanel}
+      <DefaultAddressMapPane
+        form={form}
+        mapMarkerPayload={mapMarkerPayload}
+        mapUserCoordinates={mapUserCoordinates}
+        isDesktop={isDesktop}
+      />
     </ScrollView>
   );
 }
-
-function Field({label, children, style = null}) {
-  return (
-    <View style={[styles.field, style]}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  scroll: {flex: 1, width: '100%'},
-  container: {padding: 16, gap: 16},
-  containerDesktop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 1280,
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    gap: 24,
-  },
-  formPane: {width: '100%'},
-  formPaneDesktop: {flex: 1, maxWidth: 560},
-  field: {marginBottom: 10, position: 'relative', zIndex: 1},
-  fieldRaised: {zIndex: 30, elevation: 8},
-  label: {fontSize: 13, fontWeight: '600', marginBottom: 4, color: '#334155'},
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-  },
-  select: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F8FAFC',
-  },
-  dropdown: {
-    maxHeight: 180,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    marginTop: 4,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    zIndex: 40,
-    elevation: 8,
-  },
-  option: {paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9'},
-  row: {flexDirection: 'row', alignItems: 'center'},
-  flex: {flex: 1},
-  loader: {marginLeft: 8},
-  error: {color: '#B91C1C', marginBottom: 8},
-  hint: {color: '#64748B', marginBottom: 8, fontSize: 12},
-  mapPane: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    gap: 12,
-  },
-  mapPaneDesktop: {flex: 1, minHeight: 560},
-  mapPaneTitle: {fontWeight: '700', fontSize: 15, color: '#0F172A'},
-  mapImage: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  mapImageDesktop: {height: 360},
-  liveMap: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#E2E8F0',
-  },
-  liveMapDesktop: {height: 360},
-  facadeImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  mapPlaceholder: {
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-  },
-  facadePlaceholder: {
-    minHeight: 120,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-  },
-  mapPlaceholderTitle: {
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 6,
-  },
-  mapPlaceholderText: {
-    color: '#64748B',
-    textAlign: 'center',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  actions: {flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16},
-  btnSecondary: {paddingHorizontal: 16, paddingVertical: 12},
-  btnPrimary: {
-    backgroundColor: '#1D4ED8',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  btnPrimaryText: {color: '#fff', fontWeight: '600'},
-});
