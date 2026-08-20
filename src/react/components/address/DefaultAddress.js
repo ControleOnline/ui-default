@@ -1,7 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -14,22 +16,25 @@ import {
   listStates,
   lookupPostalCode,
 } from '../../services/addressGeo';
-import DefaultAddressMapPane from './DefaultAddressMapPane';
+import DefaultMap from '../map/DefaultMap';
+import styles from './DefaultAddress.styles';
 import {
-  buildMapMarkerPayload,
-  getCurrentCoordinates,
-  hasCoordinates,
+  emptyForm,
   hydrateFromRow,
-  mergePostalCodeData,
   onlyDigits,
-  parseOptionalCoordinate,
-} from './defaultAddressHelpers';
-import {styles} from './defaultAddressStyles';
+  hasAddressText,
+  hasCoordinates,
+  mergePostalCodeData,
+  getCurrentCoordinates,
+} from './defaultAddressUtils';
+
 
 /**
- * DefaultAddress — canonical address form (CEP balancer, map, optional lat/lng).
- * app-community#283: auto coords via Google Maps on CEP; optional manual fields.
- * Preserves categories when present on the row (dev parity).
+ * DefaultAddress — único componente de formulário de endereço do ecossistema.
+ * País/estado em dropdown, CEP via balanceador (Postmon→ViaCEP→Maps),
+ * mapa/fachada quando houver GMAPS_KEY.
+ *
+ * Não criar formulários paralelos de endereço; reutilizar este componente.
  */
 export default function DefaultAddress({
   row = null,
@@ -54,6 +59,10 @@ export default function DefaultAddress({
   const [showCountryList, setShowCountryList] = useState(false);
   const [showStateList, setShowStateList] = useState(false);
 
+  function hydrateFromProps(r) {
+    return hydrateFromRow(r);
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -76,7 +85,6 @@ export default function DefaultAddress({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -88,7 +96,10 @@ export default function DefaultAddress({
       if (digits.length === 8) {
         try {
           const data = await lookupPostalCode(digits);
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
+
           setForm(prev => {
             const next = mergePostalCodeData(prev, data, {
               preserveFilledFields: true,
@@ -97,18 +108,25 @@ export default function DefaultAddress({
             return next;
           });
         } catch {
-          // keep existing row editable if provider fails
+          // Existing address data should still be editable if the map provider fails.
         }
         return;
       }
 
-      if (mode !== 'create' || hasCoordinates(initial)) return;
+      if (mode !== 'create' || hasCoordinates(initial)) {
+        return;
+      }
 
       const coordinates = await getCurrentCoordinates();
-      if (cancelled || !coordinates) return;
+      if (cancelled || !coordinates) {
+        return;
+      }
 
       setForm(prev => {
-        if (hasCoordinates(prev)) return prev;
+        if (hasCoordinates(prev)) {
+          return prev;
+        }
+
         const next = {
           ...prev,
           latitude: coordinates.latitude,
@@ -124,28 +142,13 @@ export default function DefaultAddress({
     };
   }, [mode, onFormChange, row]);
 
-  const onChange = useCallback(
-    (key, value) => {
-      setForm(prev => {
-        const next = {...prev, [key]: value};
-        onFormChange?.(next);
-        return next;
-      });
-    },
-    [onFormChange],
-  );
-
-  const onCoordinateChange = useCallback(
-    (key, raw) => {
-      const parsed = parseOptionalCoordinate(raw);
-      setForm(prev => {
-        const next = {...prev, [key]: parsed};
-        onFormChange?.(next);
-        return next;
-      });
-    },
-    [onFormChange],
-  );
+  const onChange = useCallback((key, value) => {
+    setForm(prev => {
+      const next = {...prev, [key]: value};
+      onFormChange?.(next);
+      return next;
+    });
+  }, [onFormChange]);
 
   const onSelectCountry = useCallback(async item => {
     setForm(prev => ({
@@ -157,14 +160,19 @@ export default function DefaultAddress({
     }));
     setShowCountryList(false);
     try {
-      setStates(await listStates(item.code));
+      const s = await listStates(item.code);
+      setStates(s);
     } catch (e) {
       setError(e?.message || 'Falha ao carregar estados');
     }
   }, []);
 
   const onSelectState = useCallback(item => {
-    setForm(prev => ({...prev, uf: item.uf, stateName: item.name}));
+    setForm(prev => ({
+      ...prev,
+      uf: item.uf,
+      stateName: item.name,
+    }));
     setShowStateList(false);
   }, []);
 
@@ -186,25 +194,27 @@ export default function DefaultAddress({
     try {
       const data = await lookupPostalCode(digits);
       setForm(prev => {
-        const next = mergePostalCodeData({...prev, cep: digits}, data);
+        const next = mergePostalCodeData(
+          {...prev, cep: digits},
+          data,
+        );
         onFormChange?.(next);
         return next;
       });
       if (data.uf || data.state) {
-        setStates(
-          await listStates(
-            data.country === 'Brasil' || data.country === 'Brazil'
-              ? 'BR'
-              : data.country || 'BR',
-          ),
+        const s = await listStates(
+          data.country === 'Brasil' || data.country === 'Brazil'
+            ? 'BR'
+            : data.country || 'BR',
         );
+        setStates(s);
       }
     } catch (e) {
       setError(e?.message || 'Falha ao consultar CEP');
     } finally {
       setLoadingCep(false);
     }
-  }, [form.cep, onFormChange]);
+  }, [form.cep]);
 
   const handleSave = useCallback(async () => {
     if (!peopleIri && mode === 'create') {
@@ -218,7 +228,8 @@ export default function DefaultAddress({
       if (mode === 'edit' && row) {
         payload.id = row['@id'] || row.id;
       }
-      onSaved?.(await saveAction(payload));
+      const saved = await saveAction(payload);
+      onSaved?.(saved);
     } catch (e) {
       setError(e?.message || 'Falha ao salvar endereço');
     } finally {
@@ -238,15 +249,81 @@ export default function DefaultAddress({
     [form.stateName, form.uf],
   );
 
-  const mapMarkerPayload = useMemo(() => buildMapMarkerPayload(form), [form]);
+  const mapMarkerPayload = useMemo(() => {
+    if (!hasAddressText(form) && !hasCoordinates(form)) {
+      return null;
+    }
+
+    const addressLine = [form.street, form.number].filter(Boolean).join(', ');
+    const addressExtra = [
+      form.district,
+      [form.city, form.uf].filter(Boolean).join(' - '),
+      form.countryName || form.countryCode,
+      form.cep,
+    ]
+      .filter(Boolean)
+      .join(' • ');
+
+    return {
+      id: 'default-address-preview',
+      title: form.nickname || 'Endereco',
+      addressLine: addressLine || addressExtra || 'Endereco',
+      addressExtra,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      geocodeQuery: [
+        addressLine,
+        form.district,
+        [form.city, form.uf].filter(Boolean).join(' - '),
+        form.countryName || form.countryCode,
+        form.cep,
+      ]
+        .filter(Boolean)
+        .join(', '),
+    };
+  }, [form]);
+
   const mapUserCoordinates = hasCoordinates(form)
     ? {latitude: Number(form.latitude), longitude: Number(form.longitude)}
     : null;
 
-  const Field = ({label, children, style}) => (
-    <View style={[styles.field, style]}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
+  const mapPanel = (
+    <View style={[styles.mapPane, isDesktop && styles.mapPaneDesktop]}>
+      <Text style={styles.mapPaneTitle}>Mapa</Text>
+      {hasCoordinates(form) || mapMarkerPayload ? (
+        <View style={[styles.liveMap, isDesktop && styles.liveMapDesktop]}>
+          <DefaultMap
+            markerPayloads={mapMarkerPayload ? [mapMarkerPayload] : []}
+            userCoordinates={mapUserCoordinates}
+          />
+        </View>
+      ) : form.mapStaticUrl ? (
+        <Image
+          source={{uri: form.mapStaticUrl}}
+          style={[styles.mapImage, isDesktop && styles.mapImageDesktop]}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.mapPlaceholder, isDesktop && styles.mapImageDesktop]}>
+          <Text style={styles.mapPlaceholderTitle}>Mapa indisponível</Text>
+          <Text style={styles.mapPlaceholderText}>
+            Consulte um CEP para carregar a localização quando a API retornar a imagem.
+          </Text>
+        </View>
+      )}
+
+      {/* Fachada only when provider returned street-view URL (Google Maps).
+          OpenStreetMap has no facade imagery — hide the section entirely. */}
+      {form.facadeUrl ? (
+        <>
+          <Text style={styles.mapPaneTitle}>Fachada</Text>
+          <Image
+            source={{uri: form.facadeUrl}}
+            style={styles.facadeImage}
+            resizeMode="cover"
+          />
+        </>
+      ) : null}
     </View>
   );
 
@@ -292,24 +369,21 @@ export default function DefaultAddress({
             style={styles.select}
             onPress={toggleCountryList}
             disabled={loadingMeta}>
-            <Text>{countryLabel}</Text>
+            <Text numberOfLines={1}>{countryLabel}</Text>
           </TouchableOpacity>
           {showCountryList ? (
-            <ScrollView
-              style={styles.dropdown}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled">
+            <View style={styles.dropdown}>
               {countries.map(item => (
                 <TouchableOpacity
-                  key={item.code || item.id}
+                  key={item.id || item.code}
                   style={styles.option}
                   onPress={() => onSelectCountry(item)}>
-                  <Text>
+                  <Text numberOfLines={1}>
                     {item.name} ({item.code})
                   </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
           ) : null}
         </Field>
 
@@ -318,24 +392,21 @@ export default function DefaultAddress({
             style={styles.select}
             onPress={toggleStateList}
             disabled={loadingMeta}>
-            <Text>{stateLabel}</Text>
+            <Text numberOfLines={1}>{stateLabel}</Text>
           </TouchableOpacity>
           {showStateList ? (
-            <ScrollView
-              style={styles.dropdown}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled">
+            <View style={styles.dropdown}>
               {states.map(item => (
                 <TouchableOpacity
-                  key={item.uf || item.id}
+                  key={item.id || item.uf}
                   style={styles.option}
                   onPress={() => onSelectState(item)}>
-                  <Text>
+                  <Text numberOfLines={1}>
                     {item.name} ({item.uf})
                   </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
           ) : null}
         </Field>
 
@@ -344,99 +415,65 @@ export default function DefaultAddress({
             style={styles.input}
             value={form.city}
             onChangeText={v => onChange('city', v)}
-            placeholder="Cidade"
           />
         </Field>
-
         <Field label="Bairro">
           <TextInput
             style={styles.input}
             value={form.district}
             onChangeText={v => onChange('district', v)}
-            placeholder="Bairro"
           />
         </Field>
-
-        <Field label="Rua">
+        <Field label="Logradouro">
           <TextInput
             style={styles.input}
             value={form.street}
             onChangeText={v => onChange('street', v)}
-            placeholder="Logradouro"
+          />
+        </Field>
+        <Field label="Número">
+          <TextInput
+            style={styles.input}
+            value={form.number}
+            onChangeText={v => onChange('number', v)}
+            keyboardType="number-pad"
+          />
+        </Field>
+        <Field label="Complemento">
+          <TextInput
+            style={styles.input}
+            value={form.complement}
+            onChangeText={v => onChange('complement', v)}
           />
         </Field>
 
-        <View style={[styles.row, styles.gap8]}>
-          <Field label="Número" style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={form.number}
-              onChangeText={v => onChange('number', v)}
-              placeholder="Nº"
-            />
-          </Field>
-          <Field label="Complemento" style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={form.complement}
-              onChangeText={v => onChange('complement', v)}
-              placeholder="Apto, sala..."
-            />
-          </Field>
-        </View>
-
-        <Text style={styles.hint}>
-          Latitude/longitude: auto via CEP (Google Maps) ou dispositivo. Campos
-          opcionais para ajuste manual (franquia sem endereço).
-        </Text>
-        <View style={[styles.row, styles.gap8]}>
-          <Field label="Latitude (opcional)" style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={form.latitude == null ? '' : String(form.latitude)}
-              onChangeText={v => onCoordinateChange('latitude', v)}
-              keyboardType="decimal-pad"
-              placeholder="-23.5505"
-            />
-          </Field>
-          <Field label="Longitude (opcional)" style={styles.half}>
-            <TextInput
-              style={styles.input}
-              value={form.longitude == null ? '' : String(form.longitude)}
-              onChangeText={v => onCoordinateChange('longitude', v)}
-              keyboardType="decimal-pad"
-              placeholder="-46.6333"
-            />
-          </Field>
-        </View>
-
         {!hideActions ? (
           <View style={styles.actions}>
-            {onCancel ? (
-              <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
-                <Text style={styles.btnSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-            ) : null}
+            <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
+              <Text>Cancelar</Text>
+            </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.btnPrimary, saving && styles.btnDisabled]}
+              style={styles.btnPrimary}
               onPress={handleSave}
               disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.btnPrimaryText}>{submitLabel}</Text>
-              )}
+              <Text style={styles.btnPrimaryText}>
+                {saving ? 'Salvando...' : submitLabel}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : null}
       </View>
 
-      <DefaultAddressMapPane
-        form={form}
-        mapMarkerPayload={mapMarkerPayload}
-        mapUserCoordinates={mapUserCoordinates}
-        isDesktop={isDesktop}
-      />
+      {mapPanel}
     </ScrollView>
+  );
+}
+
+function Field({label, children, style = null}) {
+  return (
+    <View style={[styles.field, style]}>
+      <Text style={styles.label}>{label}</Text>
+      {children}
+    </View>
   );
 }

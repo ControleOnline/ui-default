@@ -52,7 +52,7 @@ export default function DefaultMap({
   }
 
   return (
-    <View style={styles.mapContainer}>
+    <View style={[styles.mapContainer, {minHeight: 220}]}>
       <iframe
         title="Mapa"
         srcDoc={buildOpenStreetMapHtml({
@@ -61,7 +61,14 @@ export default function DefaultMap({
           userCoordinates: resolvedPayload.userCoordinates,
           routeColor: '#0EA5E9',
         })}
-        style={{width: '100%', height: '100%', border: 0}}
+        style={{
+          width: '100%',
+          height: '100%',
+          minHeight: 220,
+          border: 0,
+          display: 'block',
+        }}
+        loading="eager"
       />
     </View>
   );
