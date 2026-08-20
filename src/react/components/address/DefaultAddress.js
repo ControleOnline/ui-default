@@ -17,122 +17,17 @@ import {
   lookupPostalCode,
 } from '../../services/addressGeo';
 import DefaultMap from '../map/DefaultMap';
+import styles from './DefaultAddress.styles';
+import {
+  emptyForm,
+  hydrateFromRow,
+  onlyDigits,
+  hasAddressText,
+  hasCoordinates,
+  mergePostalCodeData,
+  getCurrentCoordinates,
+} from './defaultAddressUtils';
 
-const emptyForm = {
-  nickname: '',
-  cep: '',
-  street: '',
-  number: '',
-  complement: '',
-  district: '',
-  city: '',
-  uf: '',
-  stateName: '',
-  countryCode: 'BR',
-  countryName: 'Brazil',
-  latitude: null,
-  longitude: null,
-  mapStaticUrl: null,
-  facadeUrl: null,
-  provider: null,
-};
-
-const hydrateFromRow = row => {
-  if (!row || typeof row !== 'object') {
-    return {...emptyForm};
-  }
-  const street = row?.street?.street || row?.street || '';
-  const district = row?.street?.district?.district || row?.district || '';
-  const city = row?.street?.district?.city?.city || row?.city || '';
-  const stateEntity = row?.street?.district?.city?.state || row?.state;
-  const countryEntity = stateEntity?.country || row?.country;
-  return {
-    ...emptyForm,
-    nickname: row?.nickname || '',
-    cep: String(row?.street?.cep?.cep || row?.cep || row?.postal_code || ''),
-    street: typeof street === 'string' ? street : '',
-    number: row?.number != null ? String(row.number) : '',
-    complement: row?.complement || '',
-    district,
-    city,
-    uf: stateEntity?.uf || row?.uf || '',
-    stateName: stateEntity?.state || '',
-    countryCode: countryEntity?.countrycode || countryEntity?.code || 'BR',
-    countryName: countryEntity?.countryname || countryEntity?.name || 'Brazil',
-    latitude: row?.latitude ?? null,
-    longitude: row?.longitude ?? null,
-  };
-};
-
-const onlyDigits = value => String(value || '').replace(/\D+/g, '');
-
-const hasAddressText = form =>
-  [
-    form?.street,
-    form?.number,
-    form?.district,
-    form?.city,
-    form?.uf,
-    form?.cep,
-  ].some(value => String(value || '').trim().length > 0);
-
-const hasCoordinates = form =>
-  Number.isFinite(Number(form?.latitude)) && Number.isFinite(Number(form?.longitude));
-
-const mergePostalCodeData = (prev, data, {preserveFilledFields = false} = {}) => {
-  const keep = (key, nextValue) =>
-    preserveFilledFields && String(prev[key] || '').trim()
-      ? prev[key]
-      : nextValue || prev[key];
-
-  return {
-    ...prev,
-    cep: onlyDigits(data.cep || prev.cep),
-    street: keep('street', data.street),
-    district: keep('district', data.district),
-    city: keep('city', data.city),
-    uf: keep('uf', data.uf || data.state),
-    stateName: keep('stateName', data.state),
-    countryCode:
-      data.country === 'Brasil' || data.country === 'Brazil'
-        ? 'BR'
-        : data.country || prev.countryCode,
-    countryName:
-      data.country === 'Brasil' ? 'Brazil' : data.country || prev.countryName,
-    latitude: data.latitude ?? data.map?.latitude ?? prev.latitude,
-    longitude: data.longitude ?? data.map?.longitude ?? prev.longitude,
-    mapStaticUrl: data.map?.staticUrl || prev.mapStaticUrl || null,
-    facadeUrl: data.facade?.streetViewUrl || prev.facadeUrl || null,
-    provider: data.provider || prev.provider || null,
-  };
-};
-
-const getCurrentCoordinates = () =>
-  new Promise(resolve => {
-    const geolocation =
-      typeof navigator !== 'undefined' ? navigator.geolocation : null;
-
-    if (!geolocation?.getCurrentPosition) {
-      resolve(null);
-      return;
-    }
-
-    geolocation.getCurrentPosition(
-      position => {
-        const latitude = Number(position?.coords?.latitude);
-        const longitude = Number(position?.coords?.longitude);
-
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-          resolve(null);
-          return;
-        }
-
-        resolve({latitude, longitude});
-      },
-      () => resolve(null),
-      {enableHighAccuracy: true, timeout: 8000, maximumAge: 60000},
-    );
-  });
 
 /**
  * DefaultAddress — único componente de formulário de endereço do ecossistema.
@@ -417,20 +312,18 @@ export default function DefaultAddress({
         </View>
       )}
 
-      <Text style={styles.mapPaneTitle}>Fachada</Text>
+      {/* Fachada only when provider returned street-view URL (Google Maps).
+          OpenStreetMap has no facade imagery — hide the section entirely. */}
       {form.facadeUrl ? (
-        <Image
-          source={{uri: form.facadeUrl}}
-          style={styles.facadeImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.facadePlaceholder}>
-          <Text style={styles.mapPlaceholderText}>
-            Fachada disponível quando houver chave Maps e retorno do provedor.
-          </Text>
-        </View>
-      )}
+        <>
+          <Text style={styles.mapPaneTitle}>Fachada</Text>
+          <Image
+            source={{uri: form.facadeUrl}}
+            style={styles.facadeImage}
+            resizeMode="cover"
+          />
+        </>
+      ) : null}
     </View>
   );
 
@@ -584,124 +477,3 @@ function Field({label, children, style = null}) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: {flex: 1, width: '100%'},
-  container: {padding: 16, gap: 16},
-  containerDesktop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 1280,
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    gap: 24,
-  },
-  formPane: {width: '100%'},
-  formPaneDesktop: {flex: 1, maxWidth: 560},
-  field: {marginBottom: 10, position: 'relative', zIndex: 1},
-  fieldRaised: {zIndex: 30, elevation: 8},
-  label: {fontSize: 13, fontWeight: '600', marginBottom: 4, color: '#334155'},
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-  },
-  select: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F8FAFC',
-  },
-  dropdown: {
-    maxHeight: 180,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    marginTop: 4,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    zIndex: 40,
-    elevation: 8,
-  },
-  option: {paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9'},
-  row: {flexDirection: 'row', alignItems: 'center'},
-  flex: {flex: 1},
-  loader: {marginLeft: 8},
-  error: {color: '#B91C1C', marginBottom: 8},
-  hint: {color: '#64748B', marginBottom: 8, fontSize: 12},
-  mapPane: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    gap: 12,
-  },
-  mapPaneDesktop: {flex: 1, minHeight: 560},
-  mapPaneTitle: {fontWeight: '700', fontSize: 15, color: '#0F172A'},
-  mapImage: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  mapImageDesktop: {height: 360},
-  liveMap: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#E2E8F0',
-  },
-  liveMapDesktop: {height: 360},
-  facadeImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  mapPlaceholder: {
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-  },
-  facadePlaceholder: {
-    minHeight: 120,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-  },
-  mapPlaceholderTitle: {
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 6,
-  },
-  mapPlaceholderText: {
-    color: '#64748B',
-    textAlign: 'center',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  actions: {flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16},
-  btnSecondary: {paddingHorizontal: 16, paddingVertical: 12},
-  btnPrimary: {
-    backgroundColor: '#1D4ED8',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  btnPrimaryText: {color: '#fff', fontWeight: '600'},
-});
