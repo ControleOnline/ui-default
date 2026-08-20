@@ -167,6 +167,12 @@ const DefaultUpload = ({
     setCoverId(coverRelationId || null);
   }, [coverRelationId]);
 
+  // people_media library enrichment (#433): use people store actions when available
+  const peopleActionsForLibrary =
+    relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
+      ? relationActions
+      : null;
+
   const loadLibrary = useCallback(async () => {
     setLibraryLoading(true);
     setLibraryError('');
@@ -176,6 +182,7 @@ const DefaultUpload = ({
         companyId,
         fileType,
         libraryContexts: libraryContexts || DEFAULT_LIBRARY_CONTEXTS,
+        peopleActions: peopleActionsForLibrary,
       });
       setLibraryFiles(files);
     } catch (e) {
@@ -184,7 +191,7 @@ const DefaultUpload = ({
     } finally {
       setLibraryLoading(false);
     }
-  }, [companyId, fileActions, fileType, libraryContexts]);
+  }, [companyId, fileActions, fileType, libraryContexts, peopleActionsForLibrary]);
 
 
   useEffect(() => {
