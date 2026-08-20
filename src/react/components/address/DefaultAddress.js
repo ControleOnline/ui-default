@@ -295,20 +295,21 @@ export default function DefaultAddress({
             <Text>{countryLabel}</Text>
           </TouchableOpacity>
           {showCountryList ? (
-            <View style={styles.dropdown}>
-              <ScrollView nestedScrollEnabled>
-                {countries.map(item => (
-                  <TouchableOpacity
-                    key={item.code || item.id}
-                    style={styles.option}
-                    onPress={() => onSelectCountry(item)}>
-                    <Text>
-                      {item.name} ({item.code})
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            <ScrollView
+              style={styles.dropdown}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled">
+              {countries.map(item => (
+                <TouchableOpacity
+                  key={item.code || item.id}
+                  style={styles.option}
+                  onPress={() => onSelectCountry(item)}>
+                  <Text>
+                    {item.name} ({item.code})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : null}
         </Field>
 
@@ -320,20 +321,21 @@ export default function DefaultAddress({
             <Text>{stateLabel}</Text>
           </TouchableOpacity>
           {showStateList ? (
-            <View style={styles.dropdown}>
-              <ScrollView nestedScrollEnabled>
-                {states.map(item => (
-                  <TouchableOpacity
-                    key={item.uf || item.id}
-                    style={styles.option}
-                    onPress={() => onSelectState(item)}>
-                    <Text>
-                      {item.name} ({item.uf})
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            <ScrollView
+              style={styles.dropdown}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled">
+              {states.map(item => (
+                <TouchableOpacity
+                  key={item.uf || item.id}
+                  style={styles.option}
+                  onPress={() => onSelectState(item)}>
+                  <Text>
+                    {item.name} ({item.uf})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : null}
         </Field>
 
