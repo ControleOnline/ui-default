@@ -1,5 +1,7 @@
 /**
- * Library fetch helpers for DefaultUpload (app-community#296).
+ * Library fetch helpers for DefaultUpload (app-community#296 / #433).
+ * Always send itemsPerPage so the API does not default to a tiny page size
+ * (which caused the avatar manager to show only 1 of N associated images).
  */
 const {
   normalizeCollection,
@@ -31,6 +33,7 @@ async function fetchLibraryFiles({
       const params = {
         context: fileContext,
         page,
+        itemsPerPage: pageSize,
         'order[fileName]': 'ASC',
       };
       if (fileType) params.fileType = fileType;
