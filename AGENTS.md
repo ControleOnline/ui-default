@@ -17,7 +17,7 @@
 | Página | O que documenta |
 | --- | --- |
 | [Índice Default*](https://github.com/ControleOnline/ui-default/wiki/Default-Components) | Mapa da família e arquitetura |
-| [DefaultTable](https://github.com/ControleOnline/ui-default/wiki/DefaultTable) | Listagens, store contract, view modes |
+| [DefaultTable](https://github.com/ControleOnline/ui-default/wiki/DefaultTable) | Listagens, store contract, view modes, **hydrate único de filtros** (`useDefaultTableStoreSync`, anti #185) |
 | [DefaultForm](https://github.com/ControleOnline/ui-default/wiki/DefaultForm) | Create/edit genérico |
 | [DefaultInput e DefaultSelect](https://github.com/ControleOnline/ui-default/wiki/DefaultInput-e-DefaultSelect) | Campos e listas |
 | [Contrato de colunas](https://github.com/ControleOnline/ui-default/wiki/Contrato-de-colunas) | Flags e serialização |
