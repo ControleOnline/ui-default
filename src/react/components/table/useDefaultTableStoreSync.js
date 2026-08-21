@@ -23,11 +23,24 @@ export const assignGetterValue = (store, getterName, value) => {
   }
 };
 
+/** Stable JSON compare for filter objects (anti React #185 on period toggle). */
+export const areTableFiltersEqual = (a, b) => {
+  try {
+    return JSON.stringify(a ?? {}) === JSON.stringify(b ?? {});
+  } catch {
+    return a === b;
+  }
+};
+
 /**
  * Keeps controlled DefaultTable props (data/columns/configs/preferences) in sync
  * with the zustand store without depending on store object identity.
  * Zustand replaces the store slice on every commit; using that identity in effect
  * deps caused React error #185 (Maximum update depth exceeded) on Devices.
+ *
+ * Stored filters are hydrated once per preference scope / columns signature.
+ * Re-applying on every storeFilters change caused Maximum update depth when
+ * toggling date period (today → all → today) on OrderHistoryPage (app-community#448).
  */
 export function useDefaultTableStoreSync({
   columns,
@@ -45,6 +58,9 @@ export function useDefaultTableStoreSync({
   storeRef.current = store;
   const lastPublishedItemsRef = useRef(undefined);
   const configsSignatureRef = useRef('');
+  const lastHydratedFiltersKeyRef = useRef('');
+  const storeFiltersRef = useRef(storeFilters);
+  storeFiltersRef.current = storeFilters;
 
   useEffect(() => {
     if (storeColumnsLength > 0 || !Array.isArray(columns) || columns.length === 0) {
@@ -100,8 +116,16 @@ export function useDefaultTableStoreSync({
       return;
     }
 
+    const scopeKey = [
+      tablePreferenceScope?.companyKey || '',
+      tablePreferenceScope?.storeKey || '',
+      tablePreferenceScope?.routeKey || '',
+      columnsForTable.map(c => c?.key || c?.name || '').join('|'),
+    ].join('::');
+
     const storedFilters = resolveStoredTableFiltersPreference(tablePreferenceScope);
     if (!storedFilters) {
+      lastHydratedFiltersKeyRef.current = scopeKey;
       return;
     }
 
@@ -111,11 +135,23 @@ export function useDefaultTableStoreSync({
     });
 
     if (Object.keys(nextFilters).length === 0) {
+      lastHydratedFiltersKeyRef.current = scopeKey;
       return;
     }
 
+    // Hydrate once per scope/columns; never chase storeFilters (loop on period toggle).
+    if (lastHydratedFiltersKeyRef.current === scopeKey) {
+      return;
+    }
+
+    if (areTableFiltersEqual(storeFiltersRef.current, nextFilters)) {
+      lastHydratedFiltersKeyRef.current = scopeKey;
+      return;
+    }
+
+    lastHydratedFiltersKeyRef.current = scopeKey;
     publishStoreValue(storeRef.current, 'setFilters', nextFilters, 'filters');
-  }, [columnsForTable, storeFilters, storeName, tablePreferenceScope]);
+  }, [columnsForTable, storeName, tablePreferenceScope]);
 
   useEffect(() => {
     if (configsSignatureRef.current === defaultTableConfigsSignature) {

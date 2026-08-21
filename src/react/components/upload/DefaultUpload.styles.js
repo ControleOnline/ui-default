@@ -256,6 +256,20 @@ export const defaultUploadStyles = {
     width: '100%',
     height: '100%',
   },
+  attachmentActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  attachmentIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   attachmentRemoveButton: {
     backgroundColor: '#b00020',
     paddingVertical: 6,

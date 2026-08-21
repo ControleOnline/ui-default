@@ -19,6 +19,7 @@ import {
   DEFAULT_LIBRARY_CONTEXTS,
   normalizeCollection,
   getEntityId,
+  normalizeAttachmentRelation,
   getRelationFileId,
   getFileName,
   getContextLabel,
@@ -83,7 +84,10 @@ const DefaultUpload = ({
       buttonIconSecondary: themeColors.buttonIconSecondary || themeColors.buttonTextSecondary,
       iconSuccess: themeColors.iconSuccess,
       iconDanger: themeColors.iconDanger,
+      iconActive: themeColors.iconActive,
       textDanger: themeColors.textDanger,
+      cardBackground: themeColors.cardBackground,
+      cardBorder: themeColors.cardBorder,
     }),
     [
       themeColors.buttonBackground,
@@ -94,9 +98,12 @@ const DefaultUpload = ({
       themeColors.buttonIconSecondary,
       themeColors.buttonText,
       themeColors.buttonTextSecondary,
+      themeColors.iconActive,
       themeColors.iconDanger,
       themeColors.iconSuccess,
       themeColors.textDanger,
+      themeColors.cardBackground,
+      themeColors.cardBorder,
     ],
   );
 
@@ -160,6 +167,12 @@ const DefaultUpload = ({
     setCoverId(coverRelationId || null);
   }, [coverRelationId]);
 
+  // people_media library enrichment (#433): use people store actions when available
+  const peopleActionsForLibrary =
+    relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
+      ? relationActions
+      : null;
+
   const loadLibrary = useCallback(async () => {
     setLibraryLoading(true);
     setLibraryError('');
@@ -169,6 +182,7 @@ const DefaultUpload = ({
         companyId,
         fileType,
         libraryContexts: libraryContexts || DEFAULT_LIBRARY_CONTEXTS,
+        peopleActions: peopleActionsForLibrary,
       });
       setLibraryFiles(files);
     } catch (e) {
@@ -177,7 +191,7 @@ const DefaultUpload = ({
     } finally {
       setLibraryLoading(false);
     }
-  }, [companyId, fileActions, fileType, libraryContexts]);
+  }, [companyId, fileActions, fileType, libraryContexts, peopleActionsForLibrary]);
 
 
   useEffect(() => {
@@ -343,16 +357,17 @@ const DefaultUpload = ({
       try {
         setError('');
         setStatus('');
+        const attachmentRelation = normalizeAttachmentRelation(relation);
         if (typeof onRemoveAttachment === 'function') {
-          await onRemoveAttachment(relation);
-          const relationId = getEntityId(relation);
+          await onRemoveAttachment(attachmentRelation);
+          const relationId = getEntityId(attachmentRelation);
           if (String(coverId) === String(relationId)) setCoverId(null);
           setStatus(removeSuccessMessage);
           if (onChanged) await onChanged();
           return;
         }
 
-        const relationId = getEntityId(relation);
+        const relationId = getEntityId(attachmentRelation);
         if (!relationId) throw new Error('Anexo sem identificador para remocao.');
 
         if (typeof relationActions.remove !== 'function') {

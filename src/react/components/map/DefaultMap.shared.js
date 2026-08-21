@@ -692,7 +692,21 @@ export const buildOpenStreetMapHtml = ({
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors',
+            crossOrigin: true,
           }).addTo(map);
+
+          function forceMapResize() {
+            try {
+              map.invalidateSize({animate: false});
+            } catch (e) {}
+          }
+          // iframe / RN-web often mounts with 0 size then expands
+          setTimeout(forceMapResize, 50);
+          setTimeout(forceMapResize, 250);
+          setTimeout(forceMapResize, 800);
+          if (typeof window !== 'undefined') {
+            window.addEventListener('resize', forceMapResize);
+          }
 
           var bounds = L.latLngBounds([]);
           var markers = Array.isArray(window.__SHOP_MAP_MARKERS__) ? window.__SHOP_MAP_MARKERS__ : [];
