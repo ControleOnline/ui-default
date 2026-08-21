@@ -25,7 +25,7 @@ export async function listStates(country = 'BR') {
 }
 
 export function buildAddressSavePayload(form, peopleIri) {
-  return {
+  const payload = {
     street: form.street || '',
     city: form.city || '',
     district: form.district || '',
@@ -39,4 +39,12 @@ export function buildAddressSavePayload(form, peopleIri) {
     latitude: form.latitude ?? 0,
     longitude: form.longitude ?? 0,
   };
+
+  if (Array.isArray(form.categories)) {
+    payload.categories = form.categories;
+  } else if (Array.isArray(form.category)) {
+    payload.category = form.category;
+  }
+
+  return payload;
 }
