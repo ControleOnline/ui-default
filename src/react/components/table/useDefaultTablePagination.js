@@ -247,15 +247,23 @@ export const useDefaultTablePagination = ({
       }),
     [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort],
   );
+  // Signature must reflect the *merged* request query. Filters that only
+  // mirror keys already present in requestParams (e.g. People link.linkType)
+  // must not trigger a second identical getItems call on mount.
   const autoQuerySignature = useMemo(
     () =>
-      stableSerialize({
-        filters,
-        pageSize: pageSizeNumber,
-        requestParams,
-        sort: resolvedSort,
-      }),
-    [filters, pageSizeNumber, requestParams, resolvedSort],
+      stableSerialize(
+        buildQueryFromState({
+          append: false,
+          columnsForTable,
+          filters,
+          page: 1,
+          pageSizeNumber,
+          requestParams,
+          sort: resolvedSort,
+        }),
+      ),
+    [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort],
   );
   const {
     autoErroredQueryKeyRef,
