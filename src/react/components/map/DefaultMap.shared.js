@@ -695,23 +695,73 @@ export const buildOpenStreetMapHtml = ({
             crossOrigin: true,
           }).addTo(map);
 
+          // CRITICAL: set an initial view immediately so tiles start loading.
+          // Without setView/fitBounds, Leaflet keeps an empty gray canvas.
+          var initialMarkers = Array.isArray(window.__SHOP_MAP_MARKERS__)
+            ? window.__SHOP_MAP_MARKERS__
+            : [];
+          var initialUser = window.__SHOP_MAP_USER__;
+          var initialCenter = null;
+          var initialZoom = 4;
+
+          function tryInitialPoint(item) {
+            if (!item) return null;
+            var lat = normalizeCoordinate(item.latitude);
+            var lng = normalizeCoordinate(item.longitude);
+            if (isValidPoint(lat, lng)) {
+              return { lat: lat, lng: lng };
+            }
+            return null;
+          }
+
+          if (initialUser) {
+            initialCenter = tryInitialPoint(initialUser);
+            if (initialCenter) initialZoom = 15;
+          }
+          if (!initialCenter) {
+            for (var i = 0; i < initialMarkers.length; i++) {
+              initialCenter = tryInitialPoint(initialMarkers[i]);
+              if (initialCenter) {
+                initialZoom = 15;
+                break;
+              }
+            }
+          }
+          if (!initialCenter) {
+            initialCenter = { lat: -14.235004, lng: -51.92528 };
+            initialZoom = 4;
+          }
+          map.setView([initialCenter.lat, initialCenter.lng], initialZoom, {
+            animate: false,
+          });
+
           function forceMapResize() {
             try {
-              map.invalidateSize({animate: false});
+              map.invalidateSize({ animate: false });
             } catch (e) {}
           }
           // iframe / RN-web often mounts with 0 size then expands
+          forceMapResize();
           setTimeout(forceMapResize, 50);
           setTimeout(forceMapResize, 250);
           setTimeout(forceMapResize, 800);
           if (typeof window !== 'undefined') {
             window.addEventListener('resize', forceMapResize);
+            if (typeof ResizeObserver !== 'undefined') {
+              try {
+                var ro = new ResizeObserver(function () {
+                  forceMapResize();
+                });
+                var mapEl = document.getElementById('map');
+                if (mapEl) ro.observe(mapEl);
+              } catch (e) {}
+            }
           }
 
           var bounds = L.latLngBounds([]);
-          var markers = Array.isArray(window.__SHOP_MAP_MARKERS__) ? window.__SHOP_MAP_MARKERS__ : [];
+          var markers = initialMarkers;
           var routes = Array.isArray(window.__SHOP_MAP_PATHS__) ? window.__SHOP_MAP_PATHS__ : [];
-          var userCoordinates = window.__SHOP_MAP_USER__;
+          var userCoordinates = initialUser;
 
           if (
             userCoordinates &&
