@@ -64,6 +64,7 @@ const DefaultUpload = ({
   requireEntity = true,
   showInlineContent = true,
   uploadResultAlreadyAttached = false,
+  additionalLibraryFiles = null,
 }) => {
   const relationStore = useStore(relationStoreName);
   const fileStore = useStore(fileStoreName);
@@ -167,11 +168,18 @@ const DefaultUpload = ({
     setCoverId(coverRelationId || null);
   }, [coverRelationId]);
 
-  // people_media library enrichment (#433): use people store actions when available
-  const peopleActionsForLibrary =
-    relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
-      ? relationActions
-      : null;
+  // people_media library enrichment (#433): prefer relation store, else people store
+  const peopleStoreForLibrary = useStore('people');
+  const peopleActionsForLibrary = useMemo(() => {
+    if (typeof relationActions?.getPeopleMedia === 'function') {
+      return relationActions;
+    }
+    const fromPeople = peopleStoreForLibrary?.actions || {};
+    if (typeof fromPeople.getPeopleMedia === 'function') {
+      return fromPeople;
+    }
+    return null;
+  }, [relationActions, peopleStoreForLibrary]);
 
   const loadLibrary = useCallback(async () => {
     setLibraryLoading(true);
@@ -183,6 +191,7 @@ const DefaultUpload = ({
         fileType,
         libraryContexts: libraryContexts || DEFAULT_LIBRARY_CONTEXTS,
         peopleActions: peopleActionsForLibrary,
+        additionalLibraryFiles,
       });
       setLibraryFiles(files);
     } catch (e) {
@@ -191,8 +200,14 @@ const DefaultUpload = ({
     } finally {
       setLibraryLoading(false);
     }
-  }, [companyId, fileActions, fileType, libraryContexts, peopleActionsForLibrary]);
-
+  }, [
+    additionalLibraryFiles,
+    companyId,
+    fileActions,
+    fileType,
+    libraryContexts,
+    peopleActionsForLibrary,
+  ]);
 
   useEffect(() => {
     if (managerOpen) {
