@@ -280,7 +280,10 @@ export default function DefaultAddress({
             <Text numberOfLines={1}>{countryLabel}</Text>
           </TouchableOpacity>
           {showCountryList ? (
-            <View style={styles.dropdown}>
+            <ScrollView
+              style={styles.dropdown}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled">
               {countries.map(item => (
                 <TouchableOpacity
                   key={item.id || item.code}
@@ -291,7 +294,7 @@ export default function DefaultAddress({
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           ) : null}
         </Field>
 
@@ -306,7 +309,10 @@ export default function DefaultAddress({
             <Text numberOfLines={1}>{stateLabel}</Text>
           </TouchableOpacity>
           {showStateList ? (
-            <View style={styles.dropdown}>
+            <ScrollView
+              style={styles.dropdown}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled">
               {states.map(item => (
                 <TouchableOpacity
                   key={item.id || item.uf}
@@ -317,7 +323,7 @@ export default function DefaultAddress({
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           ) : null}
         </Field>
 
@@ -424,13 +430,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   dropdown: {
-    maxHeight: 180,
+    maxHeight: 240,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 8,
     marginTop: 4,
     backgroundColor: '#fff',
-    overflow: 'hidden',
     zIndex: 40,
     elevation: 8,
   },
