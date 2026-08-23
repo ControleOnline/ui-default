@@ -25,6 +25,7 @@ import {
 } from '../../services/addressFormUtils';
 import usePostalCodeLookup from '../../hooks/usePostalCodeLookup';
 import DefaultMap from '../map/DefaultMap';
+import DefaultAddressCoordFields from './DefaultAddressCoordFields';
 
 export default function DefaultAddress({
   row = null,
@@ -364,7 +365,10 @@ export default function DefaultAddress({
           />
         </Field>
 
-        {!hideActions ? (
+        
+        <DefaultAddressCoordFields form={form} onChange={onChange} />
+
+{!hideActions ? (
           <View style={styles.actions}>
             <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
               <Text>Cancelar</Text>

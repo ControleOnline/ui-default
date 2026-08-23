@@ -119,4 +119,12 @@ export default StyleSheet.create({
     borderRadius: 8,
   },
   btnPrimaryText: {color: '#fff', fontWeight: '600'},
+  coordRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 4,
+  },
+  coordHalf: {
+    flex: 1,
+  },
 });
