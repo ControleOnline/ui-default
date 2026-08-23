@@ -31,6 +31,7 @@ export default function DefaultAddressCoordFields({form, onChange}) {
             placeholder="-23.5505"
             keyboardType="decimal-pad"
             accessibilityLabel="Latitude"
+            testID="address-latitude-input"
           />
         </Field>
       </View>
@@ -49,6 +50,7 @@ export default function DefaultAddressCoordFields({form, onChange}) {
             placeholder="-46.6333"
             keyboardType="decimal-pad"
             accessibilityLabel="Longitude"
+            testID="address-longitude-input"
           />
         </Field>
       </View>
