@@ -53,7 +53,7 @@ export default function DefaultMap({
   }
 
   return (
-    <View style={styles.mapContainer}>
+    <View style={[styles.mapContainer, {height: 220, minHeight: 220}]}>
       <WebView
         source={{
           html: buildOpenStreetMapHtml({
