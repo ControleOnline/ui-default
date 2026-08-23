@@ -25,7 +25,7 @@ import {
 } from '../../services/addressFormUtils';
 import usePostalCodeLookup from '../../hooks/usePostalCodeLookup';
 import DefaultMap from '../map/DefaultMap';
-import DefaultAddressCoordFields from './DefaultAddressCoordFields';
+import LatLonReadonlyFields from './LatLonReadonlyFields';
 
 export default function DefaultAddress({
   row = null,
@@ -364,11 +364,9 @@ export default function DefaultAddress({
             onChangeText={v => onChange('complement', v)}
           />
         </Field>
+        <LatLonReadonlyFields form={form} styles={styles} Field={Field} />
 
-        
-        <DefaultAddressCoordFields form={form} onChange={onChange} />
-
-{!hideActions ? (
+        {!hideActions ? (
           <View style={styles.actions}>
             <TouchableOpacity style={styles.btnSecondary} onPress={onCancel}>
               <Text>Cancelar</Text>

@@ -133,4 +133,16 @@ export const styles = StyleSheet.create({
   btnPrimaryText: {color: '#fff', fontWeight: '600'},
   btnSecondaryText: {color: '#475569', fontWeight: '600'},
   btnDisabled: {opacity: 0.6},
+
+  coordRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  coordField: {
+    flex: 1,
+  },
+  inputReadonly: {
+    backgroundColor: '#F1F5F9',
+    color: '#475569',
+  },
 });

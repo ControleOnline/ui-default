@@ -58,9 +58,13 @@ export function hasAddressText(form) {
 }
 
 export function hasCoordinates(form) {
+  const lat = Number(form?.latitude);
+  const lng = Number(form?.longitude);
+  // 0,0 is the API/entity default for "no coordinates"
   return (
-    Number.isFinite(Number(form?.latitude)) &&
-    Number.isFinite(Number(form?.longitude))
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    !(Math.abs(lat) < 0.000001 && Math.abs(lng) < 0.000001)
   );
 }
 
@@ -141,14 +145,6 @@ export function buildMapMarkerPayload(form) {
 }
 
 export {onlyDigits};
-
-export function parseOptionalCoordinate(value) {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-  const n = Number(String(value).trim().replace(',', '.'));
-  return Number.isFinite(n) ? n : null;
-}
 
 export function getCurrentCoordinates() {
   return new Promise(resolve => {

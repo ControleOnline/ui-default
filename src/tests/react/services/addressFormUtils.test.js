@@ -3,7 +3,6 @@ import {
   onlyDigits,
   hydrateAddressFromRow,
   hasCoordinates,
-  parseOptionalCoordinate,
 } from '../../../react/services/addressFormUtils';
 
 describe('addressFormUtils', () => {
@@ -135,21 +134,7 @@ describe('addressFormUtils', () => {
   test('hasCoordinates requires finite lat/lng', () => {
     expect(hasCoordinates({latitude: -23, longitude: -46})).toBe(true);
     expect(hasCoordinates({latitude: null, longitude: -46})).toBe(false);
+    expect(hasCoordinates({latitude: 0, longitude: 0})).toBe(false);
+    expect(hasCoordinates({latitude: '0', longitude: '0'})).toBe(false);
   });
 });
-
-  test('parseOptionalCoordinate returns null for empty/invalid', () => {
-    expect(parseOptionalCoordinate('')).toBeNull();
-    expect(parseOptionalCoordinate('   ')).toBeNull();
-    expect(parseOptionalCoordinate(null)).toBeNull();
-    expect(parseOptionalCoordinate(undefined)).toBeNull();
-    expect(parseOptionalCoordinate('abc')).toBeNull();
-  });
-
-  test('parseOptionalCoordinate parses valid decimal coordinates', () => {
-    expect(parseOptionalCoordinate('-23.5505')).toBeCloseTo(-23.5505);
-    expect(parseOptionalCoordinate('-46.6333')).toBeCloseTo(-46.6333);
-    expect(parseOptionalCoordinate('0')).toBe(0);
-    expect(parseOptionalCoordinate(' 12.5 ')).toBeCloseTo(12.5);
-  });
-
