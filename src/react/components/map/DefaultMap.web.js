@@ -103,7 +103,7 @@ export default function DefaultMap({
   });
 
   return (
-    <View style={[styles.mapContainer, {height: 220, minHeight: 220, width: '100%'}]}>
+    <View style={[styles.mapContainer, {height: '100%', minHeight: 220, width: '100%', flex: 1}]}>
       <iframe
         ref={iframeRef}
         key={mapKey}
@@ -111,7 +111,7 @@ export default function DefaultMap({
         srcDoc={html}
         style={{
           width: '100%',
-          height: 220,
+          height: '100%',
           minHeight: 220,
           border: 0,
           display: 'block',
