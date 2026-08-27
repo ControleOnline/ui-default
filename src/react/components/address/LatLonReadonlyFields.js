@@ -13,6 +13,7 @@ export default function LatLonReadonlyFields({form, styles, Field}) {
       <View style={styles.coordField}>
         <Field label="Latitude">
           <TextInput
+            testID="address-latitude-input"
             style={[styles.input, styles.inputReadonly]}
             value={formatCoord(form?.latitude)}
             editable={false}
@@ -24,6 +25,7 @@ export default function LatLonReadonlyFields({form, styles, Field}) {
       <View style={styles.coordField}>
         <Field label="Longitude">
           <TextInput
+            testID="address-longitude-input"
             style={[styles.input, styles.inputReadonly]}
             value={formatCoord(form?.longitude)}
             editable={false}
