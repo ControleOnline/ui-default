@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Smoke #637 — address-cep-hydrate</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; background: #f6f7f9; }
+    h1 { font-size: 18px; }
+    label { display: block; font-size: 12px; color: #555; margin-top: 8px; }
+    input { width: 100%; max-width: 420px; padding: 8px; font-size: 14px; }
+    #map { height: 320px; width: 100%; max-width: 720px; margin-top: 12px; border: 1px solid #ccc; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 200px; }
+    #status { margin-top: 8px; font-size: 13px; }
+    .ok { color: #0a7; }
+    .err { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>DefaultAddress smoke — CEP hydrate (#637)</h1>
+  <p>fluxo: address-cep-hydrate · CEP 12941040 · pin ui-default lookupPostalCode</p>
+  <div class="row">
+    <div class="col">
+      <label>CEP</label>
+      <input id="address-cep-input" data-testid="address-cep-input" value="12941040" />
+      <label>Rua</label>
+      <input id="address-street-input" data-testid="address-street-input" />
+      <label>Bairro</label>
+      <input id="address-district-input" data-testid="address-district-input" />
+      <label>Cidade</label>
+      <input id="address-city-input" data-testid="address-city-input" />
+      <label>UF</label>
+      <input id="address-uf-input" data-testid="address-uf-input" />
+    </div>
+    <div class="col">
+      <label>Latitude</label>
+      <input id="address-latitude-input" data-testid="address-latitude-input" value="—" />
+      <label>Longitude</label>
+      <input id="address-longitude-input" data-testid="address-longitude-input" value="—" />
+      <label>Provider</label>
+      <input id="address-provider-input" />
+    </div>
+  </div>
+  <div id="status">aguardando lookup…</div>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const TOKEN = '4a073f4bf39f4a2ed19818baf44c4b3d';
+    const API = 'https://api.controleonline.com';
+    const onlyDigits = v => String(v || '').replace(/\D+/g, '');
+    const hasText = v => String(v || '').trim().length > 0;
+    const isValidCoord = v => {
+      if (v === null || v === undefined || v === '' || v === '—') return false;
+      const n = Number(v);
+      return Number.isFinite(n) && Math.abs(n) > 0.000001;
+    };
+    function merge(base, extra, suffix) {
+      const next = { ...(base || {}) };
+      const fill = (k, val) => { if (!hasText(next[k]) && hasText(val)) next[k] = val; };
+      fill('street', extra.street);
+      fill('district', extra.district);
+      fill('city', extra.city);
+      fill('state', extra.state || extra.uf);
+      fill('uf', extra.uf || extra.state);
+      if (!isValidCoord(next.latitude) && isValidCoord(extra.latitude)) next.latitude = Number(extra.latitude);
+      if (!isValidCoord(next.longitude) && isValidCoord(extra.longitude)) next.longitude = Number(extra.longitude);
+      if (suffix) next.provider = next.provider ? next.provider + '+' + suffix : suffix;
+      return next;
+    }
+    async function lookupPostalCode(cep) {
+      const digits = onlyDigits(cep);
+      let payload = { cep: digits };
+      try {
+        const r = await fetch(API + '/postal-codes/' + digits, {
+          headers: {
+            accept: 'application/ld+json',
+            'api-token': TOKEN,
+            'app-domain': 'admin.controleonline.com',
+            device: 'web-7',
+            'device-type': 'ADMIN'
+          }
+        });
+        if (r.ok) {
+          const apiData = await r.json();
+          payload = { ...payload, ...apiData, cep: digits };
+        }
+      } catch (e) {}
+      if (!hasText(payload.street) || !hasText(payload.city)) {
+        const vr = await fetch('https://viacep.com.br/ws/' + digits + '/json/');
+        const json = await vr.json();
+        payload = merge(payload, {
+          street: json.logradouro, district: json.bairro, city: json.localidade, uf: json.uf, state: json.uf
+        }, 'viacep-client');
+      }
+      if (!isValidCoord(payload.latitude) || !isValidCoord(payload.longitude)) {
+        const q = encodeURIComponent([payload.street, payload.district, payload.city, payload.uf, 'Brasil'].filter(Boolean).join(', '));
+        const nr = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + q, {
+          headers: { 'Accept-Language': 'pt-BR' }
+        });
+        const arr = await nr.json();
+        if (arr[0]) payload = merge(payload, { latitude: arr[0].lat, longitude: arr[0].lon }, 'nominatim-client');
+      }
+      return payload;
+    }
+    const map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map);
+    lookupPostalCode('12941040').then(p => {
+      document.getElementById('address-street-input').value = p.street || '';
+      document.getElementById('address-district-input').value = p.district || '';
+      document.getElementById('address-city-input').value = p.city || '';
+      document.getElementById('address-uf-input').value = p.uf || p.state || '';
+      document.getElementById('address-latitude-input').value = p.latitude;
+      document.getElementById('address-longitude-input').value = p.longitude;
+      document.getElementById('address-provider-input').value = p.provider || '';
+      const lat = Number(p.latitude), lon = Number(p.longitude);
+      map.setView([lat, lon], 16);
+      L.marker([lat, lon]).addTo(map);
+      const ok = p.city === 'Atibaia' && Math.abs(lat + 23.11) < 0.05;
+      const st = document.getElementById('status');
+      st.className = ok ? 'ok' : 'err';
+      st.textContent = ok
+        ? 'OK: rua=' + p.street + ' cidade=' + p.city + ' UF=' + (p.uf||p.state) + ' lat/lon preenchidos mapa Atibaia'
+        : 'FAIL payload=' + JSON.stringify(p);
+      window.__SMOKE637__ = p;
+    }).catch(e => {
+      document.getElementById('status').className = 'err';
+      document.getElementById('status').textContent = String(e);
+    });
+  </script>
+</body>
+</html>
