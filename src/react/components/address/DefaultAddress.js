@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -26,6 +25,7 @@ import {
 import usePostalCodeLookup from '../../hooks/usePostalCodeLookup';
 import DefaultMap from '../map/DefaultMap';
 import LatLonReadonlyFields from './LatLonReadonlyFields';
+import styles from './DefaultAddress.styles';
 
 export default function DefaultAddress({
   row = null,
@@ -258,6 +258,7 @@ export default function DefaultAddress({
         <Field label="CEP">
           <View style={styles.row}>
             <TextInput
+              testID="address-cep-input"
               style={[styles.input, styles.flex]}
               value={form.cep}
               onChangeText={v => onChange('cep', v)}
@@ -330,6 +331,7 @@ export default function DefaultAddress({
 
         <Field label="Cidade">
           <TextInput
+            testID="address-city-input"
             style={styles.input}
             value={form.city}
             onChangeText={v => onChange('city', v)}
@@ -337,6 +339,7 @@ export default function DefaultAddress({
         </Field>
         <Field label="Bairro">
           <TextInput
+            testID="address-district-input"
             style={styles.input}
             value={form.district}
             onChangeText={v => onChange('district', v)}
@@ -344,6 +347,7 @@ export default function DefaultAddress({
         </Field>
         <Field label="Logradouro">
           <TextInput
+            testID="address-street-input"
             style={styles.input}
             value={form.street}
             onChangeText={v => onChange('street', v)}
@@ -396,111 +400,3 @@ function Field({label, children, style = null}) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: {flex: 1, width: '100%'},
-  container: {padding: 16, gap: 16},
-  containerDesktop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 1280,
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    gap: 24,
-  },
-  formPane: {width: '100%'},
-  formPaneDesktop: {flex: 1, maxWidth: 560},
-  field: {marginBottom: 10, position: 'relative', zIndex: 1},
-  fieldRaised: {zIndex: 30, elevation: 8},
-  label: {fontSize: 13, fontWeight: '600', marginBottom: 4, color: '#334155'},
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-  },
-  select: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F8FAFC',
-  },
-  dropdown: {
-    maxHeight: 240,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    marginTop: 4,
-    backgroundColor: '#fff',
-    zIndex: 40,
-    elevation: 8,
-  },
-  option: {paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9'},
-  row: {flexDirection: 'row', alignItems: 'center'},
-  flex: {flex: 1},
-  loader: {marginLeft: 8},
-  error: {color: '#B91C1C', marginBottom: 8},
-  hint: {color: '#64748B', marginBottom: 8, fontSize: 12},
-  mapPane: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    gap: 12,
-  },
-  mapPaneDesktop: {flex: 1, minHeight: 560},
-  mapPaneTitle: {fontWeight: '700', fontSize: 15, color: '#0F172A'},
-  mapImage: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  mapImageDesktop: {height: 360},
-  liveMap: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#E2E8F0',
-  },
-  liveMapDesktop: {height: 360},
-  mapPlaceholder: {
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 18,
-  },
-  mapPlaceholderTitle: {fontWeight: '700', color: '#334155', marginBottom: 6},
-  mapPlaceholderText: {color: '#64748B', textAlign: 'center', fontSize: 13, lineHeight: 18},
-  actions: {flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16},
-  btnSecondary: {paddingHorizontal: 16, paddingVertical: 12},
-  btnPrimary: {
-    backgroundColor: '#1D4ED8',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  btnPrimaryText: {color: '#fff', fontWeight: '600'},
-  coordRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  coordField: {
-    flex: 1,
-  },
-  inputReadonly: {
-    backgroundColor: '#F1F5F9',
-    color: '#475569',
-  },
-});
