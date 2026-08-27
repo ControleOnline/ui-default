@@ -142,6 +142,16 @@ export function buildMapMarkerPayload(form) {
 
 export {onlyDigits};
 
+export function parseOptionalCoordinate(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const parsed = Number(String(value).trim());
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function getCurrentCoordinates() {
   return new Promise(resolve => {
     const geolocation =
