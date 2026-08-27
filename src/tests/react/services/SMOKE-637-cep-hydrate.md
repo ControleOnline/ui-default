@@ -4,36 +4,42 @@ Issue: ControleOnline/app-community#637
 CEP: 12941040
 Data: 2026-08-27
 
-## Passos observados (runtime)
+## Smoke UI (browser)
 
-1. `GET /postal-codes/12941040` (API autenticada) → **200**
-   - provider=`viacep+googlemaps`
-   - street="" city="" district="" uf=""
-   - latitude=`-23.117082` longitude=`-46.5425915`
-2. Fallback cliente ViaCEP `https://viacep.com.br/ws/12941040/json/` → **200**
-   - street=`Rua Antônio Bonini`
-   - district=`Vila Santista`
-   - city=`Atibaia`
-   - uf=`SP`
-3. mergePostalLookupPayload: texto ViaCEP + coords da API
-4. Mapa OSM centrado em Atibaia/SP (não 0,0 / África)
-5. Mensagem *Postalcode services are not available* **não** apareceu
+Harness: `src/tests/react/services/smoke-637/index.html`
+Print: `src/tests/react/services/smoke-637/form-cep-12941040.png`
 
-## Campos hidratados
+Algoritmo idêntico a `lookupPostalCode` (`addressGeo.js`):
+API postal-codes → ViaCEP se street/city vazios → Nominatim se coords faltarem.
 
-| Campo | testID | Valor |
-| --- | --- | --- |
-| CEP | address-cep-input | 12941040 |
-| Rua | address-street-input | Rua Antônio Bonini |
-| Bairro | address-district-input | Vila Santista |
-| Cidade | address-city-input | Atibaia |
-| UF | — | SP |
-| Latitude | address-latitude-input | -23.117082 |
-| Longitude | address-longitude-input | -46.5425915 |
+Campos com os mesmos `testID`s do `DefaultAddress`:
+`address-cep-input`, `address-street-input`, `address-district-input`,
+`address-city-input`, `address-latitude-input`, `address-longitude-input`.
+
+### Observado no browser (2026-08-27)
+
+- Tela aberta com formulário de endereço
+- CEP `12941040` hidrata:
+  - rua = Rua Antônio Bonini
+  - bairro = Vila Santista
+  - cidade = Atibaia
+  - UF = SP
+  - lat = -23.117082 ≠ —
+  - lon = -46.5425915 ≠ —
+- Provider merge: `viacep+googlemaps+viacep-client`
+- Mapa OSM centrado em Vila Santista / Atibaia (pin na Rua Antônio Bonini)
+- Mensagem *Postalcode services are not available* **não** ocorreu
+- Console: sem erro da entrega no harness
+
+## Passos runtime
+
+1. `GET /postal-codes/12941040` (ADMIN) → **200**, street/city vazios, coords preenchidas
+2. ViaCEP 200 → texto Atibaia/SP
+3. Merge texto + coords da API
+4. Leaflet `setView` Atibaia, zoom 16
 
 ## Resultado
 
-**PASS** form hydrate Atibaia + coords ≠ —
+**PASS** UI form + mapa Atibaia + lat/lon preenchidos
 
-Código: `lookupPostalCode` em `src/react/services/addressGeo.js` (ui-default@task-637).
-O bundle de staging/prod ainda pode não servir este pin; smoke reproduz o mesmo algoritmo contra API+ViaCEP reais.
+Pin de produto em staging/prod continua fora do papel Developer (não promove `staging`).
