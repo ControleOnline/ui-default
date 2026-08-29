@@ -39,20 +39,17 @@ export default function DefaultAddressMapPane({
         </View>
       )}
 
-      <Text style={styles.mapPaneTitle}>Fachada</Text>
+      {/* Fachada only when provider returned street-view URL (not OSM). */}
       {form.facadeUrl ? (
-        <Image
-          source={{uri: form.facadeUrl}}
-          style={styles.facadeImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.facadePlaceholder}>
-          <Text style={styles.mapPlaceholderText}>
-            Fachada disponível quando houver chave Maps e retorno do provedor.
-          </Text>
-        </View>
-      )}
+        <>
+          <Text style={styles.mapPaneTitle}>Fachada</Text>
+          <Image
+            source={{uri: form.facadeUrl}}
+            style={styles.facadeImage}
+            resizeMode="cover"
+          />
+        </>
+      ) : null}
     </View>
   );
 }
