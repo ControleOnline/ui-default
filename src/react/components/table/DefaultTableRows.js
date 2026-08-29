@@ -4,15 +4,10 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
-import DefaultColumnFilter from '../filters/DefaultColumnFilter';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
-import DefaultTableRowActions, {
-  hasDefaultTableRowActionsComponent,
-  resolveDefaultTableRowActionsWidth,
-} from './DefaultTableRowActions';
 import {
-  buildSelectionSummary,
+  persistStoreSelection,
   flattenGroupedTableItems,
   isRowSelected,
   resolveStoreSelectedIds,
@@ -49,8 +44,8 @@ const DefaultTableRows = ({ storeName }) => {
     sortedData: configs.sortedData,
   });
   const listData = useMemo(() => flattenGroupedTableItems(sortedData, columns), [columns, sortedData]);
-  const selectable = configs.selectable === true || Array.isArray(store?.getters?.selected);
-  const selectedIds = resolveStoreSelectedIds(store, configs.selectedIds);
+  const selectable = configs.selectable === true;
+  const selectedIds = resolveStoreSelectedIds(store);
   const resolvedFilters = store?.getters?.filters || {};
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
   const emptyStateLabel = isLoading ? global.t?.t(storeName, 'label', 'loading') : global.t?.t(storeName, 'label', 'empty');
@@ -60,15 +55,10 @@ const DefaultTableRows = ({ storeName }) => {
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
   const tableMutedColor = palette.textSecondary;
   const tableOddColor = themeTokens.listItemOddRow || themeTokens['bg-odd-light'] || palette.background;
-  const tableSurfaceColor = palette.background;
   const tableTextColor = palette.text;
   const rowStyle = configs.rowStyle;
   const hasRowPress = typeof configs.onRowPress === 'function';
-  const hasCustomRowActions = hasDefaultTableRowActionsComponent(configs.rowActionsComponent);
-  const hasEditAction = typeof configs.onEditRow === 'function';
-  const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
-  const shouldPinRowActions = configs.pinRowActions !== false;
-  const actionsCellWidth = hasRowActions ? resolveDefaultTableRowActionsWidth(configs) : 0;
+  const actionsCellWidth = 0;
   const selectionWidth = selectable ? SELECTION_COLUMN_WIDTH : 0;
   const tableMinWidth = useMemo(
     () => tableColumns.reduce((totalWidth, column) => totalWidth + getColumnMinWidth(column), actionsCellWidth + selectionWidth),
@@ -82,11 +72,7 @@ const DefaultTableRows = ({ storeName }) => {
     });
   };
   const tableWidth = Math.max(tableMinWidth, Number(horizontalMetrics.viewportWidth || 0));
-  const emitSelection = nextIds => {
-    store?.actions?.setSelected?.(nextIds);
-    store?.actions?.setSummary?.(buildSelectionSummary(sortedData, nextIds, columns));
-    configs.onSelectionChange?.(nextIds);
-  };
+  const emitSelection = nextIds => persistStoreSelection(store, nextIds, sortedData, columns);
 
   const renderSelectionCell = (selected, onPress, accessibilityLabel) => (
     <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={accessibilityLabel} onPress={onPress} style={[styles.cell, { minWidth: SELECTION_COLUMN_WIDTH, width: SELECTION_COLUMN_WIDTH, alignItems: 'center', justifyContent: 'center' }]}>
