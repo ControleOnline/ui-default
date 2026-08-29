@@ -1,7 +1,7 @@
-import React, {useMemo} from 'react';
-import {Modal} from 'react-native';
+import React, { useMemo } from 'react';
+import { Modal } from 'react-native';
 import ImportsPage from '@controleonline/ui-common/src/react/pages/Imports';
-import {useStore} from '@store';
+import { useStore } from '@store';
 
 const normalizeText = value => String(value ?? '').trim();
 
@@ -13,7 +13,7 @@ const translateConfigKey = key => {
   return normalizeText(global.t?.t?.(key[0], key[1], key[2]));
 };
 
-const resolveConfiguredText = ({config, fallbackKey, literalKey, translationKey}) => {
+const resolveConfiguredText = ({ config, fallbackKey, literalKey, translationKey }) => {
   const literalValue = normalizeText(config?.[literalKey]);
   if (literalValue) {
     return literalValue;
@@ -27,11 +27,11 @@ const resolveConfiguredText = ({config, fallbackKey, literalKey, translationKey}
   return normalizeText(global.t?.t?.('defaultTable', 'label', fallbackKey));
 };
 
-const DefaultTableImportModal = ({onClose, storeName, visible}) => {
+const DefaultTableImportModal = ({ onClose, storeName, visible }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const resolvedConfig = configs.import || {};
-  const importType = normalizeText(resolvedConfig.importType);
+  const importType = normalizeText(resolvedConfig.importType) || 'csv';
 
   const context = useMemo(
     () => ({
