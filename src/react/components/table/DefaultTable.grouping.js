@@ -113,3 +113,33 @@ export const toggleGroupSelection = (selectedIds, groupRows) => {
   }
   return normalizeSelectedIds([...current, ...ids]);
 };
+
+export const resolveStoreSelectedIds = (store, selectedIdsProp) => {
+  if (Array.isArray(selectedIdsProp) && selectedIdsProp.length > 0) {
+    return normalizeSelectedIds(selectedIdsProp);
+  }
+
+  return normalizeSelectedIds(store?.getters?.selected);
+};
+
+export const buildSelectionSummary = (rows, selectedIds, columns) => {
+  const selected = normalizeSelectedIds(selectedIds);
+  const items = (Array.isArray(rows) ? rows : []).filter(row =>
+    selected.includes(String(getRowKey(row))),
+  );
+  const groups = groupTableRows(items, columns).filter(group => group.rows.length > 0);
+  const totalValue = items.reduce((sum, row) => {
+    const amount = Number(row?.invoiceTotal ?? row?.total ?? row?.value ?? 0);
+    return sum + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+
+  return {
+    count: {
+      invoices: items.length,
+      groups: groups.length,
+    },
+    sum: {
+      invoiceTotal: Number(totalValue.toFixed(2)),
+    },
+  };
+};
