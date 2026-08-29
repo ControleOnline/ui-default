@@ -234,6 +234,8 @@ export const useDefaultTablePagination = ({
     sortField: resolvedSort?.field,
   });
   const pageSizeNumber = Number(requestParams.itemsPerPage || pageSize || 50) || 50;
+  const resourceEndpoint = store?.getters?.resourceEndpoint || '';
+  const storeReload = store?.getters?.reload;
   const buildRequestQuery = useCallback(
     (page, append = false) =>
       buildQueryFromState({
@@ -247,13 +249,11 @@ export const useDefaultTablePagination = ({
       }),
     [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort],
   );
-  // Signature must reflect the *merged* request query. Filters that only
-  // mirror keys already present in requestParams (e.g. People link.linkType)
-  // must not trigger a second identical getItems call on mount.
   const autoQuerySignature = useMemo(
     () =>
-      stableSerialize(
-        buildQueryFromState({
+      stableSerialize({
+        endpoint: resourceEndpoint,
+        query: buildQueryFromState({
           append: false,
           columnsForTable,
           filters,
@@ -262,8 +262,10 @@ export const useDefaultTablePagination = ({
           requestParams,
           sort: resolvedSort,
         }),
-      ),
-    [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort],
+        reload: Boolean(storeReload),
+        storeName,
+      }),
+    [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort, resourceEndpoint, storeName, storeReload],
   );
   const {
     autoErroredQueryKeyRef,
@@ -298,6 +300,12 @@ export const useDefaultTablePagination = ({
     loadAutoPage,
     resolvedActions,
   });
+
+  useEffect(() => {
+    if (storeReload && typeof store?.actions?.setReload === 'function') {
+      store.actions.setReload(false);
+    }
+  }, [storeReload, store]);
 
   const resolvedIsLoading = autoMode
     ? (autoLoading || autoLoadingMore)
