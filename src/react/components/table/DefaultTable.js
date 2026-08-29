@@ -65,6 +65,7 @@ const DefaultTable = ({
   onRowPress = null,
   onSaved = null,
   onScrollBeginDrag = null,
+  onSelectionChange = null,
   onSortChange = null,
   pageSize = null,
   pinRowActions = true,
@@ -75,6 +76,8 @@ const DefaultTable = ({
   rowStyle = null,
   searchKey = 'search',
   searchPlaceholder = '',
+  selectable = false,
+  selectedIds = [],
   showColumnFiltersButton = true,
   showSearch = null,
   showRowActions = true,
@@ -201,11 +204,9 @@ const DefaultTable = ({
     if (typeof onAdd === 'function') {
       return onAdd();
     }
-
     if (!canUseDefaultCreateForm) {
       return null;
     }
-
     setIsCreateFormOpen(true);
     return null;
   }, [canUseDefaultCreateForm, onAdd]);
@@ -234,7 +235,6 @@ const DefaultTable = ({
     if (autoMode) {
       return buildRequestQuery(currentPage || 1, false);
     }
-
     return {
       filters: storeFilters,
       requestParams: requestParamsSeed,
@@ -277,6 +277,7 @@ const DefaultTable = ({
       onRowPress,
       onSaved,
       onScrollBeginDrag,
+      onSelectionChange,
       pinRowActions,
       renderCard,
       requestParams: requestParamsSeed,
@@ -287,6 +288,8 @@ const DefaultTable = ({
       rowStyle,
       searchKey,
       searchPlaceholder,
+      selectable: selectable === true,
+      selectedIds: Array.isArray(selectedIds) ? selectedIds : [],
       showColumnFiltersButton,
       showSearch,
       showRowActions,
@@ -332,6 +335,7 @@ const DefaultTable = ({
       onRowPress,
       onSaved,
       onScrollBeginDrag,
+      onSelectionChange,
       pinRowActions,
       renderCard,
       requestParamsSeed,
@@ -343,6 +347,8 @@ const DefaultTable = ({
       rowStyle,
       searchKey,
       searchPlaceholder,
+      selectable,
+      selectedIds,
       showColumnFiltersButton,
       showSearch,
       showRowActions,
@@ -380,6 +386,8 @@ const DefaultTable = ({
         resolvedSort,
         searchKey,
         searchPlaceholder,
+        selectable,
+        selectedIdsLength: Array.isArray(selectedIds) ? selectedIds.length : 0,
         showColumnFiltersButton,
         showSearch,
         showRowActions,
@@ -415,6 +423,8 @@ const DefaultTable = ({
       resolvedSort,
       searchKey,
       searchPlaceholder,
+      selectable,
+      selectedIds,
       showColumnFiltersButton,
       showSearch,
       showRowActions,
