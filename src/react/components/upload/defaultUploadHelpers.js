@@ -5,6 +5,7 @@
 const {extractFileId} = require('./fileUpload');
 
 const DEFAULT_LIBRARY_CONTEXTS = ['products', 'products-category'];
+const IMAGE_EXT = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 
 const normalizeCollection = response => {
   if (Array.isArray(response)) return response;
@@ -29,15 +30,10 @@ const getEntityId = relation => {
 
 const normalizeAttachmentRelation = relation => {
   const relationId = getEntityId(relation);
-
   if (!relation || typeof relation !== 'object' || relation?.id || !relationId) {
     return relation;
   }
-
-  return {
-    ...relation,
-    id: relationId,
-  };
+  return {...relation, id: relationId};
 };
 
 const getRelationFileId = relation => extractFileId(relation?.file);
@@ -47,15 +43,32 @@ const getFileName = file => {
   return file?.fileName || file?.name || file?.originalName || (id ? `Arquivo ${id}` : 'Arquivo');
 };
 
-/**
- * Accepts a context string or a file-like object (uses .context).
- * Avoids String(object) → "[object Object]" in the manager modal badge.
- */
-const getContextLabel = contextOrFile => {
-  if (contextOrFile == null || contextOrFile === '') {
-    return 'sem contexto';
-  }
+const getFileExtension = file => {
+  const fromField = String(file?.extension || '').replace(/^\./, '').trim().toLowerCase();
+  if (fromField) return fromField;
+  const name = getFileName(file);
+  const match = String(name).match(/\.([a-z0-9]+)$/i);
+  return match ? match[1].toLowerCase() : '';
+};
 
+const isPreviewableImage = file => {
+  const type = String(file?.fileType || file?.mimeType || file?.type || '').toLowerCase();
+  if (type.startsWith('image/')) return true;
+  if (type === 'image') return true;
+  const ext = getFileExtension(file);
+  return IMAGE_EXT.test(`.${ext}`) || IMAGE_EXT.test(getFileName(file));
+};
+
+const getGenericFileIcon = file => {
+  const ext = getFileExtension(file);
+  if (['pfx', 'p12', 'cer', 'crt'].includes(ext)) return 'file-certificate-outline';
+  if (['pdf'].includes(ext)) return 'file-pdf-box';
+  if (['xml', 'zip'].includes(ext)) return 'folder-zip-outline';
+  return 'file-outline';
+};
+
+const getContextLabel = contextOrFile => {
+  if (contextOrFile == null || contextOrFile === '') return 'sem contexto';
   if (typeof contextOrFile === 'object' && !Array.isArray(contextOrFile)) {
     const fromFile =
       contextOrFile.context ??
@@ -67,7 +80,6 @@ const getContextLabel = contextOrFile => {
     }
     return 'sem contexto';
   }
-
   return String(contextOrFile).trim() || 'sem contexto';
 };
 
@@ -88,6 +100,9 @@ module.exports = {
   normalizeAttachmentRelation,
   getRelationFileId,
   getFileName,
+  getFileExtension,
+  isPreviewableImage,
+  getGenericFileIcon,
   getContextLabel,
   dedupeFiles,
 };
