@@ -11,10 +11,28 @@ import {MaterialCommunityIcons} from '@expo/vector-icons';
 import AnimatedModal from '@controleonline/ui-common/src/react/components/AnimatedModal';
 import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
 import {extractFileId} from './fileUpload';
-import {getFileName, getContextLabel} from './defaultUploadHelpers';
+import {
+  getFileName,
+  getFileExtension,
+  getContextLabel,
+  isPreviewableImage,
+  getGenericFileIcon,
+} from './defaultUploadHelpers';
 import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 
-/** File manager modal for DefaultUpload (app-community#296 modularization). */
+function FileThumb({file}) {
+  if (isPreviewableImage(file)) {
+    return <DefaultFile file={file} resizeMode="cover" style={styles.fileImage} />;
+  }
+  const ext = getFileExtension(file);
+  return (
+    <View style={styles.fileThumbFallback}>
+      <MaterialCommunityIcons name={getGenericFileIcon(file)} size={36} color="#475569" />
+      <Text style={styles.fileExtBadge}>{ext ? ext.toUpperCase() : 'FILE'}</Text>
+    </View>
+  );
+}
+
 export default function DefaultUploadManagerModal(props) {
   const {
     visible,
@@ -38,10 +56,6 @@ export default function DefaultUploadManagerModal(props) {
     attachedFileIds,
     handleAttachExisting,
     attachmentRows,
-    sortedAttachments,
-    coverId,
-    handleSetCover,
-    handleRemove,
     emptyLibraryLabel,
     emptyAttachmentsLabel,
     status,
@@ -49,7 +63,6 @@ export default function DefaultUploadManagerModal(props) {
   } = props;
 
   return (
-
     <AnimatedModal visible={visible} onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
@@ -83,11 +96,7 @@ export default function DefaultUploadManagerModal(props) {
             disabled={uploading}
             style={[
               styles.uploadButton,
-              {
-                backgroundColor: buttonPalette.buttonBackground,
-                borderColor: buttonPalette.buttonBorder,
-                borderWidth: 1,
-              },
+              {backgroundColor: buttonPalette.buttonBackground, borderColor: buttonPalette.buttonBorder, borderWidth: 1},
               uploading && styles.disabledButton,
             ]}>
             {uploading ? (
@@ -104,10 +113,7 @@ export default function DefaultUploadManagerModal(props) {
             disabled={libraryLoading}
             style={[
               styles.refreshButton,
-              {
-                backgroundColor: buttonPalette.buttonBackgroundSecondary,
-                borderColor: buttonPalette.buttonBorderSecondary,
-              },
+              {backgroundColor: buttonPalette.buttonBackgroundSecondary, borderColor: buttonPalette.buttonBorderSecondary},
             ]}>
             <MaterialCommunityIcons name="refresh" size={19} color={buttonPalette.buttonIconSecondary} />
           </TouchableOpacity>
@@ -133,18 +139,14 @@ export default function DefaultUploadManagerModal(props) {
                 const isAttached = fileId && attachedFileIds.has(String(fileId));
                 const isSaving = String(savingFileId || '') === String(fileId || getFileName(file));
                 return (
-                  <View
-                    key={fileId || getFileName(file)}
-                    style={[styles.fileCard, isAttached && styles.fileCardAttached]}
-                  >
+                  <View key={fileId || getFileName(file)} style={[styles.fileCard, isAttached && styles.fileCardAttached]}>
                     <View style={styles.fileThumb}>
-                      <DefaultFile file={file} resizeMode="cover" style={styles.fileImage} />
+                      <FileThumb file={file} />
                     </View>
                     <TouchableOpacity
                       onPress={() => handleAttachExisting(file)}
                       disabled={isAttached || isSaving}
-                      style={styles.fileAction}
-                    >
+                      style={styles.fileAction}>
                       {isSaving ? (
                         <ActivityIndicator size="small" color="#0F172A" />
                       ) : (
@@ -156,9 +158,7 @@ export default function DefaultUploadManagerModal(props) {
                       )}
                     </TouchableOpacity>
                     <View style={styles.fileInfo}>
-                      <Text numberOfLines={2} style={styles.fileName}>
-                        {getFileName(file)}
-                      </Text>
+                      <Text numberOfLines={2} style={styles.fileName}>{getFileName(file)}</Text>
                       <View style={styles.fileMetaRow}>
                         <Text style={styles.contextBadge}>{getContextLabel(file?.context ?? file)}</Text>
                         {isAttached && <Text style={styles.attachedBadge}>{attachLabel}</Text>}
