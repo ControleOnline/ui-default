@@ -12,6 +12,13 @@ import DefaultTableRowActions, {
   resolveDefaultTableRowActionsWidth,
 } from './DefaultTableRowActions';
 import {
+  flattenGroupedTableItems,
+  getGroupingColumns,
+  isRowSelected,
+  toggleGroupSelection,
+  toggleSelectedId,
+} from './DefaultTable.grouping';
+import {
   END_REACHED_THRESHOLD,
   getColumnStyle,
   getColumnMinWidth,
@@ -24,6 +31,8 @@ import {
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
+
+const SELECTION_COLUMN_WIDTH = 44;
 
 const DefaultTableRows = ({ storeName }) => {
   const store = useStore(storeName);
@@ -38,6 +47,13 @@ const DefaultTableRows = ({ storeName }) => {
     liveItems: store?.getters?.items,
     sortedData: configs.sortedData,
   });
+  const groupingColumns = getGroupingColumns(columns);
+  const listData = useMemo(
+    () => flattenGroupedTableItems(sortedData, columns),
+    [columns, sortedData],
+  );
+  const selectable = configs.selectable === true;
+  const selectedIds = Array.isArray(configs.selectedIds) ? configs.selectedIds : [];
   const resolvedFilters = store?.getters?.filters || {};
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
   const emptyStateLabel = isLoading
@@ -61,13 +77,14 @@ const DefaultTableRows = ({ storeName }) => {
     configs.showColumnFiltersButton !== false &&
     configs.tableFiltersVisible === true;
   const actionsCellWidth = hasRowActions ? resolveDefaultTableRowActionsWidth(configs) : 0;
+  const selectionWidth = selectable ? SELECTION_COLUMN_WIDTH : 0;
   const tableMinWidth = useMemo(
     () =>
       tableColumns.reduce(
         (totalWidth, column) => totalWidth + getColumnMinWidth(column),
-        actionsCellWidth,
+        actionsCellWidth + selectionWidth,
       ),
-    [actionsCellWidth, tableColumns],
+    [actionsCellWidth, selectionWidth, tableColumns],
   );
   const [horizontalMetrics, setHorizontalMetrics] = useState({
     contentWidth: 0,
@@ -76,11 +93,7 @@ const DefaultTableRows = ({ storeName }) => {
   });
   const updateHorizontalMetrics = patch => {
     setHorizontalMetrics(current => {
-      const next = {
-        ...current,
-        ...patch,
-      };
-
+      const next = { ...current, ...patch };
       return next.contentWidth === current.contentWidth &&
         next.viewportWidth === current.viewportWidth &&
         next.x === current.x
@@ -96,7 +109,6 @@ const DefaultTableRows = ({ storeName }) => {
     const actionsTranslateX = canScrollHorizontally
       ? x + viewportWidth - contentWidth
       : 0;
-
     return {
       actions:
         shouldPinRowActions && actionsTranslateX !== 0
@@ -105,50 +117,118 @@ const DefaultTableRows = ({ storeName }) => {
     };
   }, [horizontalMetrics, shouldPinRowActions]);
   const handleHorizontalScroll = event => {
-    updateHorizontalMetrics({
-      x: Number(event?.nativeEvent?.contentOffset?.x || 0),
-    });
+    updateHorizontalMetrics({ x: Number(event?.nativeEvent?.contentOffset?.x || 0) });
   };
   const handleHorizontalLayout = event => {
-    updateHorizontalMetrics({
-      viewportWidth: Number(event?.nativeEvent?.layout?.width || 0),
-    });
+    updateHorizontalMetrics({ viewportWidth: Number(event?.nativeEvent?.layout?.width || 0) });
   };
   const handleHorizontalContentSizeChange = width => {
-    updateHorizontalMetrics({
-      contentWidth: Number(width || 0),
-    });
+    updateHorizontalMetrics({ contentWidth: Number(width || 0) });
   };
   const handleListScroll = event => {
     if (shouldTriggerEndReachedFromScroll(event)) {
       configs.onEndReached?.();
     }
   };
-  const tableWidth = Math.max(
-    tableMinWidth,
-    Number(horizontalMetrics.viewportWidth || 0),
+  const tableWidth = Math.max(tableMinWidth, Number(horizontalMetrics.viewportWidth || 0));
+  const emitSelection = nextIds => {
+    if (typeof configs.onSelectionChange === 'function') {
+      configs.onSelectionChange(nextIds);
+    }
+  };
+
+  const renderSelectionCell = (selected, onPress, accessibilityLabel) => (
+    <TouchableOpacity
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={[
+        styles.cell,
+        {
+          minWidth: SELECTION_COLUMN_WIDTH,
+          width: SELECTION_COLUMN_WIDTH,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      ]}
+    >
+      <Icon name={selected ? 'check-square' : 'square'} size={16} color={selected ? '#0284C7' : tableMutedColor} />
+    </TouchableOpacity>
   );
 
-  const renderTableItem = ({ item: row, index }) => {
-    const RowComponent = hasRowPress ? TouchableOpacity : View;
+  const renderTableItem = ({ item, index }) => {
+    if (item?.type === 'group') {
+      const groupRows = item.group?.rows || [];
+      const groupSelected =
+        selectable &&
+        groupRows.length > 0 &&
+        groupRows.every(row => isRowSelected(row, selectedIds));
+      return (
+        <View
+          testID={`default-table-group-${item.group?.id}`}
+          style={[
+            styles.row,
+            {
+              backgroundColor: '#ECFEFF',
+              borderBottomColor: tableBorderColor,
+              borderBottomWidth: tableBorderColor ? 1 : 0,
+              minWidth: tableWidth,
+              width: tableWidth,
+              paddingVertical: 8,
+            },
+          ]}
+        >
+          {selectable
+            ? renderSelectionCell(
+                groupSelected,
+                () => emitSelection(toggleGroupSelection(selectedIds, groupRows)),
+                `Selecionar grupo ${item.group?.label || ''}`,
+              )
+            : null}
+          <View style={{ flex: 1, paddingHorizontal: 8 }}>
+            <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={2}>
+              {item.group?.label}
+            </Text>
+            <Text style={{ color: tableMutedColor, fontSize: 12 }}>
+              {item.group?.count} item(s)
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    const row = item?.row || item;
+    const RowComponent = hasRowPress || selectable ? TouchableOpacity : View;
     const rowStyleValue = typeof rowStyle === 'function' ? rowStyle(row, index) : rowStyle;
-    const rowPressProps = hasRowPress
-      ? {
-        activeOpacity: 0.84,
-        onPress: () => configs.onRowPress(row),
-      }
-      : {};
-    const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;
+    const selected = selectable && isRowSelected(row, selectedIds);
+    const rowPressProps =
+      hasRowPress || selectable
+        ? {
+            activeOpacity: 0.84,
+            onPress: () => {
+              if (selectable) {
+                emitSelection(toggleSelectedId(selectedIds, row));
+              }
+              configs.onRowPress?.(row);
+            },
+          }
+        : {};
+    const rowBackgroundColor = selected
+      ? '#ECFEFF'
+      : index % 2 === 0
+        ? tableOddColor
+        : tableEvenColor;
     const RowActionsComponent = configs.rowActionsComponent;
 
     return (
       <RowComponent
-        key={getRowKey(row)}
+        key={item?.id || getRowKey(row)}
         style={[
           styles.row,
           {
             backgroundColor: rowBackgroundColor,
-            borderBottomColor: tableBorderColor,
+            borderBottomColor: selected ? '#67E8F9' : tableBorderColor,
             borderBottomWidth: tableBorderColor ? 1 : 0,
             minWidth: tableWidth,
             width: tableWidth,
@@ -157,6 +237,13 @@ const DefaultTableRows = ({ storeName }) => {
         ]}
         {...rowPressProps}
       >
+        {selectable
+          ? renderSelectionCell(
+              selected,
+              () => emitSelection(toggleSelectedId(selectedIds, row)),
+              `Selecionar linha ${getRowKey(row)}`,
+            )
+          : null}
         {tableColumns.map(column => (
           <React.Fragment key={getColumnKey(column)}>
             <DefaultTableInput
@@ -165,9 +252,7 @@ const DefaultTableRows = ({ storeName }) => {
                 cellStyle: [
                   styles.pinnedIdentityCell,
                   styles.stickyIdentityCell,
-                  {
-                    backgroundColor: rowBackgroundColor,
-                  },
+                  { backgroundColor: rowBackgroundColor },
                 ],
               } : {}}
               row={row}
@@ -188,9 +273,7 @@ const DefaultTableRows = ({ storeName }) => {
                 flexBasis: actionsCellWidth,
                 maxWidth: actionsCellWidth,
                 backgroundColor: rowBackgroundColor,
-                ...(stickyBodyTransforms.actions
-                  ? { transform: stickyBodyTransforms.actions }
-                  : {}),
+                ...(stickyBodyTransforms.actions ? { transform: stickyBodyTransforms.actions } : {}),
               },
             ]}
           >
@@ -248,6 +331,9 @@ const DefaultTableRows = ({ storeName }) => {
               },
             ]}
           >
+            {selectable ? (
+              <View style={[styles.cell, { minWidth: SELECTION_COLUMN_WIDTH, width: SELECTION_COLUMN_WIDTH }]} />
+            ) : null}
             {tableColumns.map(column => {
               const fieldName = getColumnKey(column);
               const label = formatStoreColumnLabel({
@@ -257,7 +343,6 @@ const DefaultTableRows = ({ storeName }) => {
                 storeName,
               });
               const sortFieldName = getSortField(column);
-
               return (
                 <TouchableOpacity
                   key={fieldName}
@@ -315,9 +400,11 @@ const DefaultTableRows = ({ storeName }) => {
                 },
               ]}
             >
+              {selectable ? (
+                <View style={[styles.cell, { minWidth: SELECTION_COLUMN_WIDTH, width: SELECTION_COLUMN_WIDTH }]} />
+              ) : null}
               {tableColumns.map(column => {
                 const fieldName = getColumnKey(column);
-
                 return (
                   <View
                     key={`${fieldName}-filter`}
@@ -359,8 +446,9 @@ const DefaultTableRows = ({ storeName }) => {
           ) : null}
 
           <FlatList
-            data={sortedData}
-            keyExtractor={getRowKey}
+            data={listData}
+            extraData={selectedIds}
+            keyExtractor={item => item?.id || getRowKey(item?.row || item)}
             renderItem={renderTableItem}
             style={styles.tableList}
             contentContainerStyle={styles.tableListContent}
