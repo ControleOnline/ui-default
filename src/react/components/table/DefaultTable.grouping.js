@@ -61,6 +61,9 @@ export const flattenGroupedTableItems = (rows, columns) => {
 export const normalizeSelectedIds = selectedIds =>
   Array.from(new Set((Array.isArray(selectedIds) ? selectedIds : []).map(id => String(id))));
 
+export const resolveStoreSelectedIds = store =>
+  normalizeSelectedIds(store?.getters?.selected);
+
 export const isRowSelected = (row, selectedIds, index = 0) =>
   normalizeSelectedIds(selectedIds).includes(String(getRowKey(row, index)));
 
@@ -78,23 +81,18 @@ export const toggleGroupSelection = (selectedIds, groupRows) => {
   return normalizeSelectedIds([...current, ...ids]);
 };
 
-export const resolveStoreSelectedIds = (store, selectedIdsProp) => {
-  if (Array.isArray(selectedIdsProp) && selectedIdsProp.length > 0) {
-    return normalizeSelectedIds(selectedIdsProp);
-  }
-  return normalizeSelectedIds(store?.getters?.selected);
-};
-
-export const buildSelectionSummary = (rows, selectedIds, columns) => {
-  const selected = normalizeSelectedIds(selectedIds);
+export const persistStoreSelection = (store, nextIds, rows, columns) => {
+  const selected = normalizeSelectedIds(nextIds);
+  store?.actions?.setSelected?.(selected);
   const items = (Array.isArray(rows) ? rows : []).filter(row => selected.includes(String(getRowKey(row))));
   const groups = groupTableRows(items, columns).filter(group => group.rows.length > 0);
   const totalValue = items.reduce((sum, row) => {
     const amount = Number(row?.invoiceTotal ?? row?.total ?? row?.value ?? 0);
     return sum + (Number.isFinite(amount) ? amount : 0);
   }, 0);
-  return {
+  store?.actions?.setSummary?.({
     count: { invoices: items.length, groups: groups.length },
     sum: { invoiceTotal: Number(totalValue.toFixed(2)) },
-  };
+  });
+  return selected;
 };
