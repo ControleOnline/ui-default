@@ -6,6 +6,10 @@ import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/util
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
+import DefaultTableRowActions, {
+  hasDefaultTableRowActionsComponent,
+  resolveDefaultTableRowActionsWidth,
+} from './DefaultTableRowActions';
 import {
   persistStoreSelection,
   flattenGroupedTableItems,
@@ -58,7 +62,13 @@ const DefaultTableRows = ({ storeName }) => {
   const tableTextColor = palette.text;
   const rowStyle = configs.rowStyle;
   const hasRowPress = typeof configs.onRowPress === 'function';
-  const actionsCellWidth = 0;
+  const RowActionsComponent = configs.rowActionsComponent;
+  const hasCustomRowActions = hasDefaultTableRowActionsComponent(RowActionsComponent);
+  const hasEditAction = typeof configs.onEditRow === 'function';
+  const hasRowActions = configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
+  const shouldPinRowActions = configs.pinRowActions !== false;
+  const actionsCellWidth = hasRowActions ? resolveDefaultTableRowActionsWidth(configs) : 0;
+  const tableSurfaceColor = palette.background;
   const selectionWidth = selectable ? SELECTION_COLUMN_WIDTH : 0;
   const tableMinWidth = useMemo(
     () => tableColumns.reduce((totalWidth, column) => totalWidth + getColumnMinWidth(column), actionsCellWidth + selectionWidth),
@@ -72,6 +82,17 @@ const DefaultTableRows = ({ storeName }) => {
     });
   };
   const tableWidth = Math.max(tableMinWidth, Number(horizontalMetrics.viewportWidth || 0));
+  const stickyBodyTransforms = useMemo(() => {
+    const viewportWidth = Number(horizontalMetrics.viewportWidth || 0);
+    const contentWidth = Number(horizontalMetrics.contentWidth || 0);
+    const x = Number(horizontalMetrics.x || 0);
+    const canScrollHorizontally = viewportWidth > 0 && contentWidth > viewportWidth;
+    const actionsTranslateX = canScrollHorizontally ? x + viewportWidth - contentWidth : 0;
+    return {
+      actions: shouldPinRowActions && actionsTranslateX !== 0 ? [{ translateX: actionsTranslateX }] : null,
+      identity: x !== 0 ? [{ translateX: x }] : null,
+    };
+  }, [horizontalMetrics, shouldPinRowActions]);
   const emitSelection = nextIds => persistStoreSelection(store, nextIds, sortedData, columns);
 
   const renderSelectionCell = (selected, onPress, accessibilityLabel) => (
@@ -104,9 +125,54 @@ const DefaultTableRows = ({ storeName }) => {
         {selectable ? renderSelectionCell(selected, () => emitSelection(toggleSelectedId(selectedIds, row)), `Selecionar linha ${getRowKey(row)}`) : null}
         {tableColumns.map(column => (
           <React.Fragment key={getColumnKey(column)}>
-            <DefaultTableInput column={column} options={column?.isIdentity ? { cellStyle: [styles.pinnedIdentityCell, styles.stickyIdentityCell, { backgroundColor: rowBackgroundColor }] } : {}} row={row} storeName={storeName} variant="cell" />
+            <DefaultTableInput column={column} options={column?.isIdentity ? { cellStyle: [styles.pinnedIdentityCell, styles.stickyIdentityCell, { backgroundColor: rowBackgroundColor, ...(stickyBodyTransforms.identity ? { transform: stickyBodyTransforms.identity } : {}) }] } : {}} row={row} storeName={storeName} variant="cell" />
           </React.Fragment>
         ))}
+        {hasRowActions ? (
+          <View
+            style={[
+              styles.cell,
+              styles.actionsCell,
+              shouldPinRowActions ? [styles.stickyActionsCell, styles.pinnedActionsCell] : null,
+              {
+                minWidth: actionsCellWidth,
+                width: actionsCellWidth,
+                flexBasis: actionsCellWidth,
+                maxWidth: actionsCellWidth,
+                backgroundColor: rowBackgroundColor,
+                ...(stickyBodyTransforms.actions ? { transform: stickyBodyTransforms.actions } : {}),
+              },
+            ]}
+          >
+            <View style={styles.rowActionsGroup}>
+              {hasCustomRowActions ? (
+                <DefaultTableRowActions
+                  component={RowActionsComponent}
+                  helpers={{
+                    openEdit: () => configs.onEditRow?.(row),
+                    openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+                  }}
+                  openEdit={() => configs.onEditRow?.(row)}
+                  openRow={hasRowPress ? () => configs.onRowPress(row) : null}
+                  row={row}
+                  storeName={storeName}
+                />
+              ) : null}
+              {hasEditAction ? (
+                <TouchableOpacity
+                  style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                  activeOpacity={0.82}
+                  onPress={event => {
+                    event?.stopPropagation?.();
+                    configs.onEditRow?.(row);
+                  }}
+                >
+                  <Icon name="edit-2" size={14} color={tableMutedColor} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
       </RowComponent>
     );
   };
@@ -127,6 +193,22 @@ const DefaultTableRows = ({ storeName }) => {
               </TouchableOpacity>
             );
           })}
+          {hasRowActions ? (
+            <View
+              style={[
+                styles.cell,
+                styles.actionsCell,
+                shouldPinRowActions ? [styles.stickyActionsCell, styles.stickyHeaderCell] : null,
+                {
+                  minWidth: actionsCellWidth,
+                  width: actionsCellWidth,
+                  flexBasis: actionsCellWidth,
+                  maxWidth: actionsCellWidth,
+                  backgroundColor: tableHeaderColor,
+                },
+              ]}
+            />
+          ) : null}
         </View>
         <FlatList data={listData} extraData={selectedIds} keyExtractor={item => item?.id || getRowKey(item?.row || item)} renderItem={renderTableItem} style={styles.tableList} contentContainerStyle={styles.tableListContent} ListEmptyComponent={<DefaultTableEmptyState emptyStateLabel={emptyStateLabel} isLoading={isLoading} isTable tableMutedColor={tableMutedColor} />} nestedScrollEnabled onEndReached={configs.onEndReached} onEndReachedThreshold={END_REACHED_THRESHOLD} onRefresh={configs.onRefresh} refreshing={Boolean(configs.refreshing)} onScroll={event => { if (shouldTriggerEndReachedFromScroll(event)) configs.onEndReached?.(); }} scrollEventThrottle={120} showsVerticalScrollIndicator={false} />
       </View>
