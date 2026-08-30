@@ -1,9 +1,9 @@
 /**
- * Library fetch helpers for DefaultUpload (app-community#296 / #433).
+ * Library fetch helpers for DefaultUpload (app-community#296 / #433 / #670).
  *
  * Always send itemsPerPage so the API does not default to a tiny page size.
- * For people_media, also load /people_media relations so images linked only
- * via that join (without files.people_id) still appear in the manager.
+ * Also hydrate known file ids (certificates are public=false and may not
+ * appear in the collection filter).
  */
 const DEFAULT_LIBRARY_CONTEXTS = ['products', 'products-category'];
 
@@ -40,11 +40,6 @@ const dedupeFiles = files => {
   });
 };
 
-/**
- * Extract file objects from people_media relation items.
- * @param {unknown[]} relations
- * @returns {object[]}
- */
 function filesFromPeopleMediaRelations(relations) {
   if (!Array.isArray(relations)) return [];
   const files = [];
@@ -66,10 +61,6 @@ function filesFromPeopleMediaRelations(relations) {
   return files;
 }
 
-/**
- * Fetch all people_media for a person and return embedded files.
- * @param {{ peopleActions?: object, peopleIri: string }} args
- */
 async function fetchPeopleMediaFiles({peopleActions, peopleIri}) {
   if (!peopleIri || typeof peopleActions?.getPeopleMedia !== 'function') {
     return [];
@@ -91,15 +82,31 @@ async function fetchPeopleMediaFiles({peopleActions, peopleIri}) {
   return filesFromPeopleMediaRelations(collected);
 }
 
+async function fetchKnownFiles({fileActions, knownFileIds = []}) {
+  if (typeof fileActions?.get !== 'function') return [];
+  const ids = [...new Set(knownFileIds.map(extractFileIdLocal).filter(Boolean))];
+  const files = [];
+  for (const id of ids) {
+    try {
+      const item = await fileActions.get(id);
+      if (item && typeof item === 'object') files.push(item);
+    } catch (_) {
+      // item GET is best-effort so a missing id does not empty the library
+    }
+  }
+  return files;
+}
+
 async function fetchLibraryFiles({
   fileActions,
   companyId,
   fileType,
   libraryContexts,
   peopleActions = null,
+  knownFileIds = [],
 }) {
   if (typeof fileActions?.getItems !== 'function') {
-    return [];
+    return fetchKnownFiles({fileActions, knownFileIds});
   }
 
   const peopleIri = getEntityId(companyId) ? `/people/${getEntityId(companyId)}` : null;
@@ -116,7 +123,6 @@ async function fetchLibraryFiles({
         context: fileContext,
         page,
         itemsPerPage: pageSize,
-        'order[fileName]': 'ASC',
       };
       if (fileType) params.fileType = fileType;
       if (peopleIri) params.people = peopleIri;
@@ -131,7 +137,6 @@ async function fetchLibraryFiles({
   const batches = await Promise.all(contexts.map(fetchContextFiles));
   let files = batches.flat();
 
-  // app-community#433: also surface files linked only through people_media
   const includesPeopleMedia = contexts.some(
     c => String(c || '').trim().toLowerCase() === 'people_media',
   );
@@ -139,9 +144,12 @@ async function fetchLibraryFiles({
     try {
       const relationFiles = await fetchPeopleMediaFiles({peopleActions, peopleIri});
       files = files.concat(relationFiles);
-    } catch (_) {
-      // Library still returns /files results; relation fetch is best-effort enrichment.
-    }
+    } catch (_) {}
+  }
+
+  if (knownFileIds.length) {
+    const knownFiles = await fetchKnownFiles({fileActions, knownFileIds});
+    files = knownFiles.concat(files);
   }
 
   return dedupeFiles(files);
@@ -151,4 +159,5 @@ module.exports = {
   fetchLibraryFiles,
   filesFromPeopleMediaRelations,
   fetchPeopleMediaFiles,
+  fetchKnownFiles,
 };
