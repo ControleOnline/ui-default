@@ -25,6 +25,24 @@ import {
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
+const withAlpha = (hex, alpha = '40') => {
+  const color = String(hex || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) return `${color}${alpha}`;
+  if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+    const r = color[1];
+    const g = color[2];
+    const b = color[3];
+    return `#${r}${r}${g}${g}${b}${b}${alpha}`;
+  }
+  return color;
+};
+
+const resolveRowBackgroundColor = ({ index, tableOddColor, tableEvenColor, row }) => {
+  const statusColor = String(row?.status?.color || '').trim();
+  if (statusColor) return withAlpha(statusColor, '40');
+  return index % 2 === 0 ? tableOddColor : tableEvenColor;
+};
+
 const DefaultTableRows = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
@@ -138,7 +156,12 @@ const DefaultTableRows = ({ storeName }) => {
         onPress: () => configs.onRowPress(row),
       }
       : {};
-    const rowBackgroundColor = index % 2 === 0 ? tableOddColor : tableEvenColor;
+    const rowBackgroundColor = resolveRowBackgroundColor({
+      index,
+      tableOddColor,
+      tableEvenColor,
+      row,
+    });
     const RowActionsComponent = configs.rowActionsComponent;
 
     return (
@@ -169,7 +192,11 @@ const DefaultTableRows = ({ storeName }) => {
                     backgroundColor: rowBackgroundColor,
                   },
                 ],
-              } : {}}
+              } : {
+                cellStyle: {
+                  backgroundColor: rowBackgroundColor,
+                },
+              }}
               row={row}
               storeName={storeName}
               variant="cell"
@@ -182,15 +209,16 @@ const DefaultTableRows = ({ storeName }) => {
               styles.cell,
               styles.actionsCell,
               shouldPinRowActions ? styles.pinnedActionsCell : null,
+              shouldPinRowActions ? styles.stickyActionsCell : null,
               {
                 minWidth: actionsCellWidth,
                 width: actionsCellWidth,
                 flexBasis: actionsCellWidth,
                 maxWidth: actionsCellWidth,
-                backgroundColor: rowBackgroundColor,
                 ...(stickyBodyTransforms.actions
                   ? { transform: stickyBodyTransforms.actions }
                   : {}),
+                backgroundColor: rowBackgroundColor,
               },
             ]}
           >
