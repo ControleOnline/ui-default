@@ -470,13 +470,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   actionsCell: {
-    minWidth: 60,
-    width: 60,
-    flexBasis: 60,
+    minWidth: 96,
     flexGrow: 0,
     flexShrink: 0,
-    maxWidth: 72,
     alignItems: 'center',
+    paddingHorizontal: 8,
   },
   rowActionsGroup: {
     flexDirection: 'row',
