@@ -85,12 +85,17 @@ const useAutoPageLoader = ({
   const autoLoadedQueryKeyRef = useRef('');
   const autoErroredQueryKeyRef = useRef('');
   const autoPageRef = useRef(0);
+  const isFetchingRef = useRef(false);
 
   const loadAutoPage = useCallback(
     (page, { append = false, refresh = false } = {}) => {
       if (!autoMode || typeof resolvedActions.getItems !== 'function') {
         return Promise.resolve([]);
       }
+      if (isFetchingRef.current) {
+        return Promise.resolve([]);
+      }
+      isFetchingRef.current = true;
 
       const requestId = autoRequestIdRef.current + 1;
       autoRequestIdRef.current = requestId;
@@ -134,6 +139,7 @@ const useAutoPageLoader = ({
           return [];
         })
         .finally(() => {
+          isFetchingRef.current = false;
           if (autoRequestIdRef.current === requestId) {
             setAutoLoading(false);
             setAutoLoadingMore(false);
