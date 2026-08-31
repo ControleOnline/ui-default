@@ -6,6 +6,10 @@ import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/util
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import DefaultTableEmptyState from './DefaultTableEmptyState';
 import DefaultTableInput from './DefaultTableInput';
+import DefaultTableRowActions, {
+  hasDefaultTableRowActionsComponent,
+  resolveDefaultTableRowActionsWidth,
+} from './DefaultTableRowActions';
 import {
   persistStoreSelection,
   flattenGroupedTableItems,
@@ -58,7 +62,13 @@ const DefaultTableRows = ({ storeName }) => {
   const tableTextColor = palette.text;
   const rowStyle = configs.rowStyle;
   const hasRowPress = typeof configs.onRowPress === 'function';
-  const actionsCellWidth = 0;
+  const RowActionsComponent = configs.rowActionsComponent;
+  const hasCustomRowActions = hasDefaultTableRowActionsComponent(RowActionsComponent);
+  const hasEditAction = typeof configs.onEditRow === 'function';
+  const hasRowActions =
+    configs.showRowActions !== false && (hasCustomRowActions || hasEditAction);
+  const pinRowActions = configs.pinRowActions !== false;
+  const actionsCellWidth = hasRowActions ? resolveDefaultTableRowActionsWidth(configs) : 0;
   const selectionWidth = selectable ? SELECTION_COLUMN_WIDTH : 0;
   const tableMinWidth = useMemo(
     () => tableColumns.reduce((totalWidth, column) => totalWidth + getColumnMinWidth(column), actionsCellWidth + selectionWidth),
@@ -80,6 +90,78 @@ const DefaultTableRows = ({ storeName }) => {
     </TouchableOpacity>
   );
 
+  const renderActionsCell = (row, rowBackgroundColor) => {
+    if (!hasRowActions) return null;
+
+    const customRowActions = hasCustomRowActions ? (
+      <DefaultTableRowActions
+        component={RowActionsComponent}
+        helpers={{
+          openEdit: () => configs.onEditRow?.(row),
+          openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+        }}
+        openEdit={() => configs.onEditRow?.(row)}
+        openRow={hasRowPress ? () => configs.onRowPress(row) : null}
+        row={row}
+        storeName={storeName}
+      />
+    ) : null;
+
+    const editButton = hasEditAction ? (
+      <Text onPress={() => configs.onEditRow?.(row)} style={{ color: '#0284C7', fontWeight: '800', fontSize: 12 }}>
+        {global.t?.t(storeName, 'button', 'edit') || 'Editar'}
+      </Text>
+    ) : null;
+
+    return (
+      <View
+        style={[
+          styles.cell,
+          styles.actionsCell,
+          {
+            minWidth: actionsCellWidth,
+            width: actionsCellWidth,
+            maxWidth: actionsCellWidth,
+            flexBasis: actionsCellWidth,
+            backgroundColor: rowBackgroundColor,
+          },
+          pinRowActions ? styles.stickyActionsCell : null,
+          pinRowActions ? styles.pinnedActionsCell : null,
+        ]}
+      >
+        <View style={styles.rowActionsGroup}>
+          {customRowActions}
+          {editButton}
+        </View>
+      </View>
+    );
+  };
+
+  const renderActionsHeader = () => {
+    if (!hasRowActions) return null;
+    return (
+      <View
+        style={[
+          styles.cell,
+          styles.actionsCell,
+          {
+            minWidth: actionsCellWidth,
+            width: actionsCellWidth,
+            maxWidth: actionsCellWidth,
+            flexBasis: actionsCellWidth,
+            backgroundColor: tableHeaderColor,
+          },
+          pinRowActions ? styles.stickyActionsCell : null,
+          pinRowActions ? styles.stickyHeaderCell : null,
+        ]}
+      >
+        <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>
+          {global.t?.t(storeName, 'label', 'actions') || 'Ações'}
+        </Text>
+      </View>
+    );
+  };
+
   const renderTableItem = ({ item, index }) => {
     if (item?.type === 'group') {
       const groupRows = item.group?.rows || [];
@@ -91,6 +173,7 @@ const DefaultTableRows = ({ storeName }) => {
             <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={2}>{item.group?.label}</Text>
             <Text style={{ color: tableMutedColor, fontSize: 12 }}>{item.group?.count} item(s)</Text>
           </View>
+          {hasRowActions ? <View style={{ minWidth: actionsCellWidth, width: actionsCellWidth }} /> : null}
         </View>
       );
     }
@@ -107,6 +190,7 @@ const DefaultTableRows = ({ storeName }) => {
             <DefaultTableInput column={column} options={column?.isIdentity ? { cellStyle: [styles.pinnedIdentityCell, styles.stickyIdentityCell, { backgroundColor: rowBackgroundColor }] } : {}} row={row} storeName={storeName} variant="cell" />
           </React.Fragment>
         ))}
+        {renderActionsCell(row, rowBackgroundColor)}
       </RowComponent>
     );
   };
@@ -127,6 +211,7 @@ const DefaultTableRows = ({ storeName }) => {
               </TouchableOpacity>
             );
           })}
+          {renderActionsHeader()}
         </View>
         <FlatList data={listData} extraData={selectedIds} keyExtractor={item => item?.id || getRowKey(item?.row || item)} renderItem={renderTableItem} style={styles.tableList} contentContainerStyle={styles.tableListContent} ListEmptyComponent={<DefaultTableEmptyState emptyStateLabel={emptyStateLabel} isLoading={isLoading} isTable tableMutedColor={tableMutedColor} />} nestedScrollEnabled onEndReached={configs.onEndReached} onEndReachedThreshold={END_REACHED_THRESHOLD} onRefresh={configs.onRefresh} refreshing={Boolean(configs.refreshing)} onScroll={event => { if (shouldTriggerEndReachedFromScroll(event)) configs.onEndReached?.(); }} scrollEventThrottle={120} showsVerticalScrollIndicator={false} />
       </View>
