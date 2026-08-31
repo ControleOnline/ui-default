@@ -34,6 +34,25 @@ import useDefaultTableTheme from './useDefaultTableTheme';
 
 const SELECTION_COLUMN_WIDTH = 44;
 
+const withAlpha = (hex, alpha = '40') => {
+  const color = String(hex || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) return `${color}${alpha}`;
+  if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+    const r = color[1];
+    const g = color[2];
+    const b = color[3];
+    return `#${r}${r}${g}${g}${b}${b}${alpha}`;
+  }
+  return color;
+};
+
+const resolveRowBackgroundColor = ({ selected, index, tableOddColor, tableEvenColor, row }) => {
+  if (selected) return '#ECFEFF';
+  const statusColor = String(row?.status?.color || '').trim();
+  if (statusColor) return withAlpha(statusColor, '40');
+  return index % 2 === 0 ? tableOddColor : tableEvenColor;
+};
+
 const DefaultTableRows = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
@@ -50,7 +69,6 @@ const DefaultTableRows = ({ storeName }) => {
   const listData = useMemo(() => flattenGroupedTableItems(sortedData, columns), [columns, sortedData]);
   const selectable = configs.selectable === true;
   const selectedIds = resolveStoreSelectedIds(store);
-  const resolvedFilters = store?.getters?.filters || {};
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
   const emptyStateLabel = isLoading ? global.t?.t(storeName, 'label', 'loading') : global.t?.t(storeName, 'label', 'empty');
   const tableBorderColor = tableBorderColors.rowBorderColor;
@@ -84,8 +102,8 @@ const DefaultTableRows = ({ storeName }) => {
   const tableWidth = Math.max(tableMinWidth, Number(horizontalMetrics.viewportWidth || 0));
   const emitSelection = nextIds => persistStoreSelection(store, nextIds, sortedData, columns);
 
-  const renderSelectionCell = (selected, onPress, accessibilityLabel) => (
-    <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={accessibilityLabel} onPress={onPress} style={[styles.cell, { minWidth: SELECTION_COLUMN_WIDTH, width: SELECTION_COLUMN_WIDTH, alignItems: 'center', justifyContent: 'center' }]}>
+  const renderSelectionCell = (selected, onPress, accessibilityLabel, backgroundColor) => (
+    <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={accessibilityLabel} onPress={onPress} style={[styles.cell, { minWidth: SELECTION_COLUMN_WIDTH, width: SELECTION_COLUMN_WIDTH, alignItems: 'center', justifyContent: 'center', backgroundColor }]}>
       <Icon name={selected ? 'check-square' : 'square'} size={16} color={selected ? '#0284C7' : tableMutedColor} />
     </TouchableOpacity>
   );
@@ -118,6 +136,8 @@ const DefaultTableRows = ({ storeName }) => {
         style={[
           styles.cell,
           styles.actionsCell,
+          pinRowActions ? styles.stickyActionsCell : null,
+          pinRowActions ? styles.pinnedActionsCell : null,
           {
             minWidth: actionsCellWidth,
             width: actionsCellWidth,
@@ -125,8 +145,6 @@ const DefaultTableRows = ({ storeName }) => {
             flexBasis: actionsCellWidth,
             backgroundColor: rowBackgroundColor,
           },
-          pinRowActions ? styles.stickyActionsCell : null,
-          pinRowActions ? styles.pinnedActionsCell : null,
         ]}
       >
         <View style={styles.rowActionsGroup}>
@@ -144,6 +162,8 @@ const DefaultTableRows = ({ storeName }) => {
         style={[
           styles.cell,
           styles.actionsCell,
+          pinRowActions ? styles.stickyActionsCell : null,
+          pinRowActions ? styles.stickyHeaderCell : null,
           {
             minWidth: actionsCellWidth,
             width: actionsCellWidth,
@@ -151,8 +171,6 @@ const DefaultTableRows = ({ storeName }) => {
             flexBasis: actionsCellWidth,
             backgroundColor: tableHeaderColor,
           },
-          pinRowActions ? styles.stickyActionsCell : null,
-          pinRowActions ? styles.stickyHeaderCell : null,
         ]}
       >
         <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>
@@ -168,7 +186,7 @@ const DefaultTableRows = ({ storeName }) => {
       const groupSelected = selectable && groupRows.length > 0 && groupRows.every(row => isRowSelected(row, selectedIds));
       return (
         <View testID={`default-table-group-${item.group?.id}`} style={[styles.row, { backgroundColor: '#ECFEFF', borderBottomColor: tableBorderColor, borderBottomWidth: tableBorderColor ? 1 : 0, minWidth: tableWidth, width: tableWidth, paddingVertical: 8 }]}>
-          {selectable ? renderSelectionCell(groupSelected, () => emitSelection(toggleGroupSelection(selectedIds, groupRows)), `Selecionar grupo ${item.group?.label || ''}`) : null}
+          {selectable ? renderSelectionCell(groupSelected, () => emitSelection(toggleGroupSelection(selectedIds, groupRows)), `Selecionar grupo ${item.group?.label || ''}`, '#ECFEFF') : null}
           <View style={{ flex: 1, paddingHorizontal: 8 }}>
             <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={2}>{item.group?.label}</Text>
             <Text style={{ color: tableMutedColor, fontSize: 12 }}>{item.group?.count} item(s)</Text>
@@ -181,13 +199,19 @@ const DefaultTableRows = ({ storeName }) => {
     const row = item?.row || item;
     const RowComponent = hasRowPress || selectable ? TouchableOpacity : View;
     const selected = selectable && isRowSelected(row, selectedIds);
-    const rowBackgroundColor = selected ? '#ECFEFF' : index % 2 === 0 ? tableOddColor : tableEvenColor;
+    const rowBackgroundColor = resolveRowBackgroundColor({
+      selected,
+      index,
+      tableOddColor,
+      tableEvenColor,
+      row,
+    });
     return (
       <RowComponent key={item?.id || getRowKey(row)} style={[styles.row, { backgroundColor: rowBackgroundColor, borderBottomColor: selected ? '#67E8F9' : tableBorderColor, borderBottomWidth: tableBorderColor ? 1 : 0, minWidth: tableWidth, width: tableWidth }, typeof rowStyle === 'function' ? rowStyle(row, index) : rowStyle]} {...(hasRowPress || selectable ? { activeOpacity: 0.84, onPress: () => { if (selectable) emitSelection(toggleSelectedId(selectedIds, row)); configs.onRowPress?.(row); } } : {})}>
-        {selectable ? renderSelectionCell(selected, () => emitSelection(toggleSelectedId(selectedIds, row)), `Selecionar linha ${getRowKey(row)}`) : null}
+        {selectable ? renderSelectionCell(selected, () => emitSelection(toggleSelectedId(selectedIds, row)), `Selecionar linha ${getRowKey(row)}`, rowBackgroundColor) : null}
         {tableColumns.map(column => (
           <React.Fragment key={getColumnKey(column)}>
-            <DefaultTableInput column={column} options={column?.isIdentity ? { cellStyle: [styles.pinnedIdentityCell, styles.stickyIdentityCell, { backgroundColor: rowBackgroundColor }] } : {}} row={row} storeName={storeName} variant="cell" />
+            <DefaultTableInput column={column} options={column?.isIdentity ? { cellStyle: [styles.pinnedIdentityCell, styles.stickyIdentityCell, { backgroundColor: rowBackgroundColor }] } : { cellStyle: { backgroundColor: rowBackgroundColor } }} row={row} storeName={storeName} variant="cell" />
           </React.Fragment>
         ))}
         {renderActionsCell(row, rowBackgroundColor)}
