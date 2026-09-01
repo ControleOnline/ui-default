@@ -17,10 +17,12 @@ import {
 import {
   buildMapMarkerPayload,
   getCurrentCoordinates,
+  GEOCODE_MISS_MESSAGE,
   hasCoordinates,
   hydrateAddressFromRow,
   mergePostalCodeData,
   onlyDigits,
+  parseOptionalCoordinate,
 } from '../../services/addressFormUtils';
 import usePostalCodeLookup from '../../hooks/usePostalCodeLookup';
 import DefaultMap from '../map/DefaultMap';
@@ -53,6 +55,8 @@ export default function DefaultAddress({
     loadingCep,
     cepError,
     setCepError,
+    geocodeMiss,
+    setGeocodeMiss,
     onCepBlur,
     runLookup,
     cancelPending,
@@ -126,13 +130,19 @@ export default function DefaultAddress({
   const onChange = useCallback(
     (key, value) => {
       setForm(prev => {
-        const next = {...prev, [key]: value};
+        let nextValue = value;
+        if (key === 'latitude' || key === 'longitude') {
+          const parsed = parseOptionalCoordinate(value);
+          nextValue = parsed == null ? value : parsed;
+        }
+        const next = {...prev, [key]: nextValue};
         onFormChange?.(next);
         return next;
       });
       if (key === 'cep') {
         setCepError(null);
         setError(null);
+        setGeocodeMiss(false);
       }
     },
     [onFormChange, setCepError],
@@ -225,7 +235,7 @@ export default function DefaultAddress({
           <Text style={styles.mapPlaceholderTitle}>Mapa indisponível</Text>
           <Text style={styles.mapPlaceholderText}>
             Consulte um CEP para carregar a localização quando a API retornar a
-            imagem.
+            imagem, ou informe latitude/longitude manualmente.
           </Text>
         </View>
       )}
@@ -242,6 +252,11 @@ export default function DefaultAddress({
       keyboardShouldPersistTaps="handled">
       <View style={[styles.formPane, isDesktop && styles.formPaneDesktop]}>
         {displayError ? <Text style={styles.error}>{displayError}</Text> : null}
+        {geocodeMiss ? (
+          <Text testID="address-geocode-miss" style={styles.hint}>
+            {GEOCODE_MISS_MESSAGE}
+          </Text>
+        ) : null}
         <Text style={styles.hint}>
           Informe o CEP (8 dígitos) para autopreencher via ERP. Número/complemento/apelido são preservados.
         </Text>
@@ -368,7 +383,13 @@ export default function DefaultAddress({
             onChangeText={v => onChange('complement', v)}
           />
         </Field>
-        <LatLonReadonlyFields form={form} styles={styles} Field={Field} />
+        <LatLonReadonlyFields
+          form={form}
+          styles={styles}
+          Field={Field}
+          editable={!hasCoordinates(form) || geocodeMiss}
+          onChange={onChange}
+        />
 
         {!hideActions ? (
           <View style={styles.actions}>

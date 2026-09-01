@@ -99,8 +99,18 @@ export function mergePostalCodeData(
     countryName: isBrazil
       ? 'Brazil'
       : countryRaw || prev.countryName,
-    latitude: data?.latitude ?? data?.map?.latitude ?? prev.latitude,
-    longitude: data?.longitude ?? data?.map?.longitude ?? prev.longitude,
+    latitude:
+      data?.latitude !== undefined
+        ? data.latitude
+        : data?.map?.latitude !== undefined
+          ? data.map.latitude
+          : prev.latitude,
+    longitude:
+      data?.longitude !== undefined
+        ? data.longitude
+        : data?.map?.longitude !== undefined
+          ? data.map.longitude
+          : prev.longitude,
     mapStaticUrl: data?.map?.staticUrl || prev.mapStaticUrl || null,
     facadeUrl: data?.facade?.streetViewUrl || prev.facadeUrl || null,
     provider: data?.provider || prev.provider || null,
@@ -142,14 +152,37 @@ export function buildMapMarkerPayload(form) {
 
 export {onlyDigits};
 
+export const GEOCODE_MISS_MESSAGE =
+  'Não foi possível obter a localização no mapa para este endereço. Você pode ajustar latitude e longitude manualmente.';
+
 export function parseOptionalCoordinate(value) {
   if (value === null || value === undefined || value === '') {
     return null;
   }
 
-  const parsed = Number(String(value).trim());
+  const parsed = Number(String(value).trim().replace(',', '.'));
 
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** True when CEP/address text arrived but Nominatim (or API) left coords empty. */
+export function isGeocodeMiss(data) {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const hasText = [
+    data.street,
+    data.district,
+    data.city,
+    data.uf,
+    data.state,
+  ].some(value => String(value || '').trim().length > 0);
+  if (!hasText) {
+    return false;
+  }
+  const lat = data.latitude ?? data.map?.latitude;
+  const lon = data.longitude ?? data.map?.longitude;
+  return !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon));
 }
 
 export function getCurrentCoordinates() {

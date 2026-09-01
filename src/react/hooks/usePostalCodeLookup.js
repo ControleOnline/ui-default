@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {lookupPostalCode, listStates} from '../services/addressGeo';
 import {
+  isGeocodeMiss,
   mergePostalCodeData,
   onlyDigits,
 } from '../services/addressFormUtils';
@@ -20,6 +21,7 @@ export default function usePostalCodeLookup({
 }) {
   const [loadingCep, setLoadingCep] = useState(false);
   const [cepError, setCepError] = useState(null);
+  const [geocodeMiss, setGeocodeMiss] = useState(false);
   const requestIdRef = useRef(0);
   const debounceRef = useRef(null);
   const lastRequestedRef = useRef('');
@@ -35,12 +37,14 @@ export default function usePostalCodeLookup({
       lastRequestedRef.current = digits;
       setLoadingCep(true);
       setCepError(null);
+      setGeocodeMiss(false);
 
       try {
         const data = await lookupPostalCode(digits);
         if (requestId !== requestIdRef.current) {
           return null; // stale response
         }
+        setGeocodeMiss(isGeocodeMiss(data));
         setForm(prev => {
           const next = mergePostalCodeData(
             {...prev, cep: digits},
@@ -134,6 +138,8 @@ export default function usePostalCodeLookup({
     loadingCep,
     cepError,
     setCepError,
+    geocodeMiss,
+    setGeocodeMiss,
     onCepBlur,
     runLookup,
     cancelPending,
