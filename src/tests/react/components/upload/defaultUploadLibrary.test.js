@@ -1,6 +1,6 @@
-/**
- * app-community#433 — library lists all people_media files for the person
- */
+/** @jest-environment node */
+
+/** app-community#433 — library lists all people_media files for the person */
 const {
   fetchLibraryFiles,
   filesFromPeopleMediaRelations,

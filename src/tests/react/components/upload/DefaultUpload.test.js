@@ -71,7 +71,7 @@ jest.mock('../../../../react/components/upload/fileUpload', () => ({
   uploadFileToApi: jest.fn(),
   toFileIri: jest.fn(),
   extractFileId: value => value?.id || value,
-}));
+}), {virtual: true});
 
 jest.mock('react-native', () => ({
   ActivityIndicator: props => mockReact.createElement('activityindicator', props, props.children),
