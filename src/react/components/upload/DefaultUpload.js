@@ -113,6 +113,7 @@ const DefaultUpload = ({
     () => (Array.isArray(libraryContexts) ? libraryContexts : [libraryContexts]).filter(Boolean),
     [libraryContexts],
   );
+  const libraryContextsKey = libraryContextList.join('|');
 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -170,16 +171,18 @@ const DefaultUpload = ({
 
   // people_media library enrichment (#433): prefer relation store, else people store
   const peopleStoreForLibrary = useStore('people');
+  const relationGetPeopleMedia = relationActions?.getPeopleMedia;
+  const peopleGetPeopleMedia = peopleStoreForLibrary?.actions?.getPeopleMedia;
   const peopleActionsForLibrary = useMemo(() => {
-    if (typeof relationActions?.getPeopleMedia === 'function') {
+    if (typeof relationGetPeopleMedia === 'function') {
       return relationActions;
     }
     const fromPeople = peopleStoreForLibrary?.actions || {};
-    if (typeof fromPeople.getPeopleMedia === 'function') {
+    if (typeof peopleGetPeopleMedia === 'function') {
       return fromPeople;
     }
     return null;
-  }, [relationActions, peopleStoreForLibrary]);
+  }, [peopleGetPeopleMedia, relationGetPeopleMedia]);
 
   const loadLibrary = useCallback(async () => {
     setLibraryLoading(true);
@@ -189,7 +192,7 @@ const DefaultUpload = ({
         fileActions,
         companyId,
         fileType,
-        libraryContexts: libraryContexts || DEFAULT_LIBRARY_CONTEXTS,
+        libraryContexts: libraryContextList.length ? libraryContextList : DEFAULT_LIBRARY_CONTEXTS,
         peopleActions: peopleActionsForLibrary,
         additionalLibraryFiles,
       });
@@ -205,7 +208,7 @@ const DefaultUpload = ({
     companyId,
     fileActions,
     fileType,
-    libraryContexts,
+    libraryContextsKey,
     peopleActionsForLibrary,
   ]);
 

@@ -1,16 +1,15 @@
-const React = require('react');
+const mockReact = require('react');
 const renderer = require('react-test-renderer');
-const {jest} = require('@jest/globals');
 
 const {describe, expect, it, beforeEach} = global;
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
-const fileActions = {
+const mockFileActions = {
   getItems: jest.fn(),
 };
 
-const relationActions = {
+const mockRelationActions = {
   save: jest.fn(),
   remove: jest.fn(),
 };
@@ -20,20 +19,20 @@ jest.mock('@env', () => ({
     API_ENTRYPOINT: 'https://api.controleonline.com',
     DOMAIN: 'manager.controleonline.com',
   },
-}));
+}), {virtual: true});
 
 jest.mock('@store', () => ({
   useStore: jest.fn(name => {
     if (name === 'file') {
       return {
-        actions: fileActions,
+        actions: mockFileActions,
         getters: {},
       };
     }
 
     if (name === 'product_file' || name === 'category_file') {
       return {
-        actions: relationActions,
+        actions: mockRelationActions,
         getters: {},
       };
     }
@@ -43,28 +42,29 @@ jest.mock('@store', () => ({
       getters: {},
     };
   }),
-}));
+}), {virtual: true});
 
 jest.mock(
   '@expo/vector-icons',
   () => ({
     MaterialCommunityIcons: props =>
-      React.createElement('icon', props, props.children),
+      mockReact.createElement('icon', props, props.children),
   }),
   {virtual: true},
 );
 
 jest.mock('react-native-vector-icons/Feather', () => props =>
-  React.createElement('feathericon', props, props.children),
+  mockReact.createElement('feathericon', props, props.children),
+  {virtual: true},
 );
 
 jest.mock('@controleonline/ui-common/src/react/components/AnimatedModal', () => {
-  return props => (props.visible ? React.createElement('modal', props, props.children) : null);
-});
+  return props => (props.visible ? mockReact.createElement('modal', props, props.children) : null);
+}, {virtual: true});
 
 jest.mock('@controleonline/ui-default/src/react/components/files/DefaultFile', () => {
-  return props => React.createElement('defaultfile', props, props.children);
-});
+  return props => mockReact.createElement('defaultfile', props, props.children);
+}, {virtual: true});
 
 jest.mock('../../../../react/components/upload/fileUpload', () => ({
   selectFile: jest.fn(),
@@ -74,14 +74,14 @@ jest.mock('../../../../react/components/upload/fileUpload', () => ({
 }));
 
 jest.mock('react-native', () => ({
-  ActivityIndicator: props => React.createElement('activityindicator', props, props.children),
+  ActivityIndicator: props => mockReact.createElement('activityindicator', props, props.children),
   Platform: {OS: 'web'},
-  ScrollView: props => React.createElement('scrollview', props, props.children),
-  Text: props => React.createElement('text', props, props.children),
-  TextInput: props => React.createElement('textinput', props, props.children),
-  TouchableOpacity: props => React.createElement('touchableopacity', props, props.children),
-  View: props => React.createElement('view', props, props.children),
-}));
+  ScrollView: props => mockReact.createElement('scrollview', props, props.children),
+  Text: props => mockReact.createElement('text', props, props.children),
+  TextInput: props => mockReact.createElement('textinput', props, props.children),
+  TouchableOpacity: props => mockReact.createElement('touchableopacity', props, props.children),
+  View: props => mockReact.createElement('view', props, props.children),
+}), {virtual: true});
 
 const {selectFile, uploadFileToApi, toFileIri} = require('../../../../react/components/upload/fileUpload');
 const DefaultUpload = require('../../../../react/components/upload/DefaultUpload').default;
@@ -112,12 +112,12 @@ describe('DefaultUpload', () => {
   });
 
   it('abre a biblioteca, carrega arquivos e envia um arquivo pelo helper centralizado', async () => {
-    fileActions.getItems.mockResolvedValue({
+    mockFileActions.getItems.mockResolvedValue({
       member: [
         {id: 10, fileName: 'Biblioteca 1', context: 'products', fileType: 'image'},
       ],
     });
-    relationActions.save.mockResolvedValue({id: 42});
+    mockRelationActions.save.mockResolvedValue({id: 42});
     selectFile.mockResolvedValue({
       name: 'nova-imagem.png',
       uri: 'file:///nova-imagem.png',
@@ -130,7 +130,7 @@ describe('DefaultUpload', () => {
 
     await renderer.act(async () => {
       tree = renderer.create(
-        React.createElement(DefaultUpload, {
+        mockReact.createElement(DefaultUpload, {
           relationStoreName: 'product_file',
           relationField: 'product',
           relationResource: 'products',
@@ -152,7 +152,7 @@ describe('DefaultUpload', () => {
       await flush();
     });
 
-    expect(fileActions.getItems).toHaveBeenCalled();
+    expect(mockFileActions.getItems).toHaveBeenCalled();
 
     const uploadButton = findButtonByLabel(tree.root, 'Enviar nova');
     expect(uploadButton).toBeTruthy();
@@ -169,7 +169,7 @@ describe('DefaultUpload', () => {
       peopleId: 3,
       entityId: 12,
     });
-    expect(relationActions.save).toHaveBeenCalledWith({
+    expect(mockRelationActions.save).toHaveBeenCalledWith({
       product: '/products/12',
       file: '/files/77',
     });
@@ -180,7 +180,7 @@ describe('DefaultUpload', () => {
     const onUploadFile = jest.fn().mockResolvedValue({id: 8, file: {id: 88}});
     const onRemoveAttachment = jest.fn().mockResolvedValue({});
 
-    fileActions.getItems.mockResolvedValue({member: []});
+    mockFileActions.getItems.mockResolvedValue({member: []});
     selectFile.mockResolvedValue({
       name: 'avatar.png',
       type: 'image/png',
@@ -190,7 +190,7 @@ describe('DefaultUpload', () => {
 
     await renderer.act(async () => {
       tree = renderer.create(
-        React.createElement(DefaultUpload, {
+        mockReact.createElement(DefaultUpload, {
           relationStoreName: 'people',
           relationField: 'people',
           relationResource: 'people',
@@ -227,7 +227,7 @@ describe('DefaultUpload', () => {
         file: expect.objectContaining({name: 'avatar.png'}),
       }),
     );
-    expect(relationActions.save).not.toHaveBeenCalled();
+    expect(mockRelationActions.save).not.toHaveBeenCalled();
     expect(onChanged).toHaveBeenCalled();
 
     const removeButton = findButtonByAccessibilityLabel(tree.root, 'Remover');
@@ -241,7 +241,7 @@ describe('DefaultUpload', () => {
     expect(onRemoveAttachment).toHaveBeenCalledWith(
       expect.objectContaining({file: expect.objectContaining({id: 91})}),
     );
-    expect(relationActions.remove).not.toHaveBeenCalled();
+    expect(mockRelationActions.remove).not.toHaveBeenCalled();
   });
 
   it('normaliza o identificador da relacao antes da remocao customizada', async () => {
@@ -251,7 +251,7 @@ describe('DefaultUpload', () => {
 
     await renderer.act(async () => {
       tree = renderer.create(
-        React.createElement(DefaultUpload, {
+        mockReact.createElement(DefaultUpload, {
           relationStoreName: 'people',
           relationField: 'people',
           relationResource: 'people',
@@ -285,7 +285,7 @@ describe('DefaultUpload', () => {
 
     await renderer.act(async () => {
       tree = renderer.create(
-        React.createElement(DefaultUpload, {
+        mockReact.createElement(DefaultUpload, {
           relationStoreName: 'people',
           relationField: 'people',
           relationResource: 'people',
@@ -296,10 +296,10 @@ describe('DefaultUpload', () => {
           title: 'avatar',
           showInlineContent: false,
           renderTrigger: ({openManager}) =>
-            React.createElement(
+            mockReact.createElement(
               'touchableopacity',
               {onPress: openManager},
-              React.createElement('text', null, 'Abrir gerenciador customizado'),
+              mockReact.createElement('text', null, 'Abrir gerenciador customizado'),
             ),
         }),
       );
@@ -313,6 +313,38 @@ describe('DefaultUpload', () => {
       await flush();
     });
 
-    expect(fileActions.getItems).toHaveBeenCalled();
+    expect(mockFileActions.getItems).toHaveBeenCalled();
+  });
+
+  it('nao recarrega a biblioteca quando arrays equivalentes sao recriados', async () => {
+    mockFileActions.getItems.mockResolvedValue({member: []});
+    let tree;
+    const renderProps = () => ({
+      relationStoreName: 'people',
+      relationField: 'people',
+      relationResource: 'people',
+      entityId: 30,
+      companyId: 30,
+      context: 'company_certificate',
+      libraryContexts: ['company_certificate'],
+      knownFileIds: [],
+      showInlineContent: false,
+      renderTrigger: ({openManager}) =>
+        mockReact.createElement('touchableopacity', {onPress: openManager}, 'Abrir'),
+    });
+
+    await renderer.act(async () => {
+      tree = renderer.create(mockReact.createElement(DefaultUpload, renderProps()));
+      tree.root.findByType('touchableopacity').props.onPress();
+      await flush();
+    });
+
+    await renderer.act(async () => {
+      tree.update(mockReact.createElement(DefaultUpload, renderProps()));
+      tree.update(mockReact.createElement(DefaultUpload, renderProps()));
+      await flush();
+    });
+
+    expect(mockFileActions.getItems).toHaveBeenCalledTimes(1);
   });
 });

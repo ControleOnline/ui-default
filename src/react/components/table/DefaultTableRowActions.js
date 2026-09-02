@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DEFAULT_ROW_ACTIONS_WIDTH = 96;
+const DEFAULT_ROW_ACTIONS_WIDTH = 140;
 
 const isReactComponentType = value =>
   value &&

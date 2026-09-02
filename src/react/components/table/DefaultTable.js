@@ -65,6 +65,7 @@ const DefaultTable = ({
   onRowPress = null,
   onSaved = null,
   onScrollBeginDrag = null,
+  onSelectionChange = null,
   onSortChange = null,
   pageSize = null,
   pinRowActions = true,
@@ -140,6 +141,7 @@ const DefaultTable = ({
     ...storeDeclaredConfigs,
     ...(store?.getters?.configs || {}),
   };
+  const storeSelectable = storeDeclaredConfigs.selectable === true;
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const addConfig = store?.getters?.add;
   const normalizedAddButtonPlacement = normalizeText(addButtonPlacement) || 'toolbar';
@@ -201,11 +203,9 @@ const DefaultTable = ({
     if (typeof onAdd === 'function') {
       return onAdd();
     }
-
     if (!canUseDefaultCreateForm) {
       return null;
     }
-
     setIsCreateFormOpen(true);
     return null;
   }, [canUseDefaultCreateForm, onAdd]);
@@ -234,7 +234,6 @@ const DefaultTable = ({
     if (autoMode) {
       return buildRequestQuery(currentPage || 1, false);
     }
-
     return {
       filters: storeFilters,
       requestParams: requestParamsSeed,
@@ -277,6 +276,7 @@ const DefaultTable = ({
       onRowPress,
       onSaved,
       onScrollBeginDrag,
+      onSelectionChange,
       pinRowActions,
       renderCard,
       requestParams: requestParamsSeed,
@@ -287,15 +287,18 @@ const DefaultTable = ({
       rowStyle,
       searchKey,
       searchPlaceholder,
+      selectable: storeSelectable,
       showColumnFiltersButton,
       showSearch,
-      showRowActions,
+      showRowActions: storeDeclaredConfigs.showRowActions === false ? false : showRowActions,
       showToolbar,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
-      summary,
-      summaryLabels,
+      summary: summary !== undefined ? summary : store?.getters?.summary,
+      summaryLabels: Object.keys(summaryLabels || {}).length
+        ? summaryLabels
+        : storeDeclaredConfigs.summaryLabels || {},
       tableFiltersVisible,
       refreshing: resolvedIsRefreshing,
       tablePreferenceScope,
@@ -319,6 +322,7 @@ const DefaultTable = ({
       handleRefresh,
       resolvedOnAdd,
       storeDeclaredConfigs,
+      storeSelectable,
       importAction,
       initialViewMode,
       exportAction,
@@ -332,6 +336,7 @@ const DefaultTable = ({
       onRowPress,
       onSaved,
       onScrollBeginDrag,
+      onSelectionChange,
       pinRowActions,
       renderCard,
       requestParamsSeed,
@@ -350,6 +355,7 @@ const DefaultTable = ({
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
+      store,
       summary,
       summaryLabels,
       tableFiltersVisible,
@@ -380,6 +386,7 @@ const DefaultTable = ({
         resolvedSort,
         searchKey,
         searchPlaceholder,
+        selectable: storeSelectable,
         showColumnFiltersButton,
         showSearch,
         showRowActions,
@@ -403,6 +410,7 @@ const DefaultTable = ({
       filters,
       forceCardsOnCompact,
       storeDeclaredConfigs,
+      storeSelectable,
       exportAction,
       importAction,
       initialViewMode,
