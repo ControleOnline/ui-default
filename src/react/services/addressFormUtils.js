@@ -70,7 +70,9 @@ export function hasCoordinates(form) {
 
 /**
  * Merge postal-code API payload into form state.
- * Always preserves number, complement and nickname (manual fields).
+ * Preserves complement and nickname (manual).
+ * On CEP lookup (preserveFilledFields=false): clears number and replaces
+ * auto-filled address/coords — no residual from previous CEP (#746).
  * When preserveFilledFields is true, also keeps non-empty street/city/etc.
  */
 export function mergePostalCodeData(
@@ -78,46 +80,88 @@ export function mergePostalCodeData(
   data,
   {preserveFilledFields = false} = {},
 ) {
-  const keep = (key, nextValue) =>
-    preserveFilledFields && String(prev[key] || '').trim()
-      ? prev[key]
-      : nextValue || prev[key] || '';
+  const pick = (key, nextValue) => {
+    if (preserveFilledFields && String(prev[key] || '').trim()) {
+      return prev[key];
+    }
+    if (
+      nextValue !== undefined &&
+      nextValue !== null &&
+      String(nextValue).trim() !== ''
+    ) {
+      return nextValue;
+    }
+    // Fresh CEP lookup must not keep residual street/city/etc.
+    if (!preserveFilledFields) {
+      return nextValue == null ? '' : String(nextValue);
+    }
+    return prev[key] || '';
+  };
 
   const countryRaw = data?.country;
   const isBrazil =
     countryRaw === 'Brasil' || countryRaw === 'Brazil' || countryRaw === 'BR';
 
+  const latitude =
+    data?.latitude !== undefined
+      ? data.latitude
+      : data?.map?.latitude !== undefined
+        ? data.map.latitude
+        : preserveFilledFields
+          ? prev.latitude
+          : null;
+  const longitude =
+    data?.longitude !== undefined
+      ? data.longitude
+      : data?.map?.longitude !== undefined
+        ? data.map.longitude
+        : preserveFilledFields
+          ? prev.longitude
+          : null;
+
   return {
     ...prev,
-    // Manual fields never overwritten by lookup
-    number: prev.number,
+    // Número do imóvel anterior não se aplica ao novo CEP (#746)
+    number: preserveFilledFields ? prev.number : '',
     complement: prev.complement,
     nickname: prev.nickname,
     cep: onlyDigits(data?.cep || prev.cep),
-    street: keep('street', data?.street),
-    district: keep('district', data?.district),
-    city: keep('city', data?.city),
-    uf: keep('uf', data?.uf || data?.state),
-    stateName: keep('stateName', data?.state),
-    countryCode: isBrazil ? 'BR' : countryRaw || prev.countryCode,
+    street: pick('street', data?.street),
+    district: pick('district', data?.district),
+    city: pick('city', data?.city),
+    uf: pick('uf', data?.uf || data?.state),
+    stateName: pick('stateName', data?.state),
+    countryCode: isBrazil ? 'BR' : countryRaw || prev.countryCode || 'BR',
     countryName: isBrazil
       ? 'Brazil'
-      : countryRaw || prev.countryName,
-    latitude:
-      data?.latitude !== undefined
-        ? data.latitude
-        : data?.map?.latitude !== undefined
-          ? data.map.latitude
-          : prev.latitude,
-    longitude:
-      data?.longitude !== undefined
-        ? data.longitude
-        : data?.map?.longitude !== undefined
-          ? data.map.longitude
-          : prev.longitude,
-    mapStaticUrl: data?.map?.staticUrl || prev.mapStaticUrl || null,
-    facadeUrl: data?.facade?.streetViewUrl || prev.facadeUrl || null,
-    provider: data?.provider || prev.provider || null,
+      : countryRaw || prev.countryName || 'Brazil',
+    latitude,
+    longitude,
+    mapStaticUrl: preserveFilledFields
+      ? data?.map?.staticUrl || prev.mapStaticUrl || null
+      : data?.map?.staticUrl || null,
+    facadeUrl: preserveFilledFields
+      ? data?.facade?.streetViewUrl || prev.facadeUrl || null
+      : data?.facade?.streetViewUrl || null,
+    provider: data?.provider || (preserveFilledFields ? prev.provider : null) || null,
+  };
+}
+
+/** Clear fields derived from a previous CEP when lookup fails (#746). */
+export function clearPostalCodeDerivedFields(prev) {
+  return {
+    ...prev,
+    number: '',
+    street: '',
+    district: '',
+    city: '',
+    uf: '',
+    stateName: '',
+    latitude: null,
+    longitude: null,
+    mapStaticUrl: null,
+    facadeUrl: null,
+    provider: null,
   };
 }
 

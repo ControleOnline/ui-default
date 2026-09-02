@@ -136,6 +136,10 @@ export default function DefaultAddress({
           nextValue = parsed == null ? value : parsed;
         }
         const next = {...prev, [key]: nextValue};
+        // Troca de CEP: número do imóvel anterior não se aplica (#746)
+        if (key === 'cep' && onlyDigits(value) !== onlyDigits(prev.cep)) {
+          next.number = '';
+        }
         onFormChange?.(next);
         return next;
       });
@@ -258,7 +262,7 @@ export default function DefaultAddress({
           </Text>
         ) : null}
         <Text style={styles.hint}>
-          Informe o CEP (8 dígitos) para autopreencher via ERP. Número/complemento/apelido são preservados.
+          Informe o CEP (8 dígitos) para autopreencher via ERP. Complemento/apelido são preservados; o número é limpo ao trocar o CEP.
         </Text>
 
         <Field label="Apelido">

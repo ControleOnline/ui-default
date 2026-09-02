@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {lookupPostalCode, listStates} from '../services/addressGeo';
 import {
+  clearPostalCodeDerivedFields,
   isGeocodeMiss,
   mergePostalCodeData,
   onlyDigits,
@@ -10,7 +11,8 @@ const DEBOUNCE_MS = 450;
 
 /**
  * CEP lookup with debounce (8 digits), race-token protection and loading/error state.
- * Never overwrites number/complement/nickname (via mergePostalCodeData).
+ * Clears number on lookup; clears derived address/coords on failure (#746).
+ * Preserves complement/nickname.
  */
 export default function usePostalCodeLookup({
   formCep,
@@ -80,6 +82,12 @@ export default function usePostalCodeLookup({
           e?.response?.data?.detail ||
           'CEP inválido ou serviço indisponível';
         setCepError(message);
+        // CEP não encontrado: zera residual de endereço/coords/número (#746)
+        setForm(prev => {
+          const next = clearPostalCodeDerivedFields(prev);
+          onFormChange?.(next);
+          return next;
+        });
         return null;
       } finally {
         if (requestId === requestIdRef.current) {
