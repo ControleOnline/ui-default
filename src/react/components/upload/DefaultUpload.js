@@ -108,6 +108,10 @@ const DefaultUpload = ({
     const fromAttachments = attachmentRows.map(getRelationFileId);
     return [...fromProp, ...fromAttachments].map(extractFileId).filter(Boolean);
   }, [attachmentRows, knownFileIds]);
+  const resolvedKnownIdsKey = resolvedKnownIds.join('|');
+  const libraryContextsKey = Array.isArray(libraryContexts)
+    ? libraryContexts.join('|')
+    : String(libraryContexts || '');
 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -180,7 +184,7 @@ const DefaultUpload = ({
     } finally {
       setLibraryLoading(false);
     }
-  }, [companyId, fileActions, fileType, libraryContexts, peopleActionsForLibrary, resolvedKnownIds]);
+  }, [companyId, fileActions, fileType, libraryContextsKey, peopleActionsForLibrary, resolvedKnownIdsKey]);
 
   useEffect(() => {
     if (managerOpen) {

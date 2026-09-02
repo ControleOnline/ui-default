@@ -315,4 +315,36 @@ describe('DefaultUpload', () => {
 
     expect(fileActions.getItems).toHaveBeenCalled();
   });
+
+  it('nao recarrega a biblioteca quando arrays equivalentes sao recriados', async () => {
+    fileActions.getItems.mockResolvedValue({member: []});
+    let tree;
+    const renderProps = () => ({
+      relationStoreName: 'people',
+      relationField: 'people',
+      relationResource: 'people',
+      entityId: 30,
+      companyId: 30,
+      context: 'company_certificate',
+      libraryContexts: ['company_certificate'],
+      knownFileIds: [],
+      showInlineContent: false,
+      renderTrigger: ({openManager}) =>
+        React.createElement('touchableopacity', {onPress: openManager}, 'Abrir'),
+    });
+
+    await renderer.act(async () => {
+      tree = renderer.create(React.createElement(DefaultUpload, renderProps()));
+      tree.root.findByType('touchableopacity').props.onPress();
+      await flush();
+    });
+
+    await renderer.act(async () => {
+      tree.update(React.createElement(DefaultUpload, renderProps()));
+      tree.update(React.createElement(DefaultUpload, renderProps()));
+      await flush();
+    });
+
+    expect(fileActions.getItems).toHaveBeenCalledTimes(1);
+  });
 });
