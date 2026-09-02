@@ -335,6 +335,9 @@ describe('DefaultUpload', () => {
 
     await renderer.act(async () => {
       tree = renderer.create(mockReact.createElement(DefaultUpload, renderProps()));
+    });
+
+    await renderer.act(async () => {
       tree.root.findByType('touchableopacity').props.onPress();
       await flush();
     });
