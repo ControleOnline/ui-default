@@ -16,10 +16,12 @@ import {
 } from '../../services/addressGeo';
 import {
   buildMapMarkerPayload,
+  formatCepMask,
   getCurrentCoordinates,
   hasCoordinates,
   hydrateAddressFromRow,
   mergePostalCodeData,
+  normalizeCepDigits,
   onlyDigits,
 } from '../../services/addressFormUtils';
 import usePostalCodeLookup from '../../hooks/usePostalCodeLookup';
@@ -126,7 +128,9 @@ export default function DefaultAddress({
   const onChange = useCallback(
     (key, value) => {
       setForm(prev => {
-        const next = {...prev, [key]: value};
+        const nextValue =
+          key === 'cep' ? normalizeCepDigits(value) : value;
+        const next = {...prev, [key]: nextValue};
         onFormChange?.(next);
         return next;
       });
@@ -260,7 +264,7 @@ export default function DefaultAddress({
             <TextInput
               testID="address-cep-input"
               style={[styles.input, styles.flex]}
-              value={form.cep}
+              value={formatCepMask(form.cep)}
               onChangeText={v => onChange('cep', v)}
               onBlur={onCepBlur}
               keyboardType="number-pad"

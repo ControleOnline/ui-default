@@ -1,5 +1,20 @@
 const onlyDigits = value => String(value || '').replace(/\D+/g, '');
 
+/** Keep at most 8 CEP digits (Brazilian postal code). */
+export const normalizeCepDigits = value => onlyDigits(value).slice(0, 8);
+
+/**
+ * Display mask #####-### (hyphen is visual only; max 8 digits).
+ * @example formatCepMask('01310100') => '01310-100'
+ */
+export const formatCepMask = value => {
+  const digits = normalizeCepDigits(value);
+  if (digits.length <= 5) {
+    return digits;
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 export const emptyAddressForm = {
   nickname: '',
   cep: '',
@@ -89,7 +104,7 @@ export function mergePostalCodeData(
     number: prev.number,
     complement: prev.complement,
     nickname: prev.nickname,
-    cep: onlyDigits(data?.cep || prev.cep),
+    cep: normalizeCepDigits(data?.cep || prev.cep),
     street: keep('street', data?.street),
     district: keep('district', data?.district),
     city: keep('city', data?.city),
