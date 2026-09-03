@@ -50,6 +50,8 @@ export default function DefaultAddress({
   const [error, setError] = useState(null);
   const [showCountryList, setShowCountryList] = useState(false);
   const [showStateList, setShowStateList] = useState(false);
+  // Once the user types lat/lon, keep both fields editable (avoid lock when both become finite).
+  const [coordsManualEdit, setCoordsManualEdit] = useState(false);
 
   const {
     loadingCep,
@@ -97,6 +99,7 @@ export default function DefaultAddress({
     let cancelled = false;
     const initial = hydrateAddressFromRow(row);
     setForm(initial);
+    setCoordsManualEdit(false);
     onFormChange?.(initial);
     const digits = onlyDigits(initial.cep);
 
@@ -132,8 +135,19 @@ export default function DefaultAddress({
       setForm(prev => {
         let nextValue = value;
         if (key === 'latitude' || key === 'longitude') {
+          // Keep raw string while typing so decimals/signs are not truncated mid-edit.
+          // Persist number only when the full token parses; otherwise keep the draft string.
           const parsed = parseOptionalCoordinate(value);
-          nextValue = parsed == null ? value : parsed;
+          const trimmed = String(value ?? '').trim();
+          const looksComplete =
+            trimmed !== '' &&
+            trimmed !== '-' &&
+            trimmed !== '.' &&
+            trimmed !== '-.' &&
+            !trimmed.endsWith('.') &&
+            !trimmed.endsWith(',');
+          nextValue =
+            parsed != null && looksComplete ? parsed : value;
         }
         const next = {...prev, [key]: nextValue};
         // Troca de CEP: número do imóvel anterior não se aplica (#746)
@@ -143,13 +157,17 @@ export default function DefaultAddress({
         onFormChange?.(next);
         return next;
       });
+      if (key === 'latitude' || key === 'longitude') {
+        setCoordsManualEdit(true);
+      }
       if (key === 'cep') {
         setCepError(null);
         setError(null);
         setGeocodeMiss(false);
+        setCoordsManualEdit(false);
       }
     },
-    [onFormChange, setCepError],
+    [onFormChange, setCepError, setGeocodeMiss],
   );
 
   const onSelectCountry = useCallback(async item => {
@@ -391,7 +409,7 @@ export default function DefaultAddress({
           form={form}
           styles={styles}
           Field={Field}
-          editable={!hasCoordinates(form) || geocodeMiss}
+          editable={!hasCoordinates(form) || geocodeMiss || coordsManualEdit}
           onChange={onChange}
         />
 
