@@ -133,6 +133,7 @@ const DefaultTableRows = ({ storeName }) => {
 
     return (
       <View
+        testID={`default-table-row-actions-${getRowKey(row)}`}
         style={[
           styles.cell,
           styles.actionsCell,
@@ -159,6 +160,7 @@ const DefaultTableRows = ({ storeName }) => {
     if (!hasRowActions) return null;
     return (
       <View
+        testID="default-table-row-actions-header"
         style={[
           styles.cell,
           styles.actionsCell,
