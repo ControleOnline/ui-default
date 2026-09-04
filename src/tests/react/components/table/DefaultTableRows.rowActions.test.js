@@ -39,9 +39,33 @@ jest.mock('react-native', () => {
     Text: createComponent('Text'),
     TouchableOpacity: createComponent('TouchableOpacity'),
     View: createComponent('View'),
+    StyleSheet: {create: value => value},
+    Platform: {select: value => value.web || value.default},
   };
 });
 
+jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => () => null);
+jest.mock('../../../../react/components/table/DefaultTable.styles', () => ({
+  cell: {},
+  actionsCell: {},
+  pinnedActionsCell: {},
+  stickyActionsCell: {},
+  stickyHeaderCell: {},
+  stickyIdentityCell: {},
+  rowActionsGroup: {},
+  headerRow: {},
+  headerText: {},
+  sortableHeader: {},
+  row: {},
+  scroll: {},
+  content: {},
+  tableList: {},
+  tableListContent: {},
+  filterRow: {},
+  filterCell: {},
+  iconButton: {},
+  horizontalScrollContent: {},
+}));
 jest.mock('../../../../react/components/table/DefaultTableEmptyState', () => () => null);
 jest.mock('../../../../react/components/table/DefaultTableInput', () => {
   const React = require('react');
