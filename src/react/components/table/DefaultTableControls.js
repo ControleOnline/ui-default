@@ -146,6 +146,9 @@ const DefaultTableControls = ({ storeName }) => {
         </DefaultModalButton>
       ) : null}
       <TouchableOpacity
+        testID="default-table-view-toggle"
+        accessibilityRole="button"
+        accessibilityLabel={`Alternar para visualização ${nextViewMode === 'cards' ? 'cards' : 'tabela'}`}
         style={buttonStyle}
         activeOpacity={0.82}
         onPress={() => {
