@@ -1288,7 +1288,21 @@ export default {
         .dispatch(this.configs.store + "/getItems", params)
         .then((data) => {
           this.pagination.rowsNumber = this.totalItems;
-          data.forEach((d) => {
+          const searchQuery =
+            this.filters && this.filters.search != null
+              ? String(this.filters.search).trim()
+              : "";
+          let rows = data;
+          if (searchQuery) {
+            rows = data.filter((row) =>
+              DefaultFiltersMethods.rowMatchesGeneralSearch(
+                row,
+                searchQuery,
+                this.columns
+              )
+            );
+          }
+          rows.forEach((d) => {
             for (const key in d) {
               if (d.hasOwnProperty(key)) {
                 const value = d[key];
@@ -1301,7 +1315,7 @@ export default {
               }
             }
           });
-          this.items = data;
+          this.items = rows;
           this.discoverySelected();
         })
         .catch(() => {

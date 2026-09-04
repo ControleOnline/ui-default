@@ -304,3 +304,37 @@ export function saveFormat(columnName, value, row) {
 
   return !isNaN(value) ? parseFloat(value) : value;
 }
+
+export function stringifySearchValue(val) {
+  if (val == null) return "";
+  if (typeof val === "string" || typeof val === "number") return String(val);
+  if (typeof val === "object") {
+    return [val.label, val.product, val.name, val.sku, val.value, val.queue, val.productUnit]
+      .filter(Boolean)
+      .join(" ");
+  }
+  return "";
+}
+
+export function rowMatchesGeneralSearch(row, query, columns) {
+  if (!query) return true;
+  const q = String(query).toLowerCase().trim();
+  if (!q) return true;
+  const keys = new Set();
+  (columns || []).forEach((c) => {
+    if (c && (c.key || c.name)) keys.add(c.key || c.name);
+    if (c && c.name) keys.add(c.name);
+  });
+  ["sku", "product", "name", "description", "id"].forEach((k) => keys.add(k));
+  for (const key of keys) {
+    if (!key || !row) continue;
+    const text = stringifySearchValue(row[key]);
+    if (text && text.toLowerCase().includes(q)) return true;
+  }
+  for (const key of Object.keys(row || {})) {
+    if (key.startsWith("@")) continue;
+    const text = stringifySearchValue(row[key]);
+    if (text && text.toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
