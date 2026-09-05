@@ -8,6 +8,7 @@ import DefaultFiltersModal from './DefaultFiltersModal';
 import DefaultModalButton from './DefaultModalButton';
 import styles from './DefaultTable.styles';
 import { normalizeText } from '../inputs/defaultInputUtils';
+import { countActiveFilters } from '../filters/filterValue';
 import {
   persistTableViewModePreference,
   resolveDefaultTablePreferenceScope,
@@ -36,7 +37,7 @@ const DefaultTableControls = ({ storeName }) => {
       column?.filters !== false,
   );
   const tableFiltersVisible = Boolean(configs.tableFiltersVisible);
-  const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
+  const activeFilterCount = countActiveFilters(filters);
   const addConfig = store?.getters?.add;
   const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
   const shouldRenderAddButton =
