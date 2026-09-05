@@ -841,8 +841,19 @@ export default {
         this.colFilter = this.$copyObject(this.filters);
         this.search = this.colFilter?.search;
         this.filterKey++;
+        if (this.pagination && this.pagination.page !== 1) {
+          this.pagination.page = 1;
+        }
       },
       deep: true,
+    },
+    totalItems: {
+      handler: function (total) {
+        const rowsNumber = Number(total);
+        if (Number.isFinite(rowsNumber) && this.pagination) {
+          this.pagination.rowsNumber = rowsNumber;
+        }
+      },
     },
     selectedRows: {
       handler: function (selectedRows) {
@@ -1262,7 +1273,6 @@ export default {
     },
     loadData(props) {
       this.adjustElementHeight();
-      if (this.isLoading) return;
       if (props) {
         this.pagination = props.pagination;
         this.applyFilters(Object.assign(this.filters, props.filters));
@@ -1287,8 +1297,11 @@ export default {
       this.$store
         .dispatch(this.configs.store + "/getItems", params)
         .then((data) => {
-          this.pagination.rowsNumber = this.totalItems;
-          data.forEach((d) => {
+          const rows = Array.isArray(data) ? data : [];
+          this.pagination.rowsNumber = Number.isFinite(Number(this.totalItems))
+            ? Number(this.totalItems)
+            : rows.length;
+          rows.forEach((d) => {
             for (const key in d) {
               if (d.hasOwnProperty(key)) {
                 const value = d[key];
@@ -1301,7 +1314,7 @@ export default {
               }
             }
           });
-          this.items = data;
+          this.items = rows;
           this.discoverySelected();
         })
         .catch(() => {

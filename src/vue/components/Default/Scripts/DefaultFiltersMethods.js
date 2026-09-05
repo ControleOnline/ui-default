@@ -65,6 +65,9 @@ export function applyVisibleColumns(visibleColumns) {
 export function applyFilters(filters) {
   let f = this.$copyObject(filters);
   let pf = this.$copyObject(this.filters);
+  if (this.pagination) {
+    this.pagination.page = 1;
+  }
   if (f != pf) this.$store.commit(this.configs.store + "/SET_FILTERS", f);
 }
 export function onSearch() {

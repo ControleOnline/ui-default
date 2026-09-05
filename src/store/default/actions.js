@@ -48,24 +48,50 @@ export const getOfflineItems = ({commit, getters}, params = {}) => {
     });
 };
 
+let listRequestSeq = 0;
+
+const normalizeCollectionItems = data => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.member)) return data.member;
+  if (Array.isArray(data?.['hydra:member'])) return data['hydra:member'];
+  return [];
+};
+
+const resolveCollectionTotalItems = (data, items) =>
+  Number(
+    data?.totalItems ??
+      data?.['hydra:totalItems'] ??
+      (Array.isArray(items) ? items.length : 0) ??
+      0,
+  );
+
 export const getOnlineItems = ({commit, getters}, params = {}) => {
+  const requestId = ++listRequestSeq;
   commit(types.SET_ISLOADING, true);
   if (getters.items != null) commit(types.SET_ITEMS, []);
   commit(types.SET_TOTALITEMS, 0);
   return api
     .fetch(getters.resourceEndpoint, {params: params})
     .then(data => {
-      commit(types.SET_ITEMS, data['member']);
-      commit(types.SET_TOTALITEMS, data['totalItems']);
+      const items = normalizeCollectionItems(data);
+      if (requestId !== listRequestSeq) {
+        return items;
+      }
+      commit(types.SET_ITEMS, items);
+      commit(types.SET_TOTALITEMS, resolveCollectionTotalItems(data, items));
 
-      return data['member'];
+      return items;
     })
     .catch(e => {
-      commit(types.SET_ERROR, e.message);
+      if (requestId === listRequestSeq) {
+        commit(types.SET_ERROR, e.message);
+      }
       throw e;
     })
     .finally(() => {
-      commit(types.SET_ISLOADING, false);
+      if (requestId === listRequestSeq) {
+        commit(types.SET_ISLOADING, false);
+      }
     });
 };
 
