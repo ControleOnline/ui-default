@@ -4,9 +4,11 @@
             <div class="label-range-date row" v-if="labelType == 'stack-label'">
                 {{ $tt(configs.store, 'input', column.label) }}
             </div>
-            <q-input borderless stack-label readonly :label="$tt(configs.store, 'input', 'dateFrom')"
+            <q-input borderless readonly
+                :label="from ? '' : $tt(configs.store, 'input', 'dateFrom')"
                 class="q-pa-none custom-input" dense v-model="from" mask="##/##/####"></q-input>
-            <q-input borderless stack-label readonly :label="$tt(configs.store, 'input', 'dateTo')"
+            <q-input borderless readonly
+                :label="to ? '' : $tt(configs.store, 'input', 'dateTo')"
                 class="q-pa-none custom-input" dense v-model="to" mask="##/##/####"></q-input>
         </div>
         <div class="col-1 col-sm-1 col-md-1 col-lg-1 col-xg-1 col-xs-1 q-pa-sm  flex flex-end justify-end items-center">
@@ -106,16 +108,20 @@ export default {
 <style>
 .outlined-div {
     border: 1px solid #aaa;
-    padding: 0px 10px 0px 10px;
+    padding: 8px 10px 4px 10px;
     border-radius: 5px;
+    position: relative;
 }
 
 .label-range-date {
     position: absolute;
     font-size: 10px;
-    margin-top: 3px;
+    top: -8px;
+    left: 10px;
+    background: #fff;
+    padding: 0 4px;
+    z-index: 1;
 }
-
 
 .outlined-div>div {
     padding: 0px;
@@ -126,18 +132,17 @@ export default {
 }
 
 .custom-input .q-field__native {
-    padding-top: 18px;
-    padding-left: 25px;
-    width: 100px;
+    padding-top: 10px;
+    padding-left: 4px;
+    width: auto;
 }
 
 .custom-input .q-field__label {
-    top: 25px;
-    font-size: 14px;
+    top: 10px;
+    font-size: 13px;
 }
 
 .range-date-filter input {
-  position: absolute;
-  right: 15px;
+  position: static;
 }
 </style>
