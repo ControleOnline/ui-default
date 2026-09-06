@@ -123,14 +123,30 @@ export const normalizeOptionKey = option => {
 export const resolveOptionLabel = (column, option, storeName = '') => {
   if (!option) return '';
 
+  const STATUS_DISPLAY_PT = {
+    paid: 'Pago',
+    'waiting payment': 'Aguardando pagamento',
+    waiting_payment: 'Aguardando pagamento',
+  };
+
   const translateOptionLabel = rawLabel => {
     const normalizedLabel = normalizeText(rawLabel);
+    const statusFallback = STATUS_DISPLAY_PT[normalizedLabel.toLowerCase()] || '';
     if (!shouldTranslateOptionLabel(column, storeName, normalizedLabel)) {
-      return normalizedLabel;
+      return statusFallback || normalizedLabel;
     }
 
     const translated = global.t?.t(storeName, 'label', normalizedLabel) || normalizedLabel;
-    return normalizeText(translated) === formatHumanLabel(normalizedLabel)
+    const translatedText = normalizeText(translated);
+    if (
+      statusFallback &&
+      (!translatedText ||
+        translatedText.toLowerCase() === normalizedLabel.toLowerCase() ||
+        translatedText === formatHumanLabel(normalizedLabel))
+    ) {
+      return statusFallback;
+    }
+    return translatedText === formatHumanLabel(normalizedLabel)
       ? normalizedLabel
       : translated;
   };
