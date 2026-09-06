@@ -152,6 +152,9 @@ const DefaultTableControls = ({ storeName }) => {
         accessibilityLabel={`Alternar para visualização ${nextViewMode === 'cards' ? 'cards' : 'tabela'}`}
         style={buttonStyle}
         activeOpacity={0.82}
+        accessibilityRole="button"
+        accessibilityLabel={nextViewMode === 'table' ? 'Lista' : 'Cards'}
+        title={nextViewMode === 'table' ? 'Lista' : 'Cards'}
         onPress={() => {
           const nextConfigs = {
             ...configs,
