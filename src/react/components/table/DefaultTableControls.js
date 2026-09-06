@@ -149,12 +149,12 @@ const DefaultTableControls = ({ storeName }) => {
       <TouchableOpacity
         testID="default-table-view-toggle"
         accessibilityRole="button"
-        accessibilityLabel={`Alternar para visualização ${nextViewMode === 'cards' ? 'cards' : 'tabela'}`}
+        accessibilityLabel={`Alternar para visualização ${nextViewMode === 'cards' ? 'cartões' : 'lista'}`}
         style={buttonStyle}
         activeOpacity={0.82}
         accessibilityRole="button"
-        accessibilityLabel={nextViewMode === 'table' ? 'Lista' : 'Cards'}
-        title={nextViewMode === 'table' ? 'Lista' : 'Cards'}
+        accessibilityLabel={nextViewMode === 'table' ? 'Lista' : 'Cartões'}
+        title={nextViewMode === 'table' ? 'Lista' : 'Cartões'}
         onPress={() => {
           const nextConfigs = {
             ...configs,
