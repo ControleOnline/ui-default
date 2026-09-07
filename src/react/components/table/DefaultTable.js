@@ -395,6 +395,7 @@ const DefaultTable = ({
         showTotalItemsInFooter,
         storedViewMode,
         tableFiltersVisible,
+        sortedData,
         sortedDataLength: sortedData.length,
         toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
       }),
@@ -431,7 +432,7 @@ const DefaultTable = ({
       showTotalItemsInFooter,
       storedViewMode,
       tableFiltersVisible,
-      sortedData.length,
+      sortedData,
       toolbarActions,
     ],
   );
