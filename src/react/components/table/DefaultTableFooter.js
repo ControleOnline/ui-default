@@ -21,6 +21,7 @@ const DefaultTableFooter = ({ storeName }) => {
   const isCompactView = false;
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
+  const totalItemsLabel = String(configs.totalItemsLabel || '').trim();
   const tableColumns = columns;
   const { themeColors } = useDefaultTableTheme();
   const tableFooterBackgroundColor = themeColors.tableFooterBackground;
@@ -45,7 +46,7 @@ const DefaultTableFooter = ({ storeName }) => {
     !shouldRenderFooterTotalItems;
   const resolvedTotalItemsText =
     shouldRenderTotalItems
-      ? `${totalItemsNumber} ${global.t?.t(storeName, 'label', 'items')}`
+      ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items')}`
       : '';
   const configuredSummary = configs.summary;
   const resolvedSummary = configuredSummary !== undefined

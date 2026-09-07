@@ -52,6 +52,7 @@ export function useDefaultTableStoreSync({
   storeColumnsLength,
   storeFilters,
   storeName,
+  totalItems,
   tablePreferenceScope,
 }) {
   const storeRef = useRef(store);
@@ -83,6 +84,14 @@ export function useDefaultTableStoreSync({
     lastPublishedItemsRef.current = data;
     publishStoreValue(storeRef.current, 'setItems', data, 'items');
   }, [data, storeName]);
+
+  useEffect(() => {
+    if (totalItems === undefined || totalItems === null) {
+      return;
+    }
+
+    publishStoreValue(storeRef.current, 'setTotalItems', totalItems, 'totalItems');
+  }, [storeName, totalItems]);
 
   useEffect(() => {
     if (!columnsForTable.length) {

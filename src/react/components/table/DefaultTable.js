@@ -86,6 +86,8 @@ const DefaultTable = ({
   storeName = '',
   summary = undefined,
   summaryLabels = {},
+  totalItems = null,
+  totalItemsLabel = '',
   toolbarActions = [],
   visibleColumnsPreferenceKey = '',
 }) => {
@@ -156,6 +158,10 @@ const DefaultTable = ({
 
   if (data !== undefined && Array.isArray(data)) {
     assignGetterValue(store, 'items', data);
+  }
+
+  if (totalItems !== null && totalItems !== undefined) {
+    assignGetterValue(store, 'totalItems', totalItems);
   }
 
   const { requestSort, resolvedSort } = useDefaultTableSortState({
@@ -299,6 +305,7 @@ const DefaultTable = ({
       summaryLabels: Object.keys(summaryLabels || {}).length
         ? summaryLabels
         : storeDeclaredConfigs.summaryLabels || {},
+      totalItemsLabel,
       tableFiltersVisible,
       refreshing: resolvedIsRefreshing,
       tablePreferenceScope,
@@ -360,6 +367,7 @@ const DefaultTable = ({
       summaryLabels,
       tableFiltersVisible,
       tablePreferenceScope,
+      totalItemsLabel,
       toolbarActions,
     ],
   );
@@ -394,6 +402,7 @@ const DefaultTable = ({
         showTotalItemsInCompactToolbar,
         showTotalItemsInFooter,
         storedViewMode,
+        totalItemsLabel,
         tableFiltersVisible,
         sortedData,
         sortedDataLength: sortedData.length,
@@ -431,6 +440,7 @@ const DefaultTable = ({
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       storedViewMode,
+      totalItemsLabel,
       tableFiltersVisible,
       sortedData,
       toolbarActions,
@@ -451,6 +461,7 @@ const DefaultTable = ({
     storeColumnsLength: storeColumns.length,
     storeFilters,
     storeName,
+    totalItems,
     tablePreferenceScope,
   });
 

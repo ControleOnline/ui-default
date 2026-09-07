@@ -43,6 +43,7 @@ const DefaultTableToolbar = ({ storeName }) => {
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
+  const totalItemsLabel = String(configs.totalItemsLabel || '').trim();
   const toolbarActions = Array.isArray(configs.toolbarActions) ? configs.toolbarActions : [];
   const buildTransferAction = (action, fallback) => {
     if (!action) return null;
@@ -130,7 +131,7 @@ const DefaultTableToolbar = ({ storeName }) => {
     !shouldRenderFooterTotalItems;
   const resolvedTotalItemsText =
     shouldRenderTotalItems
-      ? `${totalItemsNumber} ${global.t?.t(storeName, 'label', 'items')}`
+      ? `${totalItemsNumber} ${totalItemsLabel || global.t?.t(storeName, 'label', 'items')}`
       : '';
   const renderToolbarActions = () =>
     resolvedToolbarActions.length > 0 ? (
