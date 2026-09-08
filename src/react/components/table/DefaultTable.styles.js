@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   cardsGrid: {
     paddingVertical: 10,
     paddingHorizontal: 0,
-    gap: 8,
+    gap: 10,
     flexGrow: 1,
     width: '100%',
     alignSelf: 'stretch',
@@ -535,16 +535,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     width: '100%',
   },
-  // FlatList multi-column cells must stretch so cards fill the row
-  // (app-community#710 — products card grid floating on desktop).
   cardItem: {
     position: 'relative',
     flex: 1,
     flexBasis: 0,
     flexGrow: 1,
     minWidth: 0,
-    width: '100%',
     maxWidth: '100%',
+    width: '100%',
     alignSelf: 'stretch',
   },
   cardItemWithActions: {
