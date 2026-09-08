@@ -517,10 +517,11 @@ const styles = StyleSheet.create({
   },
   cardsGrid: {
     paddingVertical: 10,
-    paddingHorizontal: 8,
-    gap: 10,
+    paddingHorizontal: 0,
+    gap: 8,
     flexGrow: 1,
     width: '100%',
+    alignSelf: 'stretch',
   },
   cardsGridWithBottomAdd: {
     paddingBottom: 86,
@@ -539,8 +540,11 @@ const styles = StyleSheet.create({
   cardItem: {
     position: 'relative',
     flex: 1,
+    flexBasis: 0,
+    flexGrow: 1,
     minWidth: 0,
     width: '100%',
+    maxWidth: '100%',
     alignSelf: 'stretch',
   },
   cardItemWithActions: {
