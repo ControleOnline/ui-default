@@ -436,10 +436,10 @@ const DefaultTable = ({
     ],
   );
 
-  if (store?.getters) {
-    assignGetterValue(store, 'configs', defaultTableConfigs);
-  }
-
+  // Do not mutate store.configs during render. A new configs object is built
+  // every pass; writing it here retriggers subscribers and React #185 when
+  // opening Adicionar on DefaultTable (categories). Sync only in the hook
+  // when defaultTableConfigsSignature changes.
   useDefaultTableStoreSync({
     columns,
     columnsForTable,
