@@ -8,7 +8,6 @@ import DefaultFiltersModal from './DefaultFiltersModal';
 import DefaultModalButton from './DefaultModalButton';
 import styles from './DefaultTable.styles';
 import { normalizeText } from '../inputs/defaultInputUtils';
-import { countActiveFilters } from '../filters/filterValue';
 import {
   persistTableViewModePreference,
   resolveDefaultTablePreferenceScope,
@@ -36,8 +35,7 @@ const DefaultTableControls = ({ storeName }) => {
       column?.filter !== false &&
       column?.filters !== false,
   );
-  const tableFiltersVisible = Boolean(configs.tableFiltersVisible);
-  const activeFilterCount = countActiveFilters(filters);
+  const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
   const addConfig = store?.getters?.add;
   const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
   const shouldRenderAddButton =
@@ -79,35 +77,42 @@ const DefaultTableControls = ({ storeName }) => {
     <>
       <DefaultDebug storeName={storeName} />
       {hasFilterableColumns && effectiveViewMode === 'table' ? (
-        <TouchableOpacity
-          style={[
-            ...buttonStyle,
-            tableFiltersVisible ? pressedStyle : null,
-          ]}
-          activeOpacity={0.82}
-          onPress={() =>
-            updateConfigs({
-              ...configs,
-              tableFiltersVisible: !tableFiltersVisible,
-            })
-          }
-        >
-          <Icon
-            name="filter"
-            size={14}
-            color={tableFiltersVisible ? pressedIconColor : textColor}
-          />
-          {activeFilterCount > 0 ? (
-            <Text
+        <DefaultModalButton
+          renderButton={({ isOpen, open }) => (
+            <TouchableOpacity
               style={[
-                styles.toolbarBadgeText,
-                { color: tableFiltersVisible ? pressedIconColor : textColor },
+                ...buttonStyle,
+                isOpen ? pressedStyle : null,
               ]}
+              activeOpacity={0.82}
+              onPress={open}
             >
-              {activeFilterCount}
-            </Text>
-          ) : null}
-        </TouchableOpacity>
+              <Icon
+                name="filter"
+                size={14}
+                color={isOpen ? pressedIconColor : textColor}
+              />
+              {activeFilterCount > 0 ? (
+                <Text
+                  style={[
+                    styles.toolbarBadgeText,
+                    { color: isOpen ? pressedIconColor : textColor },
+                  ]}
+                >
+                  {activeFilterCount}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          )}
+        >
+          {({ close, isOpen }) => (
+            <DefaultFiltersModal
+              storeName={storeName}
+              visible={isOpen}
+              onClose={close}
+            />
+          )}
+        </DefaultModalButton>
       ) : null}
       {hasFilterableColumns && effectiveViewMode === 'cards' ? (
         <DefaultModalButton
@@ -147,14 +152,8 @@ const DefaultTableControls = ({ storeName }) => {
         </DefaultModalButton>
       ) : null}
       <TouchableOpacity
-        testID="default-table-view-toggle"
-        accessibilityRole="button"
-        accessibilityLabel={`Alternar para visualização ${nextViewMode === 'cards' ? 'cartões' : 'lista'}`}
         style={buttonStyle}
         activeOpacity={0.82}
-        accessibilityRole="button"
-        accessibilityLabel={nextViewMode === 'table' ? 'Lista' : 'Cartões'}
-        title={nextViewMode === 'table' ? 'Lista' : 'Cartões'}
         onPress={() => {
           const nextConfigs = {
             ...configs,
