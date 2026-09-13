@@ -85,7 +85,6 @@ export default function DefaultUploadManagerModal(props) {
         <View style={styles.modalHeader}>
           <View>
             <Text style={styles.modalTitle}>{managerTitle}</Text>
-            <Text style={styles.modalSubtitle}>{context}</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.iconButton}>
             <MaterialCommunityIcons name="close" size={22} color={buttonPalette.buttonIconSecondary} />
@@ -214,7 +213,14 @@ export default function DefaultUploadManagerModal(props) {
                     <View style={styles.fileInfo}>
                       <Text numberOfLines={2} style={styles.fileName}>{getFileName(file)}</Text>
                       <View style={styles.fileMetaRow}>
-                        <Text style={styles.contextBadge}>{getContextLabel(file?.context ?? file)}</Text>
+                        {(() => {
+                          const label = getContextLabel(file?.context ?? file);
+                          // Hide internal store contexts from end users
+                          if (!label || label === 'sem contexto' || /^[a-z0-9]+(?:_[a-z0-9]+)+$/.test(label)) {
+                            return null;
+                          }
+                          return <Text style={styles.contextBadge}>{label}</Text>;
+                        })()}
                         {isAttached && <Text style={styles.attachedBadge}>{attachLabel}</Text>}
                       </View>
                     </View>
