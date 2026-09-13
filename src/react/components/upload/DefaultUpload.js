@@ -292,9 +292,16 @@ const DefaultUpload = ({
         return;
       }
       await attachFileToEntity(uploadedFile, {successMessage: uploadSuccessMessage});
+      setError('');
       await loadLibrary([uploadedFile]);
     } catch (e) {
-      setError(e?.message || 'Falha ao anexar arquivo.');
+      const message = String(e?.message || e?.response?.data?.detail || e?.description || '');
+      // Private files are not readable via GET /files/{id}; ignore that noise if attach path failed spuriously
+      if (/item not found for\s*["']?\/files\//i.test(message)) {
+        setError('Nao foi possivel vincular o arquivo. Tente novamente.');
+      } else {
+        setError(message || 'Falha ao anexar arquivo.');
+      }
     } finally {
       setUploading(false);
     }
