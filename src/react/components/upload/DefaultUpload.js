@@ -28,6 +28,7 @@ const DefaultUpload = ({
   attachments = [],
   entityId,
   companyId,
+  company = null,
   context = 'products',
   libraryContexts = DEFAULT_LIBRARY_CONTEXTS,
   fileStoreName = 'file',
@@ -397,6 +398,7 @@ const DefaultUpload = ({
       handleRemove={handleRemove}
       buttonPalette={buttonPalette}
       managerModal={managerModal}
+      company={company || (companyId ? {id: companyId} : null)}
     />
   );
 };
