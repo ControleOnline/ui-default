@@ -48,14 +48,25 @@ function filesFromPeopleMediaRelations(relations) {
     if (!file) continue;
     const id = extractFileIdLocal(file);
     if (!id) continue;
+    // Always tag people_media library entries so the manager can preview as image
+    // even when API returns a bare IRI / minimal File payload.
     if (typeof file === 'object') {
       files.push({
         ...file,
         id: file.id || id,
         '@id': file['@id'] || `/files/${id}`,
+        context: file.context || 'people_media',
+        fileType: file.fileType || file.mimeType || 'image',
+        fileName: file.fileName || file.name || file.originalName || `Arquivo ${id}`,
       });
     } else {
-      files.push({id, '@id': `/files/${id}`});
+      files.push({
+        id,
+        '@id': `/files/${id}`,
+        context: 'people_media',
+        fileType: 'image',
+        fileName: `Arquivo ${id}`,
+      });
     }
   }
   return files;

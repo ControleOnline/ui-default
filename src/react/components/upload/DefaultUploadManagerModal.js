@@ -20,9 +20,18 @@ import {
 } from './defaultUploadHelpers';
 import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 
-function FileThumb({file}) {
-  if (isPreviewableImage(file)) {
-    return <DefaultFile file={file} resizeMode="cover" style={styles.fileImage} />;
+function FileThumb({file, preferImage = false, company = null}) {
+  const fileId = extractFileId(file);
+  // people_media / image uploads often arrive as {id} without extension metadata
+  if (fileId && (preferImage || isPreviewableImage(file))) {
+    return (
+      <DefaultFile
+        file={file}
+        company={company}
+        resizeMode="cover"
+        style={styles.fileImage}
+      />
+    );
   }
   const ext = getFileExtension(file);
   return (
@@ -60,7 +69,12 @@ export default function DefaultUploadManagerModal(props) {
     emptyAttachmentsLabel,
     status,
     error,
+    fileType = 'image',
+    company = null,
   } = props;
+  const preferImage =
+    String(fileType || '').toLowerCase() === 'image' ||
+    String(context || '').toLowerCase() === 'people_media';
 
   return (
     <AnimatedModal visible={visible} onRequestClose={onClose}>
@@ -141,7 +155,7 @@ export default function DefaultUploadManagerModal(props) {
                 return (
                   <View key={fileId || getFileName(file)} style={[styles.fileCard, isAttached && styles.fileCardAttached]}>
                     <View style={styles.fileThumb}>
-                      <FileThumb file={file} />
+                      <FileThumb file={file} preferImage={preferImage} company={company} />
                     </View>
                     <TouchableOpacity
                       onPress={() => handleAttachExisting(file)}
