@@ -64,13 +64,16 @@ export default function DefaultUploadManagerModal(props) {
     filteredLibraryFiles,
     attachedFileIds,
     handleAttachExisting,
-    attachmentRows,
+    attachmentRows = [],
     emptyLibraryLabel,
     emptyAttachmentsLabel,
     status,
     error,
     fileType = 'image',
     company = null,
+    coverId = null,
+    handleSetCover = null,
+    handleRemove = null,
   } = props;
   const preferImage =
     String(fileType || '').toLowerCase() === 'image' ||
