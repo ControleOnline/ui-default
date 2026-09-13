@@ -1,4 +1,4 @@
-import React, {memo, useEffect, useMemo, useState} from 'react';
+import React, {memo, useEffect, useMemo, useRef, useState} from 'react';
 import {Image, Platform} from 'react-native';
 import {useStore} from '@store';
 import {resolveDefaultFileSource} from '@controleonline/ui-common/src/react/utils/fileUrl';
@@ -15,7 +15,7 @@ const resolveCompanyFromStore = peopleGetters => {
   return null;
 };
 
-/** Sync session token (same source as api.getToken) for authenticated downloads. */
+/** Sync session token (same source as api.getToken). */
 const readSessionApiToken = () => {
   try {
     if (typeof localStorage === 'undefined') {
@@ -36,6 +36,32 @@ const readSessionApiToken = () => {
   }
 };
 
+const headersKey = headers => {
+  if (!headers || typeof headers !== 'object') {
+    return '';
+  }
+  try {
+    return JSON.stringify(headers);
+  } catch (e) {
+    return '';
+  }
+};
+
+const companyKey = company => {
+  if (!company || typeof company !== 'object') {
+    return String(company || '');
+  }
+  return String(company.id || company['@id'] || company.domain || '');
+};
+
+/**
+ * DefaultFile — authenticated image preview.
+ *
+ * On web, RN Image becomes <img> and ignores source.headers. We fetch the
+ * download URL with API-TOKEN and display a blob: URL. Blob URLs are only
+ * revoked on unmount / when the remote URI changes — never while still
+ * assigned to the Image (avoids WebKitBlobResource error 1).
+ */
 const DefaultFile = ({
   file,
   source,
@@ -47,72 +73,118 @@ const DefaultFile = ({
   const peopleStore = useStore('people');
   const peopleGetters = peopleStore?.getters || {};
   const resolvedCompany = company || resolveCompanyFromStore(peopleGetters);
-  const resolvedSource = useMemo(() => {
-    const sessionToken = readSessionApiToken();
-    const authHeaders = {
+
+  const sessionToken = useMemo(() => readSessionApiToken(), []);
+  const authHeaders = useMemo(
+    () => ({
       ...(sessionToken ? {'API-TOKEN': sessionToken} : {}),
       ...headers,
-    };
-    return resolveDefaultFileSource(source ?? file, {
-      company: resolvedCompany,
-      appDomain,
-      headers: authHeaders,
-    });
-  }, [appDomain, company, file, headers, resolvedCompany, source]);
-
-  const [displayUri, setDisplayUri] = useState(
-    () => resolvedSource?.uri || null,
+    }),
+    // headers identity from parents can churn; key by JSON
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sessionToken, headersKey(headers)],
   );
 
+  const resolvedSource = useMemo(
+    () =>
+      resolveDefaultFileSource(source ?? file, {
+        company: resolvedCompany,
+        appDomain,
+        headers: authHeaders,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [appDomain, companyKey(resolvedCompany), source, file, authHeaders],
+  );
+
+  const remoteUri = resolvedSource?.uri || null;
+  const remoteHeaders = resolvedSource?.headers || {};
+
+  const [displayUri, setDisplayUri] = useState(null);
+  const blobRef = useRef(null);
+  const requestIdRef = useRef(0);
+
   useEffect(() => {
+    const requestId = ++requestIdRef.current;
     let cancelled = false;
-    let objectUrl = null;
+
+    const revokeBlob = () => {
+      if (blobRef.current && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+        try {
+          URL.revokeObjectURL(blobRef.current);
+        } catch (e) {
+          // ignore
+        }
+        blobRef.current = null;
+      }
+    };
+
+    if (!remoteUri) {
+      revokeBlob();
+      setDisplayUri(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (/^(data:|blob:)/i.test(remoteUri)) {
+      revokeBlob();
+      setDisplayUri(remoteUri);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // Native: headers work on Image source — no blob needed
+    if (Platform.OS !== 'web') {
+      revokeBlob();
+      setDisplayUri(remoteUri);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (typeof fetch !== 'function') {
+      setDisplayUri(remoteUri);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     const load = async () => {
-      if (!resolvedSource?.uri) {
-        if (!cancelled) {
-          setDisplayUri(null);
+      try {
+        const response = await fetch(remoteUri, {
+          method: 'GET',
+          headers: remoteHeaders,
+          credentials: 'omit',
+        });
+        if (!response.ok) {
+          throw new Error(`download ${response.status}`);
         }
-        return;
-      }
-
-      const remoteUri = resolvedSource.uri;
-      // data:/blob: already displayable without fetch
-      if (/^(data:|blob:)/i.test(remoteUri)) {
-        if (!cancelled) {
-          setDisplayUri(remoteUri);
+        const contentType = String(
+          response.headers.get('content-type') || '',
+        ).toLowerCase();
+        if (contentType.includes('application/json')) {
+          throw new Error('download returned json');
         }
-        return;
-      }
-
-      // On web, <img> ignores Image headers — fetch with API-TOKEN then blob URL.
-      if (Platform.OS === 'web' && typeof fetch === 'function') {
-        try {
-          const response = await fetch(remoteUri, {
-            method: 'GET',
-            headers: resolvedSource.headers || {},
-            credentials: 'omit',
-          });
-          if (!response.ok) {
-            throw new Error(`download ${response.status}`);
-          }
-          const blob = await response.blob();
-          objectUrl = URL.createObjectURL(blob);
-          if (!cancelled) {
-            setDisplayUri(objectUrl);
-          }
-          return;
-        } catch (e) {
-          // Fall back to raw uri (public files / cookie sessions).
-          if (!cancelled) {
-            setDisplayUri(remoteUri);
-          }
+        const blob = await response.blob();
+        if (!blob || blob.size === 0) {
+          throw new Error('empty blob');
+        }
+        if (cancelled || requestId !== requestIdRef.current) {
           return;
         }
-      }
-
-      if (!cancelled) {
-        setDisplayUri(remoteUri);
+        const nextUrl = URL.createObjectURL(blob);
+        // Revoke previous only after we have the next URL
+        revokeBlob();
+        blobRef.current = nextUrl;
+        setDisplayUri(nextUrl);
+      } catch (e) {
+        if (cancelled || requestId !== requestIdRef.current) {
+          return;
+        }
+        // Do not keep a broken blob; fall back to remote (may 403 on <img>)
+        revokeBlob();
+        setDisplayUri(null);
       }
     };
 
@@ -120,11 +192,25 @@ const DefaultFile = ({
 
     return () => {
       cancelled = true;
-      if (objectUrl && typeof URL !== 'undefined' && URL.revokeObjectURL) {
-        URL.revokeObjectURL(objectUrl);
+      // Defer revoke so an in-flight Image paint is not interrupted by a
+      // transient dependency flicker (Strict Mode double-invoke is OK:
+      // requestId invalidates the stale response).
+    };
+  }, [remoteUri, headersKey(remoteHeaders)]);
+
+  // Unmount: revoke blob
+  useEffect(() => {
+    return () => {
+      if (blobRef.current && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+        try {
+          URL.revokeObjectURL(blobRef.current);
+        } catch (e) {
+          // ignore
+        }
+        blobRef.current = null;
       }
     };
-  }, [resolvedSource]);
+  }, []);
 
   if (!displayUri) {
     return null;
@@ -133,12 +219,11 @@ const DefaultFile = ({
   return (
     <Image
       {...imageProps}
-      source={{
-        uri: displayUri,
-        ...(Platform.OS === 'web'
-          ? {}
-          : {headers: resolvedSource?.headers || {}}),
-      }}
+      source={
+        Platform.OS === 'web'
+          ? {uri: displayUri}
+          : {uri: displayUri, headers: remoteHeaders}
+      }
     />
   );
 };
