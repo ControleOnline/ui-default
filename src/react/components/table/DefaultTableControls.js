@@ -35,7 +35,6 @@ const DefaultTableControls = ({ storeName }) => {
       column?.filter !== false &&
       column?.filters !== false,
   );
-  const tableFiltersVisible = Boolean(configs.tableFiltersVisible);
   const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
   const addConfig = store?.getters?.add;
   const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
@@ -78,35 +77,42 @@ const DefaultTableControls = ({ storeName }) => {
     <>
       <DefaultDebug storeName={storeName} />
       {hasFilterableColumns && effectiveViewMode === 'table' ? (
-        <TouchableOpacity
-          style={[
-            ...buttonStyle,
-            tableFiltersVisible ? pressedStyle : null,
-          ]}
-          activeOpacity={0.82}
-          onPress={() =>
-            updateConfigs({
-              ...configs,
-              tableFiltersVisible: !tableFiltersVisible,
-            })
-          }
-        >
-          <Icon
-            name="filter"
-            size={14}
-            color={tableFiltersVisible ? pressedIconColor : textColor}
-          />
-          {activeFilterCount > 0 ? (
-            <Text
+        <DefaultModalButton
+          renderButton={({ isOpen, open }) => (
+            <TouchableOpacity
               style={[
-                styles.toolbarBadgeText,
-                { color: tableFiltersVisible ? pressedIconColor : textColor },
+                ...buttonStyle,
+                isOpen ? pressedStyle : null,
               ]}
+              activeOpacity={0.82}
+              onPress={open}
             >
-              {activeFilterCount}
-            </Text>
-          ) : null}
-        </TouchableOpacity>
+              <Icon
+                name="filter"
+                size={14}
+                color={isOpen ? pressedIconColor : textColor}
+              />
+              {activeFilterCount > 0 ? (
+                <Text
+                  style={[
+                    styles.toolbarBadgeText,
+                    { color: isOpen ? pressedIconColor : textColor },
+                  ]}
+                >
+                  {activeFilterCount}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          )}
+        >
+          {({ close, isOpen }) => (
+            <DefaultFiltersModal
+              storeName={storeName}
+              visible={isOpen}
+              onClose={close}
+            />
+          )}
+        </DefaultModalButton>
       ) : null}
       {hasFilterableColumns && effectiveViewMode === 'cards' ? (
         <DefaultModalButton
