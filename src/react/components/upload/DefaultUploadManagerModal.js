@@ -157,20 +157,57 @@ export default function DefaultUploadManagerModal(props) {
                     <View style={styles.fileThumb}>
                       <FileThumb file={file} preferImage={preferImage} company={company} />
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleAttachExisting(file)}
-                      disabled={isAttached || isSaving}
-                      style={styles.fileAction}>
-                      {isSaving ? (
-                        <ActivityIndicator size="small" color="#0F172A" />
+                    <View style={{flexDirection: 'row', gap: 6, position: 'absolute', top: 8, right: 8, zIndex: 2}}>
+                      {isAttached ? (
+                        <>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const row = (attachmentRows || []).find(
+                                item => String(extractFileId(item?.file)) === String(fileId),
+                              );
+                              if (row) handleSetCover?.(row);
+                            }}
+                            style={styles.fileAction}
+                            accessibilityLabel="Definir como principal">
+                            <MaterialCommunityIcons
+                              name={
+                                (attachmentRows || []).some(
+                                  item =>
+                                    String(item?.id) === String(coverId) &&
+                                    String(extractFileId(item?.file)) === String(fileId),
+                                )
+                                  ? 'star'
+                                  : 'star-outline'
+                              }
+                              size={18}
+                              color="#0F172A"
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const row = (attachmentRows || []).find(
+                                item => String(extractFileId(item?.file)) === String(fileId),
+                              );
+                              if (row) handleRemove?.(row);
+                            }}
+                            style={styles.fileAction}
+                            accessibilityLabel="Remover">
+                            <MaterialCommunityIcons name="trash-can-outline" size={18} color="#B91C1C" />
+                          </TouchableOpacity>
+                        </>
                       ) : (
-                        <MaterialCommunityIcons
-                          name={isAttached ? 'check' : 'plus'}
-                          size={18}
-                          color={isAttached ? '#15803D' : '#0F172A'}
-                        />
+                        <TouchableOpacity
+                          onPress={() => handleAttachExisting(file)}
+                          disabled={isSaving}
+                          style={styles.fileAction}>
+                          {isSaving ? (
+                            <ActivityIndicator size="small" color="#0F172A" />
+                          ) : (
+                            <MaterialCommunityIcons name="plus" size={18} color="#0F172A" />
+                          )}
+                        </TouchableOpacity>
                       )}
-                    </TouchableOpacity>
+                    </View>
                     <View style={styles.fileInfo}>
                       <Text numberOfLines={2} style={styles.fileName}>{getFileName(file)}</Text>
                       <View style={styles.fileMetaRow}>

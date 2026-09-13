@@ -19,6 +19,7 @@ export default function DefaultUploadAttachmentsList({
   buttonPalette,
   managerModal,
   company = null,
+  showAttachmentActions = true,
 }) {
   const iconDanger =
     buttonPalette?.iconDanger ||
@@ -84,44 +85,46 @@ export default function DefaultUploadAttachmentsList({
                       />
                     ) : null}
                   </View>
-                  <View style={styles.attachmentActionsRow}>
-                    <TouchableOpacity
-                      onPress={() => handleSetCover(row)}
-                      accessibilityLabel={
-                        isCover ? 'Capa selecionada' : 'Definir como capa'
-                      }
-                      style={[
-                        styles.attachmentIconButton,
-                        {
-                          backgroundColor: actionBg,
-                          borderColor: isCover ? iconActive : actionBorder,
-                          borderWidth: 1,
-                        },
-                      ]}>
-                      <FeatherIcon
-                        name="star"
-                        size={16}
-                        color={isCover ? iconActive : iconIdle}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleRemove(row)}
-                      accessibilityLabel="Remover"
-                      style={[
-                        styles.attachmentIconButton,
-                        {
-                          backgroundColor: actionBg,
-                          borderColor: actionBorder,
-                          borderWidth: 1,
-                        },
-                      ]}>
-                      <FeatherIcon
-                        name="trash-2"
-                        size={16}
-                        color={iconDanger}
-                      />
-                    </TouchableOpacity>
-                  </View>
+                  {showAttachmentActions ? (
+                    <View style={styles.attachmentActionsRow}>
+                      <TouchableOpacity
+                        onPress={() => handleSetCover(row)}
+                        accessibilityLabel={
+                          isCover ? 'Capa selecionada' : 'Definir como capa'
+                        }
+                        style={[
+                          styles.attachmentIconButton,
+                          {
+                            backgroundColor: actionBg,
+                            borderColor: isCover ? iconActive : actionBorder,
+                            borderWidth: 1,
+                          },
+                        ]}>
+                        <FeatherIcon
+                          name="star"
+                          size={16}
+                          color={isCover ? iconActive : iconIdle}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleRemove(row)}
+                        accessibilityLabel="Remover"
+                        style={[
+                          styles.attachmentIconButton,
+                          {
+                            backgroundColor: actionBg,
+                            borderColor: actionBorder,
+                            borderWidth: 1,
+                          },
+                        ]}>
+                        <FeatherIcon
+                          name="trash-2"
+                          size={16}
+                          color={iconDanger}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
                 </View>
               );
             })}

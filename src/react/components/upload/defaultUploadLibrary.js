@@ -138,14 +138,16 @@ async function fetchLibraryFiles({
     c => String(c || '').trim().toLowerCase() === 'people_media',
   );
 
-  // people_media is company-scoped via /people_media — not GET /files collection/item.
-  // GET /files and GET /files/{id} often 404 for private company media while /download works.
-  if (includesPeopleMedia && peopleIri) {
+  // people_media is company-scoped via /people_media — never GET /files collection/item
+  // (those endpoints 404 for private company media while /download still works).
+  if (includesPeopleMedia) {
     let files = [];
-    try {
-      files = await fetchPeopleMediaFiles({peopleActions, peopleIri});
-    } catch (_) {
-      files = [];
+    if (peopleIri) {
+      try {
+        files = await fetchPeopleMediaFiles({peopleActions, peopleIri});
+      } catch (_) {
+        files = [];
+      }
     }
     const existing = new Set(
       files.map(file => String(extractFileIdLocal(file) || '')).filter(Boolean),

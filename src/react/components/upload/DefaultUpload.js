@@ -29,6 +29,7 @@ const DefaultUpload = ({
   entityId,
   companyId,
   company = null,
+  showAttachmentActions = true,
   context = 'products',
   libraryContexts = DEFAULT_LIBRARY_CONTEXTS,
   fileStoreName = 'file',
@@ -161,10 +162,17 @@ const DefaultUpload = ({
     setCoverId(coverRelationId || null);
   }, [coverRelationId]);
 
-  const peopleActionsForLibrary =
-    relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
-      ? relationActions
-      : null;
+  const peopleStoreForMedia = useStore('people');
+  const peopleActionsForLibrary = (() => {
+    const fromRelation =
+      relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
+        ? relationActions
+        : null;
+    if (fromRelation) return fromRelation;
+    const fromPeople = peopleStoreForMedia?.actions;
+    if (typeof fromPeople?.getPeopleMedia === 'function') return fromPeople;
+    return null;
+  })();
 
   const loadLibrary = useCallback(async (extraFiles = []) => {
     setLibraryLoading(true);
@@ -420,6 +428,7 @@ const DefaultUpload = ({
       buttonPalette={buttonPalette}
       managerModal={managerModal}
       company={company || (companyId ? {id: companyId} : null)}
+      showAttachmentActions={showAttachmentActions}
     />
   );
 };
