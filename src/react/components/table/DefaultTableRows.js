@@ -34,22 +34,16 @@ import useDefaultTableTheme from './useDefaultTableTheme';
 
 const SELECTION_COLUMN_WIDTH = 44;
 
-const withAlpha = (hex, alpha = '40') => {
-  const color = String(hex || '').trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(color)) return `${color}${alpha}`;
-  if (/^#[0-9a-fA-F]{3}$/.test(color)) {
-    const r = color[1];
-    const g = color[2];
-    const b = color[3];
-    return `#${r}${r}${g}${g}${b}${b}${alpha}`;
-  }
-  return color;
-};
 
-const resolveRowBackgroundColor = ({ selected, index, tableOddColor, tableEvenColor, row }) => {
-  if (selected) return '#ECFEFF';
-  const statusColor = String(row?.status?.color || '').trim();
-  if (statusColor) return withAlpha(statusColor, '40');
+/** Row stripe colors from themes-map listItemEvenRow / listItemOddRow — never status.color. */
+export const resolveRowBackgroundColor = ({
+  selected,
+  index,
+  tableOddColor,
+  tableEvenColor,
+  selectedBackground = '#ECFEFF',
+}) => {
+  if (selected) return selectedBackground;
   return index % 2 === 0 ? tableOddColor : tableEvenColor;
 };
 
@@ -204,7 +198,6 @@ const DefaultTableRows = ({ storeName }) => {
       index,
       tableOddColor,
       tableEvenColor,
-      row,
     });
     return (
       <RowComponent key={item?.id || getRowKey(row)} style={[styles.row, { backgroundColor: rowBackgroundColor, borderBottomColor: selected ? '#67E8F9' : tableBorderColor, borderBottomWidth: tableBorderColor ? 1 : 0, minWidth: tableWidth, width: tableWidth }, typeof rowStyle === 'function' ? rowStyle(row, index) : rowStyle]} {...(hasRowPress || selectable ? { activeOpacity: 0.84, onPress: () => { if (selectable) emitSelection(toggleSelectedId(selectedIds, row)); configs.onRowPress?.(row); } } : {})}>
