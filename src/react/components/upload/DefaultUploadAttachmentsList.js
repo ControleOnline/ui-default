@@ -2,6 +2,7 @@ import React from 'react';
 import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import DefaultFile from '@controleonline/ui-default/src/react/components/files/DefaultFile';
+import {extractFileId} from './fileUpload';
 import {defaultUploadStyles as styles} from './DefaultUpload.styles';
 
 /** Inline attachment cards for DefaultUpload (app-community#296 / #385). */
@@ -17,6 +18,8 @@ export default function DefaultUploadAttachmentsList({
   handleRemove,
   buttonPalette,
   managerModal,
+  company = null,
+  showAttachmentActions = true,
 }) {
   const iconDanger =
     buttonPalette?.iconDanger ||
@@ -57,57 +60,71 @@ export default function DefaultUploadAttachmentsList({
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.attachmentsList}>
             {sortedAttachments.map((row, index) => {
-              const file = row?.file || row;
+              // people_media rows must use nested file only — never the relation as file
+              // (relation id would be mistaken for file id and break the preview).
+              const rawFile = row?.file;
+              const fileId = extractFileId(rawFile);
+              const file =
+                rawFile && typeof rawFile === 'object' && !Array.isArray(rawFile)
+                  ? rawFile
+                  : fileId
+                    ? {id: fileId, '@id': `/files/${fileId}`}
+                    : null;
               const isCover = String(coverId) === String(row.id);
               return (
                 <View
-                  key={row.id || file?.id || index}
+                  key={row.id || fileId || index}
                   style={styles.attachmentCard}>
                   <View style={styles.attachmentThumb}>
-                    <DefaultFile
-                      file={file}
-                      resizeMode="cover"
-                      style={styles.attachmentImage}
-                    />
-                  </View>
-                  <View style={styles.attachmentActionsRow}>
-                    <TouchableOpacity
-                      onPress={() => handleSetCover(row)}
-                      accessibilityLabel={
-                        isCover ? 'Capa selecionada' : 'Definir como capa'
-                      }
-                      style={[
-                        styles.attachmentIconButton,
-                        {
-                          backgroundColor: actionBg,
-                          borderColor: isCover ? iconActive : actionBorder,
-                          borderWidth: 1,
-                        },
-                      ]}>
-                      <FeatherIcon
-                        name="star"
-                        size={16}
-                        color={isCover ? iconActive : iconIdle}
+                    {file ? (
+                      <DefaultFile
+                        file={file}
+                        company={company}
+                        resizeMode="cover"
+                        style={styles.attachmentImage}
                       />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleRemove(row)}
-                      accessibilityLabel="Remover"
-                      style={[
-                        styles.attachmentIconButton,
-                        {
-                          backgroundColor: actionBg,
-                          borderColor: actionBorder,
-                          borderWidth: 1,
-                        },
-                      ]}>
-                      <FeatherIcon
-                        name="trash-2"
-                        size={16}
-                        color={iconDanger}
-                      />
-                    </TouchableOpacity>
+                    ) : null}
                   </View>
+                  {showAttachmentActions ? (
+                    <View style={styles.attachmentActionsRow}>
+                      <TouchableOpacity
+                        onPress={() => handleSetCover(row)}
+                        accessibilityLabel={
+                          isCover ? 'Capa selecionada' : 'Definir como capa'
+                        }
+                        style={[
+                          styles.attachmentIconButton,
+                          {
+                            backgroundColor: actionBg,
+                            borderColor: isCover ? iconActive : actionBorder,
+                            borderWidth: 1,
+                          },
+                        ]}>
+                        <FeatherIcon
+                          name="star"
+                          size={16}
+                          color={isCover ? iconActive : iconIdle}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleRemove(row)}
+                        accessibilityLabel="Remover"
+                        style={[
+                          styles.attachmentIconButton,
+                          {
+                            backgroundColor: actionBg,
+                            borderColor: actionBorder,
+                            borderWidth: 1,
+                          },
+                        ]}>
+                        <FeatherIcon
+                          name="trash-2"
+                          size={16}
+                          color={iconDanger}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
                 </View>
               );
             })}

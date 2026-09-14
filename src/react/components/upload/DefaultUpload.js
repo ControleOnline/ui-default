@@ -28,6 +28,8 @@ const DefaultUpload = ({
   attachments = [],
   entityId,
   companyId,
+  company = null,
+  showAttachmentActions = true,
   context = 'products',
   libraryContexts = DEFAULT_LIBRARY_CONTEXTS,
   fileStoreName = 'file',
@@ -160,10 +162,17 @@ const DefaultUpload = ({
     setCoverId(coverRelationId || null);
   }, [coverRelationId]);
 
-  const peopleActionsForLibrary =
-    relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
-      ? relationActions
-      : null;
+  const peopleStoreForMedia = useStore('people');
+  const peopleActionsForLibrary = (() => {
+    const fromRelation =
+      relationStoreName === 'people' && typeof relationActions?.getPeopleMedia === 'function'
+        ? relationActions
+        : null;
+    if (fromRelation) return fromRelation;
+    const fromPeople = peopleStoreForMedia?.actions;
+    if (typeof fromPeople?.getPeopleMedia === 'function') return fromPeople;
+    return null;
+  })();
 
   const loadLibrary = useCallback(async (extraFiles = []) => {
     setLibraryLoading(true);
@@ -177,7 +186,26 @@ const DefaultUpload = ({
         peopleActions: peopleActionsForLibrary,
         knownFileIds: resolvedKnownIds,
       });
-      setLibraryFiles(dedupeFiles([...(Array.isArray(extraFiles) ? extraFiles : []), ...files]));
+      const preferImageMeta = String(fileType || '').toLowerCase() === 'image';
+      const withMeta = (list) =>
+        (Array.isArray(list) ? list : []).map(item => {
+          if (!item || typeof item !== 'object') return item;
+          const id = extractFileId(item);
+          if (!id) return item;
+          return {
+            ...item,
+            id: item.id || id,
+            '@id': item['@id'] || `/files/${id}`,
+            context: item.context || context || 'people_media',
+            fileType: item.fileType || item.mimeType || (preferImageMeta ? 'image' : item.fileType),
+            fileName: item.fileName || item.name || item.originalName || `Arquivo ${id}`,
+          };
+        });
+      setLibraryFiles(
+        dedupeFiles(
+          withMeta([...(Array.isArray(extraFiles) ? extraFiles : []), ...files]),
+        ),
+      );
     } catch (e) {
       setLibraryError(e?.message || 'Falha ao carregar biblioteca de arquivos.');
       setLibraryFiles(dedupeFiles(extraFiles));
@@ -372,6 +400,8 @@ const DefaultUpload = ({
       emptyAttachmentsLabel={emptyAttachmentLabel}
       status={status}
       error={error}
+      fileType={fileType}
+      company={company || (companyId ? {id: companyId} : null)}
     />
   );
 
@@ -397,6 +427,8 @@ const DefaultUpload = ({
       handleRemove={handleRemove}
       buttonPalette={buttonPalette}
       managerModal={managerModal}
+      company={company || (companyId ? {id: companyId} : null)}
+      showAttachmentActions={showAttachmentActions}
     />
   );
 };
