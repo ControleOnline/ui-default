@@ -60,6 +60,7 @@ const DefaultUpload = ({
   requireEntity = true,
   showInlineContent = true,
   uploadResultAlreadyAttached = false,
+  attachOnUpload = true,
   knownFileIds = [],
 }) => {
   const relationStore = useStore(relationStoreName);
@@ -284,28 +285,25 @@ const DefaultUpload = ({
         typeof onUploadFile === 'function'
           ? await onUploadFile({acceptedTypes, companyId, context, entityId, file})
           : await uploadFileToApi({file, context, peopleId: companyId, entityId});
-      setLibraryFiles(current => dedupeFiles([uploadedFile, ...current]));
+            setLibraryFiles(current => dedupeFiles([uploadedFile, ...current]));
       if (uploadResultAlreadyAttached) {
         setStatus(uploadSuccessMessage);
         if (onChanged) await onChanged();
         await loadLibrary([uploadedFile]);
         return;
       }
+      // Library-only upload: do not auto-attach — user picks which file is active
+      if (!attachOnUpload) {
+        setStatus(uploadSuccessMessage || 'Arquivo enviado. Selecione para usar.');
+        setError('');
+        await loadLibrary([uploadedFile]);
+        return;
+      }
       await attachFileToEntity(uploadedFile, {successMessage: uploadSuccessMessage});
       setError('');
       await loadLibrary([uploadedFile]);
-    } catch (e) {
-      const message = String(e?.message || e?.response?.data?.detail || e?.description || '');
-      // Private files are not readable via GET /files/{id}; ignore that noise if attach path failed spuriously
-      if (/item not found for\s*["']?\/files\//i.test(message)) {
-        setError('Nao foi possivel vincular o arquivo. Tente novamente.');
-      } else {
-        setError(message || 'Falha ao anexar arquivo.');
-      }
-    } finally {
-      setUploading(false);
     }
-  }, [acceptedTypes, attachFileToEntity, companyId, context, entityId, loadLibrary, onChanged, onUploadFile, requireEntity, saveBeforeLabel, uploadSuccessMessage, uploadResultAlreadyAttached]);
+  }, [acceptedTypes, attachFileToEntity, attachOnUpload, companyId, context, entityId, loadLibrary, onChanged, onUploadFile, requireEntity, saveBeforeLabel, uploadSuccessMessage, uploadResultAlreadyAttached]);
 
   const handleAttachExisting = useCallback(
     async file => {
