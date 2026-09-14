@@ -302,6 +302,15 @@ const DefaultUpload = ({
       await attachFileToEntity(uploadedFile, {successMessage: uploadSuccessMessage});
       setError('');
       await loadLibrary([uploadedFile]);
+    } catch (e) {
+      const message = String(e?.message || e?.response?.data?.detail || e?.description || '');
+      if (/item not found for\s*["']?\/files\//i.test(message)) {
+        setError('Nao foi possivel vincular o arquivo. Tente novamente.');
+      } else {
+        setError(message || 'Falha ao anexar arquivo.');
+      }
+    } finally {
+      setUploading(false);
     }
   }, [acceptedTypes, attachFileToEntity, attachOnUpload, companyId, context, entityId, loadLibrary, onChanged, onUploadFile, requireEntity, saveBeforeLabel, uploadSuccessMessage, uploadResultAlreadyAttached]);
 
