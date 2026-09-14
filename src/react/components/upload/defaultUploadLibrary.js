@@ -138,17 +138,56 @@ async function fetchLibraryFiles({
     c => String(c || '').trim().toLowerCase() === 'people_media',
   );
 
-  // people_media is company-scoped via /people_media — never GET /files collection/item
-  // (those endpoints 404 for private company media while /download still works).
+  // people_media gallery = all company Files with context people_media (persist across
+  // refresh) + currently linked people_media relations. Selecting a new active image
+  // only changes the people_media row; previous Files stay in the company library.
   if (includesPeopleMedia) {
     let files = [];
-    if (peopleIri) {
+
+    // 1) Persisted company library: GET /files?context=people_media&people=/people/{id}
+    if (peopleIri && typeof fileActions?.getItems === 'function') {
+      const pageSize = 500;
+      const maxPages = 10;
       try {
-        files = await fetchPeopleMediaFiles({peopleActions, peopleIri});
+        for (let page = 1; page <= maxPages; page += 1) {
+          const params = {
+            context: 'people_media',
+            people: peopleIri,
+            page,
+            itemsPerPage: pageSize,
+          };
+          if (fileType) params.fileType = fileType;
+          const response = await fileActions.getItems(params);
+          const pageItems = normalizeCollection(response);
+          for (const item of pageItems) {
+            const id = extractFileIdLocal(item);
+            if (!id) continue;
+            files.push({
+              ...(typeof item === 'object' ? item : {}),
+              id: (item && item.id) || id,
+              '@id': (item && item['@id']) || `/files/${id}`,
+              context: (item && item.context) || 'people_media',
+              fileType: (item && (item.fileType || item.mimeType)) || 'image',
+              fileName:
+                (item && (item.fileName || item.name || item.originalName)) ||
+                `Arquivo ${id}`,
+            });
+          }
+          if (pageItems.length < pageSize) break;
+        }
       } catch (_) {
-        files = [];
+        // Collection may fail on older API — fall through to relations + stubs
       }
     }
+
+    // 2) Active links (people_media rows) — ensure current selection is present
+    if (peopleIri) {
+      try {
+        const relationFiles = await fetchPeopleMediaFiles({peopleActions, peopleIri});
+        files = files.concat(relationFiles);
+      } catch (_) {}
+    }
+
     const existing = new Set(
       files.map(file => String(extractFileIdLocal(file) || '')).filter(Boolean),
     );

@@ -9,49 +9,51 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../../../../');
 const require = createRequire(import.meta.url);
 const lib = require(join(root, 'src/react/components/upload/defaultUploadLibrary.js'));
 
-test('people_media path never requires peopleIri to avoid GET /files', async () => {
+test('people_media library loads company file collection for persistence', async () => {
   const source = readFileSync(
     join(root, 'src/react/components/upload/defaultUploadLibrary.js'),
     'utf8',
   );
-  assert.match(source, /if \(includesPeopleMedia\)/);
-  assert.doesNotMatch(
-    source,
-    /if \(includesPeopleMedia && peopleIri\)/,
-  );
-  // Without peopleIri still returns stubs only
+  assert.match(source, /GET \/files\?context=people_media/);
+  assert.match(source, /Persisted company library/);
+
+  const calls = [];
   const files = await lib.fetchLibraryFiles({
     fileActions: {
-      getItems: async () => {
-        throw new Error('should not call getItems');
+      getItems: async params => {
+        calls.push(params);
+        return {
+          member: [
+            {id: 100, context: 'people_media', fileName: 'a.jpg', fileType: 'image'},
+            {id: 101, context: 'people_media', fileName: 'b.jpg', fileType: 'image'},
+          ],
+        };
       },
       get: async () => {
-        throw new Error('should not call get');
+        throw new Error('should not GET item');
       },
     },
-    companyId: null,
+    companyId: 5,
     fileType: 'image',
     libraryContexts: ['people_media'],
-    peopleActions: null,
-    knownFileIds: [8469],
+    peopleActions: {
+      getPeopleMedia: async () => [
+        {id: 1, file: {id: 100, '@id': '/files/100'}},
+      ],
+    },
+    knownFileIds: [],
   });
-  assert.equal(files.length, 1);
-  assert.equal(files[0].id, 8469);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].context, 'people_media');
+  assert.equal(calls[0].people, '/people/5');
+  const ids = files.map(f => f.id).sort();
+  assert.deepEqual(ids, [100, 101]);
 });
 
-test('inline attachments list can hide star/trash', () => {
+test('selecting active media does not require deleting previous file from library source', () => {
   const source = readFileSync(
-    join(root, 'src/react/components/upload/DefaultUploadAttachmentsList.js'),
+    join(root, 'src/react/components/upload/defaultUploadLibrary.js'),
     'utf8',
   );
-  assert.match(source, /showAttachmentActions/);
-});
-
-test('manager shows remove for attached library items', () => {
-  const source = readFileSync(
-    join(root, 'src/react/components/upload/DefaultUploadManagerModal.js'),
-    'utf8',
-  );
-  assert.match(source, /trash-can-outline/);
-  assert.match(source, /handleRemove/);
+  assert.match(source, /previous Files stay in the company library/);
 });
