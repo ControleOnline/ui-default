@@ -28,7 +28,7 @@ function FileThumb({file, preferImage = false, company = null}) {
       <DefaultFile
         file={file}
         company={company}
-        resizeMode="cover"
+        resizeMode="contain"
         style={styles.fileImage}
       />
     );

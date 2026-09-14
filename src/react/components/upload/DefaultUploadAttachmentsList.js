@@ -80,7 +80,7 @@ export default function DefaultUploadAttachmentsList({
                       <DefaultFile
                         file={file}
                         company={company}
-                        resizeMode="cover"
+                        resizeMode="contain"
                         style={styles.attachmentImage}
                       />
                     ) : null}
