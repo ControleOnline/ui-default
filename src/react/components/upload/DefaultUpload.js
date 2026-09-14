@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Text,
@@ -126,6 +126,8 @@ const DefaultUpload = ({
   const [libraryError, setLibraryError] = useState('');
   const [librarySearch, setLibrarySearch] = useState('');
   const [savingFileId, setSavingFileId] = useState(null);
+  // Persist gallery items across attach/select so previous files stay visible
+  const libraryHistoryRef = useRef([]);
 
   const sortedAttachments = useMemo(() => {
     if (!coverId) return attachmentRows;
@@ -140,11 +142,12 @@ const DefaultUpload = ({
   const attachedFileIds = useMemo(
     () =>
       new Set(
-        [...attachmentRows.map(getRelationFileId), ...resolvedKnownIds]
+        attachmentRows
+          .map(getRelationFileId)
           .filter(Boolean)
           .map(String),
       ),
-    [attachmentRows, resolvedKnownIds],
+    [attachmentRows],
   );
 
   const filteredLibraryFiles = useMemo(() => {
@@ -179,13 +182,16 @@ const DefaultUpload = ({
     setLibraryLoading(true);
     setLibraryError('');
     try {
+      const historyIds = (libraryHistoryRef.current || [])
+        .map(file => extractFileId(file))
+        .filter(Boolean);
       const files = await fetchLibraryFiles({
         fileActions,
         companyId,
         fileType,
         libraryContexts: libraryContexts || DEFAULT_LIBRARY_CONTEXTS,
         peopleActions: peopleActionsForLibrary,
-        knownFileIds: resolvedKnownIds,
+        knownFileIds: [...resolvedKnownIds, ...historyIds],
       });
       const preferImageMeta = String(fileType || '').toLowerCase() === 'image';
       const withMeta = (list) =>
@@ -202,14 +208,25 @@ const DefaultUpload = ({
             fileName: item.fileName || item.name || item.originalName || `Arquivo ${id}`,
           };
         });
-      setLibraryFiles(
-        dedupeFiles(
-          withMeta([...(Array.isArray(extraFiles) ? extraFiles : []), ...files]),
-        ),
+      // Merge API results with session gallery history so selecting a new active
+      // image does not remove the previous one from the manager library.
+      const merged = dedupeFiles(
+        withMeta([
+          ...(Array.isArray(extraFiles) ? extraFiles : []),
+          ...files,
+          ...(libraryHistoryRef.current || []),
+        ]),
       );
+      libraryHistoryRef.current = merged;
+      setLibraryFiles(merged);
     } catch (e) {
       setLibraryError(e?.message || 'Falha ao carregar biblioteca de arquivos.');
-      setLibraryFiles(dedupeFiles(extraFiles));
+      const fallback = dedupeFiles([
+        ...(Array.isArray(extraFiles) ? extraFiles : []),
+        ...(libraryHistoryRef.current || []),
+      ]);
+      libraryHistoryRef.current = fallback;
+      setLibraryFiles(fallback);
     } finally {
       setLibraryLoading(false);
     }
@@ -285,7 +302,11 @@ const DefaultUpload = ({
         typeof onUploadFile === 'function'
           ? await onUploadFile({acceptedTypes, companyId, context, entityId, file})
           : await uploadFileToApi({file, context, peopleId: companyId, entityId});
-            setLibraryFiles(current => dedupeFiles([uploadedFile, ...current]));
+            setLibraryFiles(current => {
+        const next = dedupeFiles([uploadedFile, ...current]);
+        libraryHistoryRef.current = next;
+        return next;
+      });
       if (uploadResultAlreadyAttached) {
         setStatus(uploadSuccessMessage);
         if (onChanged) await onChanged();
