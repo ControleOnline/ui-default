@@ -130,7 +130,7 @@ export const defaultUploadStyles = {
   attachmentsEmpty: {borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10},
   attachmentsEmptyText: {color: '#666'},
   attachmentsList: {flexDirection: 'row', gap: 10},
-  attachmentCard: {width: 320, height: 320, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 0, overflow: 'hidden', backgroundColor: '#fff'},
+  attachmentCard: {width: 320, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 0, overflow: 'hidden', backgroundColor: '#fff'},
   attachmentThumb: {width: 320, height: 320, backgroundColor: '#f5f5f5', overflow: 'hidden', alignItems: 'center', justifyContent: 'center'},
   attachmentImage: {width: 320, height: 320},
   attachmentActionsRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 2},
