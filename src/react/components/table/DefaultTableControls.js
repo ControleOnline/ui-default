@@ -35,7 +35,6 @@ const DefaultTableControls = ({ storeName }) => {
       column?.filter !== false &&
       column?.filters !== false,
   );
-  const tableFiltersVisible = Boolean(configs.tableFiltersVisible);
   const activeFilterCount = Object.values(filters).filter(value => normalizeText(value) !== '').length;
   const addConfig = store?.getters?.add;
   const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
@@ -77,38 +76,8 @@ const DefaultTableControls = ({ storeName }) => {
   return (
     <>
       <DefaultDebug storeName={storeName} />
-      {hasFilterableColumns && effectiveViewMode === 'table' ? (
-        <TouchableOpacity
-          style={[
-            ...buttonStyle,
-            tableFiltersVisible ? pressedStyle : null,
-          ]}
-          activeOpacity={0.82}
-          onPress={() =>
-            updateConfigs({
-              ...configs,
-              tableFiltersVisible: !tableFiltersVisible,
-            })
-          }
-        >
-          <Icon
-            name="filter"
-            size={14}
-            color={tableFiltersVisible ? pressedIconColor : textColor}
-          />
-          {activeFilterCount > 0 ? (
-            <Text
-              style={[
-                styles.toolbarBadgeText,
-                { color: tableFiltersVisible ? pressedIconColor : textColor },
-              ]}
-            >
-              {activeFilterCount}
-            </Text>
-          ) : null}
-        </TouchableOpacity>
-      ) : null}
-      {hasFilterableColumns && effectiveViewMode === 'cards' ? (
+      {/* app-community#811: LISTA (table) e CARD abrem o mesmo DefaultFiltersModal */}
+      {hasFilterableColumns ? (
         <DefaultModalButton
           renderButton={({ isOpen, open }) => (
             <TouchableOpacity
@@ -129,7 +98,8 @@ const DefaultTableControls = ({ storeName }) => {
                   style={[
                     styles.toolbarBadgeText,
                     { color: isOpen ? pressedIconColor : textColor },
-                  ]}>
+                  ]}
+                >
                   {activeFilterCount}
                 </Text>
               ) : null}
