@@ -397,6 +397,8 @@ const DefaultUpload = ({
       handleRemove={handleRemove}
       buttonPalette={buttonPalette}
       managerModal={managerModal}
+      company={company}
+      showAttachmentActions={showAttachmentActions}
     />
   );
 };
