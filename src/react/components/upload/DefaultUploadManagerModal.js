@@ -212,6 +212,11 @@ export default function DefaultUploadManagerModal(props) {
                     </View>
                     <View style={styles.fileInfo}>
                       <Text numberOfLines={2} style={styles.fileName}>{getFileName(file)}</Text>
+                      {Array.isArray(file?.mediaTypesUsed) && file.mediaTypesUsed.length > 0 ? (
+                        <Text numberOfLines={2} style={styles.mediaTypesLine}>
+                          {file.mediaTypesUsed.join(', ')}
+                        </Text>
+                      ) : null}
                       <View style={styles.fileMetaRow}>
                         {(() => {
                           const label = getContextLabel(file?.context ?? file);
