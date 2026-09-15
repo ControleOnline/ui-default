@@ -40,36 +40,70 @@ const dedupeFiles = files => {
   });
 };
 
+function resolvePeopleMediaTypeLabel(relation) {
+  const mediaType = relation?.mediaType;
+  if (!mediaType) return '';
+  if (typeof mediaType === 'string') {
+    // Prefer last path segment only when it looks like a label, not a numeric id
+    const segment = String(mediaType).split('/').filter(Boolean).pop() || '';
+    if (segment && !/^\d+$/.test(segment)) return segment.trim();
+    return '';
+  }
+  return String(
+    mediaType.type || mediaType.name || mediaType.label || mediaType.code || '',
+  ).trim();
+}
+
 function filesFromPeopleMediaRelations(relations) {
   if (!Array.isArray(relations)) return [];
-  const files = [];
+  // Group by file id and collect media_types where the image is used (#814)
+  const byFileId = new Map();
   for (const relation of relations) {
     const file = relation?.file;
     if (!file) continue;
     const id = extractFileIdLocal(file);
     if (!id) continue;
+    const typeLabel = resolvePeopleMediaTypeLabel(relation);
+    const key = String(id);
+    const existing = byFileId.get(key);
+    if (existing) {
+      if (typeLabel && !existing.mediaTypesUsed.includes(typeLabel)) {
+        existing.mediaTypesUsed.push(typeLabel);
+      }
+      continue;
+    }
     // Always tag people_media library entries so the manager can preview as image
     // even when API returns a bare IRI / minimal File payload.
-    if (typeof file === 'object') {
-      files.push({
-        ...file,
-        id: file.id || id,
-        '@id': file['@id'] || `/files/${id}`,
-        context: file.context || 'people_media',
-        fileType: file.fileType || file.mimeType || 'image',
-        fileName: file.fileName || file.name || file.originalName || `Arquivo ${id}`,
-      });
-    } else {
-      files.push({
-        id,
-        '@id': `/files/${id}`,
-        context: 'people_media',
-        fileType: 'image',
-        fileName: `Arquivo ${id}`,
-      });
-    }
+    const base =
+      typeof file === 'object'
+        ? {
+            ...file,
+            id: file.id || id,
+            '@id': file['@id'] || `/files/${id}`,
+            context: file.context || 'people_media',
+            fileType: file.fileType || file.mimeType || 'image',
+            fileName: file.fileName || file.name || file.originalName || `Arquivo ${id}`,
+          }
+        : {
+            id,
+            '@id': `/files/${id}`,
+            context: 'people_media',
+            fileType: 'image',
+            fileName: `Arquivo ${id}`,
+          };
+    byFileId.set(key, {
+      ...base,
+      mediaTypesUsed: typeLabel ? [typeLabel] : [],
+    });
   }
-  return files;
+  return Array.from(byFileId.values()).map(file => ({
+    ...file,
+    mediaTypesUsed: Array.isArray(file.mediaTypesUsed)
+      ? [...file.mediaTypesUsed].sort((a, b) =>
+          String(a).localeCompare(String(b), 'pt-BR', {sensitivity: 'base'}),
+        )
+      : [],
+  }));
 }
 
 async function fetchPeopleMediaFiles({peopleActions, peopleIri}) {
@@ -207,6 +241,7 @@ async function fetchLibraryFiles({
 module.exports = {
   fetchLibraryFiles,
   filesFromPeopleMediaRelations,
+  resolvePeopleMediaTypeLabel,
   fetchPeopleMediaFiles,
   fetchKnownFiles,
   synthesizeKnownImageFiles,
