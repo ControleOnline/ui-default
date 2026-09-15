@@ -40,25 +40,70 @@ const dedupeFiles = files => {
   });
 };
 
+function resolvePeopleMediaTypeLabel(relation) {
+  const mediaType = relation?.mediaType;
+  if (!mediaType) return '';
+  if (typeof mediaType === 'string') {
+    // Prefer last path segment only when it looks like a label, not a numeric id
+    const segment = String(mediaType).split('/').filter(Boolean).pop() || '';
+    if (segment && !/^\d+$/.test(segment)) return segment.trim();
+    return '';
+  }
+  return String(
+    mediaType.type || mediaType.name || mediaType.label || mediaType.code || '',
+  ).trim();
+}
+
 function filesFromPeopleMediaRelations(relations) {
   if (!Array.isArray(relations)) return [];
-  const files = [];
+  // Group by file id and collect media_types where the image is used (#814)
+  const byFileId = new Map();
   for (const relation of relations) {
     const file = relation?.file;
     if (!file) continue;
     const id = extractFileIdLocal(file);
     if (!id) continue;
-    if (typeof file === 'object') {
-      files.push({
-        ...file,
-        id: file.id || id,
-        '@id': file['@id'] || `/files/${id}`,
-      });
-    } else {
-      files.push({id, '@id': `/files/${id}`});
+    const typeLabel = resolvePeopleMediaTypeLabel(relation);
+    const key = String(id);
+    const existing = byFileId.get(key);
+    if (existing) {
+      if (typeLabel && !existing.mediaTypesUsed.includes(typeLabel)) {
+        existing.mediaTypesUsed.push(typeLabel);
+      }
+      continue;
     }
+    // Always tag people_media library entries so the manager can preview as image
+    // even when API returns a bare IRI / minimal File payload.
+    const base =
+      typeof file === 'object'
+        ? {
+            ...file,
+            id: file.id || id,
+            '@id': file['@id'] || `/files/${id}`,
+            context: file.context || 'people_media',
+            fileType: file.fileType || file.mimeType || 'image',
+            fileName: file.fileName || file.name || file.originalName || `Arquivo ${id}`,
+          }
+        : {
+            id,
+            '@id': `/files/${id}`,
+            context: 'people_media',
+            fileType: 'image',
+            fileName: `Arquivo ${id}`,
+          };
+    byFileId.set(key, {
+      ...base,
+      mediaTypesUsed: typeLabel ? [typeLabel] : [],
+    });
   }
-  return files;
+  return Array.from(byFileId.values()).map(file => ({
+    ...file,
+    mediaTypesUsed: Array.isArray(file.mediaTypesUsed)
+      ? [...file.mediaTypesUsed].sort((a, b) =>
+          String(a).localeCompare(String(b), 'pt-BR', {sensitivity: 'base'}),
+        )
+      : [],
+  }));
 }
 
 async function fetchPeopleMediaFiles({peopleActions, peopleIri}) {
@@ -97,6 +142,20 @@ async function fetchKnownFiles({fileActions, knownFileIds = []}) {
   return files;
 }
 
+function synthesizeKnownImageFiles(knownFileIds = [], fileType = 'image', context = 'people_media') {
+  const preferImage = String(fileType || '').toLowerCase() === 'image';
+  return knownFileIds
+    .map(extractFileIdLocal)
+    .filter(Boolean)
+    .map(id => ({
+      id,
+      '@id': `/files/${id}`,
+      context,
+      fileType: preferImage ? 'image' : fileType || undefined,
+      fileName: `Arquivo ${id}`,
+    }));
+}
+
 async function fetchLibraryFiles({
   fileActions,
   companyId,
@@ -105,16 +164,40 @@ async function fetchLibraryFiles({
   peopleActions = null,
   knownFileIds = [],
 }) {
+  const peopleIri = getEntityId(companyId) ? `/people/${getEntityId(companyId)}` : null;
+  const contexts = Array.isArray(libraryContexts) && libraryContexts.length
+    ? libraryContexts
+    : DEFAULT_LIBRARY_CONTEXTS;
+  const includesPeopleMedia = contexts.some(
+    c => String(c || '').trim().toLowerCase() === 'people_media',
+  );
+
+  // people_media is company-scoped via /people_media — never GET /files collection/item
+  // (those endpoints 404 for private company media while /download still works).
+  if (includesPeopleMedia) {
+    let files = [];
+    if (peopleIri) {
+      try {
+        files = await fetchPeopleMediaFiles({peopleActions, peopleIri});
+      } catch (_) {
+        files = [];
+      }
+    }
+    const existing = new Set(
+      files.map(file => String(extractFileIdLocal(file) || '')).filter(Boolean),
+    );
+    const stubs = synthesizeKnownImageFiles(knownFileIds, fileType, 'people_media').filter(
+      file => !existing.has(String(file.id)),
+    );
+    return dedupeFiles(files.concat(stubs));
+  }
+
   if (typeof fileActions?.getItems !== 'function') {
     return fetchKnownFiles({fileActions, knownFileIds});
   }
 
-  const peopleIri = getEntityId(companyId) ? `/people/${getEntityId(companyId)}` : null;
   const pageSize = 500;
   const maxPages = 10;
-  const contexts = Array.isArray(libraryContexts) && libraryContexts.length
-    ? libraryContexts
-    : DEFAULT_LIBRARY_CONTEXTS;
 
   const fetchContextFiles = async fileContext => {
     const contextFiles = [];
@@ -126,10 +209,15 @@ async function fetchLibraryFiles({
       };
       if (fileType) params.fileType = fileType;
       if (peopleIri) params.people = peopleIri;
-      const response = await fileActions.getItems(params);
-      const pageItems = normalizeCollection(response);
-      contextFiles.push(...pageItems);
-      if (pageItems.length < pageSize) break;
+      try {
+        const response = await fileActions.getItems(params);
+        const pageItems = normalizeCollection(response);
+        contextFiles.push(...pageItems);
+        if (pageItems.length < pageSize) break;
+      } catch (_) {
+        // Collection filter may 404 for some contexts — skip page
+        break;
+      }
     }
     return contextFiles;
   };
@@ -137,19 +225,14 @@ async function fetchLibraryFiles({
   const batches = await Promise.all(contexts.map(fetchContextFiles));
   let files = batches.flat();
 
-  const includesPeopleMedia = contexts.some(
-    c => String(c || '').trim().toLowerCase() === 'people_media',
-  );
-  if (includesPeopleMedia && peopleIri) {
-    try {
-      const relationFiles = await fetchPeopleMediaFiles({peopleActions, peopleIri});
-      files = files.concat(relationFiles);
-    } catch (_) {}
-  }
-
   if (knownFileIds.length) {
+    // Prefer stubs over GET /files/{id} when item endpoint 404s for private files
     const knownFiles = await fetchKnownFiles({fileActions, knownFileIds});
-    files = knownFiles.concat(files);
+    if (knownFiles.length) {
+      files = knownFiles.concat(files);
+    } else {
+      files = synthesizeKnownImageFiles(knownFileIds, fileType, contexts[0]).concat(files);
+    }
   }
 
   return dedupeFiles(files);
@@ -158,6 +241,8 @@ async function fetchLibraryFiles({
 module.exports = {
   fetchLibraryFiles,
   filesFromPeopleMediaRelations,
+  resolvePeopleMediaTypeLabel,
   fetchPeopleMediaFiles,
   fetchKnownFiles,
+  synthesizeKnownImageFiles,
 };

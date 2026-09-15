@@ -87,6 +87,7 @@ export const defaultUploadStyles = {
   fileImage: {width: '100%', height: '100%'},
   fileInfo: {padding: 9, minHeight: 74},
   fileName: {color: '#0F172A', fontSize: 12, fontWeight: '700', lineHeight: 16},
+  mediaTypesLine: {color: '#64748B', fontSize: 11, fontWeight: '600', lineHeight: 14, marginTop: 3},
   fileMetaRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 7},
   contextBadge: {
     color: '#475569',
