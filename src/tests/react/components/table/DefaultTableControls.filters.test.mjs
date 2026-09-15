@@ -10,17 +10,10 @@ const source = readFileSync(
   'utf8',
 );
 
-test('table mode filter button opens DefaultFiltersModal', () => {
-  assert.match(source, /effectiveViewMode === 'table'/);
+test('filter button opens DefaultFiltersModal in table and cards modes (#811)', () => {
   assert.match(source, /DefaultFiltersModal/);
-  // table mode must not toggle orphan tableFiltersVisible flag only
+  assert.match(source, /hasFilterableColumns \? \(/);
+  // must not gate the modal only on cards / must not toggle orphan flag
   assert.doesNotMatch(source, /tableFiltersVisible:\s*!tableFiltersVisible/);
-  assert.doesNotMatch(source, /const tableFiltersVisible = Boolean/);
-});
-
-test('cards mode filter modal remains', () => {
-  assert.match(source, /effectiveViewMode === 'cards'/);
-  // two modal usages: table + cards
-  const matches = source.match(/<DefaultFiltersModal/g) || [];
-  assert.ok(matches.length >= 2, `expected >=2 DefaultFiltersModal, got ${matches.length}`);
+  assert.doesNotMatch(source, /effectiveViewMode === 'cards' \? \([\s\S]*DefaultFiltersModal/);
 });

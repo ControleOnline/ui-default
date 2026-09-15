@@ -76,7 +76,8 @@ const DefaultTableControls = ({ storeName }) => {
   return (
     <>
       <DefaultDebug storeName={storeName} />
-      {hasFilterableColumns && effectiveViewMode === 'table' ? (
+      {/* app-community#811: LISTA (table) e CARD abrem o mesmo DefaultFiltersModal */}
+      {hasFilterableColumns ? (
         <DefaultModalButton
           renderButton={({ isOpen, open }) => (
             <TouchableOpacity
@@ -99,43 +100,6 @@ const DefaultTableControls = ({ storeName }) => {
                     { color: isOpen ? pressedIconColor : textColor },
                   ]}
                 >
-                  {activeFilterCount}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-          )}
-        >
-          {({ close, isOpen }) => (
-            <DefaultFiltersModal
-              storeName={storeName}
-              visible={isOpen}
-              onClose={close}
-            />
-          )}
-        </DefaultModalButton>
-      ) : null}
-      {hasFilterableColumns && effectiveViewMode === 'cards' ? (
-        <DefaultModalButton
-          renderButton={({ isOpen, open }) => (
-            <TouchableOpacity
-              style={[
-                ...buttonStyle,
-                isOpen ? pressedStyle : null,
-              ]}
-              activeOpacity={0.82}
-              onPress={open}
-            >
-              <Icon
-                name="filter"
-                size={14}
-                color={isOpen ? pressedIconColor : textColor}
-              />
-              {activeFilterCount > 0 ? (
-                <Text
-                  style={[
-                    styles.toolbarBadgeText,
-                    { color: isOpen ? pressedIconColor : textColor },
-                  ]}>
                   {activeFilterCount}
                 </Text>
               ) : null}
