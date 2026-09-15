@@ -4,6 +4,8 @@ import {
   hydrateAddressFromRow,
   hasCoordinates,
   parseOptionalCoordinate,
+  formatCepMask,
+  normalizeCepDigits,
 } from '../../../react/services/addressFormUtils';
 
 describe('addressFormUtils', () => {
@@ -150,5 +152,25 @@ describe('addressFormUtils', () => {
     expect(parseOptionalCoordinate('-46.6333')).toBeCloseTo(-46.6333);
     expect(parseOptionalCoordinate('0')).toBe(0);
     expect(parseOptionalCoordinate(' 12.5 ')).toBeCloseTo(12.5);
+  });
+});
+
+describe('formatCepMask / normalizeCepDigits', () => {
+  test('normalizeCepDigits caps at 8 digits', () => {
+    expect(normalizeCepDigits('013101001')).toBe('01310100');
+    expect(normalizeCepDigits('01310-1001')).toBe('01310100');
+    expect(normalizeCepDigits('01310-100')).toBe('01310100');
+  });
+
+  test('formatCepMask applies #####-###', () => {
+    expect(formatCepMask('01310')).toBe('01310');
+    expect(formatCepMask('013101')).toBe('01310-1');
+    expect(formatCepMask('01310100')).toBe('01310-100');
+    expect(formatCepMask('013101001')).toBe('01310-100');
+  });
+
+  test('lookup gate: only 8 digits', () => {
+    expect(onlyDigits(formatCepMask('01310-10')).length).toBe(7);
+    expect(onlyDigits(formatCepMask('01310-100')).length).toBe(8);
   });
 });

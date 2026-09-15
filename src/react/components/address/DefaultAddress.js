@@ -16,11 +16,14 @@ import {
 } from '../../services/addressGeo';
 import {
   buildMapMarkerPayload,
+  formatCepMask,
   getCurrentCoordinates,
   hasCoordinates,
   hydrateAddressFromRow,
   mergePostalCodeData,
+  normalizeCepDigits,
   onlyDigits,
+  parseOptionalCoordinate,
 } from '../../services/addressFormUtils';
 import usePostalCodeLookup from '../../hooks/usePostalCodeLookup';
 import DefaultMap from '../map/DefaultMap';
@@ -48,6 +51,8 @@ export default function DefaultAddress({
   const [error, setError] = useState(null);
   const [showCountryList, setShowCountryList] = useState(false);
   const [showStateList, setShowStateList] = useState(false);
+  // Once the user types lat/lon, keep both fields editable (avoid lock when both become finite).
+  const [coordsManualEdit, setCoordsManualEdit] = useState(false);
 
   const {
     loadingCep,
@@ -93,6 +98,7 @@ export default function DefaultAddress({
     let cancelled = false;
     const initial = hydrateAddressFromRow(row);
     setForm(initial);
+    setCoordsManualEdit(false);
     onFormChange?.(initial);
     const digits = onlyDigits(initial.cep);
 
@@ -126,13 +132,34 @@ export default function DefaultAddress({
   const onChange = useCallback(
     (key, value) => {
       setForm(prev => {
-        const next = {...prev, [key]: value};
+        let nextValue = value;
+        if (key === 'cep') {
+          nextValue = normalizeCepDigits(value);
+        } else if (key === 'latitude' || key === 'longitude') {
+          // Keep raw string while typing so decimals/signs are not truncated mid-edit.
+          const parsed = parseOptionalCoordinate(value);
+          const trimmed = String(value ?? '').trim();
+          const looksComplete =
+            trimmed !== '' &&
+            trimmed !== '-' &&
+            trimmed !== '.' &&
+            trimmed !== '-.' &&
+            !trimmed.endsWith('.') &&
+            !trimmed.endsWith(',');
+          nextValue =
+            parsed != null && looksComplete ? parsed : value;
+        }
+        const next = {...prev, [key]: nextValue};
         onFormChange?.(next);
         return next;
       });
+      if (key === 'latitude' || key === 'longitude') {
+        setCoordsManualEdit(true);
+      }
       if (key === 'cep') {
         setCepError(null);
         setError(null);
+        setCoordsManualEdit(false);
       }
     },
     [onFormChange, setCepError],
@@ -225,7 +252,7 @@ export default function DefaultAddress({
           <Text style={styles.mapPlaceholderTitle}>Mapa indisponível</Text>
           <Text style={styles.mapPlaceholderText}>
             Consulte um CEP para carregar a localização quando a API retornar a
-            imagem.
+            imagem, ou informe latitude/longitude manualmente.
           </Text>
         </View>
       )}
@@ -260,7 +287,7 @@ export default function DefaultAddress({
             <TextInput
               testID="address-cep-input"
               style={[styles.input, styles.flex]}
-              value={form.cep}
+              value={formatCepMask(form.cep)}
               onChangeText={v => onChange('cep', v)}
               onBlur={onCepBlur}
               keyboardType="number-pad"
@@ -368,7 +395,13 @@ export default function DefaultAddress({
             onChangeText={v => onChange('complement', v)}
           />
         </Field>
-        <LatLonReadonlyFields form={form} styles={styles} Field={Field} />
+        <LatLonReadonlyFields
+          form={form}
+          styles={styles}
+          Field={Field}
+          editable={!hasCoordinates(form) || coordsManualEdit}
+          onChange={onChange}
+        />
 
         {!hideActions ? (
           <View style={styles.actions}>

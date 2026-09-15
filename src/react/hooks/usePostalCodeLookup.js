@@ -26,7 +26,7 @@ export default function usePostalCodeLookup({
 
   const runLookup = useCallback(
     async (rawCep, {preserveFilledFields = false} = {}) => {
-      const digits = onlyDigits(rawCep);
+      const digits = onlyDigits(rawCep).slice(0, 8);
       if (digits.length !== 8) {
         return null;
       }
@@ -86,13 +86,17 @@ export default function usePostalCodeLookup({
     [setForm, onFormChange, setStates],
   );
 
-  // Debounced auto-lookup when user types a complete 8-digit CEP
+  // Debounced auto-lookup ONLY when CEP has exactly 8 digits (never partial).
   useEffect(() => {
     if (!enabled) {
       return undefined;
     }
-    const digits = onlyDigits(formCep);
+    const digits = onlyDigits(formCep).slice(0, 8);
     if (digits.length !== 8) {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
       return undefined;
     }
     if (digits === lastRequestedRef.current) {
