@@ -54,6 +54,13 @@ export const isColorColumn = column => {
   );
 };
 
+export const isIconColumn = column => {
+  const fieldName = normalizeColumnKey(getColumnKey(column));
+  const inputType = normalizeColumnKey(column?.inputType || column?.type);
+
+  return inputType === 'icon' || fieldName === 'icon';
+};
+
 export const isFileColumn = column => {
   const inputType = normalizeColumnKey(column?.inputType || column?.type);
 
