@@ -4,8 +4,8 @@ import {useStore} from '@store';
 import {resolveDefaultFileSource} from '@controleonline/ui-common/src/react/utils/fileUrl';
 
 const resolveCompanyFromStore = peopleGetters => {
-  if (peopleGetters?.defaultCompany?.id) {
-    return peopleGetters.defaultCompany;
+  if (peopleGetters?.mainCompany?.id) {
+    return peopleGetters.mainCompany;
   }
 
   if (peopleGetters?.currentCompany?.id) {
