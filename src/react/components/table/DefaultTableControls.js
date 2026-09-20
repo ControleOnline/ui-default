@@ -1,3 +1,4 @@
+// fluxo: outros | etapa: order-history-page-filtro | https://github.com/ControleOnline/app-community/wiki/Smoke-Test-Flows
 import React from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -81,6 +82,8 @@ const DefaultTableControls = ({ storeName }) => {
         <DefaultModalButton
           renderButton={({ isOpen, open }) => (
             <TouchableOpacity
+              accessibilityLabel="Filtros"
+              testID="default-table-filter-button"
               style={[
                 ...buttonStyle,
                 isOpen ? pressedStyle : null,
