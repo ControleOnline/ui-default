@@ -1,3 +1,4 @@
+// fluxo: outros | etapa: order-history-page-filtro | https://github.com/ControleOnline/app-community/wiki/Smoke-Test-Flows
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,6 +14,7 @@ const source = readFileSync(
 test('filter button opens DefaultFiltersModal in table and cards modes (#811)', () => {
   assert.match(source, /DefaultFiltersModal/);
   assert.match(source, /hasFilterableColumns \? \(/);
+  assert.match(source, /testID="default-table-filter-button"/);
   // must not gate the modal only on cards / must not toggle orphan flag
   assert.doesNotMatch(source, /tableFiltersVisible:\s*!tableFiltersVisible/);
   assert.doesNotMatch(source, /effectiveViewMode === 'cards' \? \([\s\S]*DefaultFiltersModal/);
