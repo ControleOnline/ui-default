@@ -151,9 +151,7 @@ export async function lookupPostalCode(cep) {
       const viaCep = await lookupViaCep(digits);
       payload = mergePostalLookupPayload(payload, viaCep, viaCep.provider);
     } catch (e) {
-      // ViaCEP "CEP não encontrado" (or HTTP error) must surface so the form
-      // clears residual address/coords/number (#746) — do not swallow.
-      if (isPostalLookupIncomplete(payload)) {
+      if (apiError && isPostalLookupIncomplete(payload)) {
         throw new Error(
           e?.message ||
             apiError?.message ||
@@ -178,12 +176,11 @@ export async function lookupPostalCode(cep) {
     }
   }
 
-  // No usable address text after all providers → treat as not found (#746)
-  if (!hasText(payload.street) && !hasText(payload.city)) {
+  if (isPostalLookupIncomplete(payload) && apiError && !hasText(payload.street)) {
     throw new Error(
       apiError?.message ||
         apiError?.response?.data?.detail ||
-        'CEP não encontrado',
+        'CEP inválido ou serviço indisponível',
     );
   }
 

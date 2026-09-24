@@ -470,13 +470,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   actionsCell: {
-    minWidth: 60,
-    width: 60,
-    flexBasis: 60,
+    minWidth: 96,
     flexGrow: 0,
     flexShrink: 0,
-    maxWidth: 72,
     alignItems: 'center',
+    paddingHorizontal: 8,
   },
   rowActionsGroup: {
     flexDirection: 'row',
@@ -519,11 +517,10 @@ const styles = StyleSheet.create({
   },
   cardsGrid: {
     paddingVertical: 10,
-    paddingHorizontal: 0,
-    gap: 8,
+    paddingHorizontal: 8,
+    gap: 10,
     flexGrow: 1,
     width: '100%',
-    alignSelf: 'stretch',
   },
   cardsGridWithBottomAdd: {
     paddingBottom: 86,
@@ -542,11 +539,8 @@ const styles = StyleSheet.create({
   cardItem: {
     position: 'relative',
     flex: 1,
-    flexBasis: 0,
-    flexGrow: 1,
     minWidth: 0,
     width: '100%',
-    maxWidth: '100%',
     alignSelf: 'stretch',
   },
   cardItemWithActions: {
