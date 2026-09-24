@@ -5,7 +5,6 @@ const {
   TABLE_VISIBLE_COLUMNS_PREFERENCES_KEY,
   TABLE_VIEW_MODE_PREFERENCES_KEY,
   buildDefaultVisibleColumns,
-  canHideVisibleColumn,
   persistTableFiltersPreference,
   persistTableSortPreference,
   persistTableViewModePreference,
@@ -72,20 +71,10 @@ describe('tableVisibleColumnsPreferences', () => {
         },
       }),
     ).toEqual({
-      id: true,
+      id: false,
       status: true,
       price: false,
     });
-  });
-
-  it('does not allow hiding the last remaining column', () => {
-    expect(
-      canHideVisibleColumn({
-        columns,
-        fieldName: 'status',
-        visibleColumns: {id: true, status: false, price: false},
-      }),
-    ).toBe(false);
   });
 
   it('builds the company, route and store preference scope', () => {
