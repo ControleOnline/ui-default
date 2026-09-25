@@ -11,6 +11,7 @@ import {
   isEditableColumn,
   isExtraDataColumn,
   isFileColumn,
+  isIconColumn,
   isValidFeatherIcon,
   normalizeText,
   resolveCellPresentation,
@@ -19,6 +20,9 @@ import {
 } from './defaultInputUtils';
 import DefaultColorInput from './DefaultColorInput';
 import DefaultDateInput from './DefaultDateInput';
+import DefaultFeatherIconPicker, {
+  normalizeFeatherIconName,
+} from './DefaultFeatherIconPicker';
 import DefaultSelect from './DefaultSelect';
 import styles from './DefaultInput.styles';
 
@@ -131,6 +135,93 @@ const DefaultInput = ({
         value={value}
         variant={variant}
       />
+    );
+  }
+
+  if (isIconColumn(column)) {
+    const fieldNameIcon = getColumnKey(column);
+    const rawIconValue = value ?? row?.[fieldNameIcon];
+    const selectedIcon = normalizeFeatherIconName(rawIconValue);
+    const isFormIcon = variant === 'form';
+    const canEditIcon = isEditableColumn(column) && typeof onStartEditing === 'function';
+
+    const commitIcon = nextIcon => {
+      const normalized = normalizeFeatherIconName(nextIcon);
+      if (autoSave) {
+        onSave?.(normalized);
+        return;
+      }
+      onChangeValue?.(normalized);
+    };
+
+    if (!editing && !isFormIcon) {
+      return (
+        <View style={[styles.wrap, containerStyle]}>
+          {showLabel ? (
+            <Text style={styles.fieldLabel}>{label || column?.label || fieldNameIcon}</Text>
+          ) : null}
+          <TouchableOpacity
+            style={styles.readButton}
+            activeOpacity={canEditIcon ? 0.78 : 1}
+            disabled={!canEditIcon}
+            onPress={() => onStartEditing?.()}
+          >
+            <View style={styles.readValueWrap}>
+              <Icon
+                name={selectedIcon || 'search'}
+                size={14}
+                color={selectedIcon ? '#0F172A' : '#94A3B8'}
+              />
+              <Text
+                style={[
+                  styles.readText,
+                  !selectedIcon ? styles.mutedText : null,
+                  readTextStyle,
+                ]}
+                numberOfLines={numberOfLines}
+              >
+                {selectedIcon || '-'}
+              </Text>
+            </View>
+            {saving ? (
+              <Text style={[styles.savingText, { color: accentColor }]}>Salvando</Text>
+            ) : canEditIcon ? (
+              <Icon style={styles.editIcon} name="edit-2" size={13} color="#64748B" />
+            ) : null}
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.wrap, containerStyle]}>
+        {showLabel ? (
+          <Text style={styles.fieldLabel}>{label || column?.label || fieldNameIcon}</Text>
+        ) : null}
+        <View style={styles.editingWrap}>
+          <View style={styles.editingRow}>
+            <DefaultFeatherIconPicker
+              value={selectedIcon}
+              onChange={commitIcon}
+              placeholder={
+                global.t?.t(storeName, 'input', column?.label || fieldNameIcon) ||
+                'Buscar icone'
+              }
+              style={[isFormIcon ? styles.formInput : null, inputStyle, { flex: 1 }]}
+            />
+            {!isFormIcon ? (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                activeOpacity={0.8}
+                onPress={onCancelEditing}
+              >
+                <Icon name="x" size={14} color="#64748B" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {saving ? <Text style={styles.savingText}>Salvando</Text> : null}
+        </View>
+      </View>
     );
   }
 

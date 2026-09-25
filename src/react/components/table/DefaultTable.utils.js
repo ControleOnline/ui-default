@@ -438,6 +438,42 @@ export const normalizeSortText = value =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
+export const parseSortNumber = value => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (value == null) return NaN;
+
+  const raw = String(value).trim();
+  if (!raw || !/[0-9]/.test(raw)) return NaN;
+
+  const compact = raw.replace(/[^0-9,.-]/g, '');
+  if (!compact) return NaN;
+
+  const hasComma = compact.includes(',');
+  const hasDot = compact.includes('.');
+  let normalized = compact;
+
+  if (hasComma && hasDot) {
+    normalized = compact.lastIndexOf(',') > compact.lastIndexOf('.')
+      ? compact.replace(/\./g, '').replace(',', '.')
+      : compact.replace(/,/g, '');
+  } else if (hasComma) {
+    const parts = compact.split(',');
+    normalized = parts.length === 2 && parts[1].length <= 2
+      ? `${parts[0].replace(/\./g, '')}.${parts[1]}`
+      : compact.replace(/,/g, '');
+  } else if (hasDot) {
+    const parts = compact.split('.');
+    if (parts.length > 2) {
+      normalized = compact.replace(/\./g, '');
+    } else if (parts.length === 2 && parts[1].length === 3 && parts[0].length <= 3) {
+      normalized = compact.replace(/\./g, '');
+    }
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+};
+
 export const resolveSortComparable = ({ column, row, storeName, columns }) => {
   const fieldName = getColumnKey(column);
   const sortField = getSortField(column);
@@ -472,11 +508,9 @@ export const resolveSortComparable = ({ column, row, storeName, columns }) => {
         storeName,
       }));
 
-  const normalizedNumber = Number(
-    String(resolvedValue).replace(/[^0-9,.-]/g, '').replace(',', '.'),
-  );
+  const normalizedNumber = parseSortNumber(resolvedValue);
 
-  if (Number.isFinite(normalizedNumber) && String(resolvedValue).match(/[0-9]/)) {
+  if (Number.isFinite(normalizedNumber)) {
     return normalizedNumber;
   }
 

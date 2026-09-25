@@ -188,16 +188,85 @@ Com colunas só via prop (store ainda sem columns):
 />
 ```
 
+
+## Sincronização com o store (`useDefaultTableStoreSync`)
+
+Hook interno que mantém props controladas do `DefaultTable` alinhadas ao slice Zustand **sem depender da identidade do objeto `store`** (Zustand troca a referência a cada commit).
+
+**Arquivo:** `src/react/components/table/useDefaultTableStoreSync.js`  
+**Testes:** `src/tests/react/components/table/useDefaultTableStoreSync.test.js`
+
+### O que sincroniza
+
+| Efeito | Origem → destino | Guard anti-loop |
+| --- | --- | --- |
+| Colunas | prop `columns` → `actions.setColumns` / `getters.columns` | só se o store ainda não tiver colunas |
+| Itens controlados | prop `data` → `actions.setItems` | mesma referência de array (`lastPublishedItemsRef`) |
+| Colunas visíveis | `localStorage` (escopo empresa/store/rota) → `setVisibleColumns` | sanitização por colunas atuais |
+| Filtros persistidos | `localStorage` → `setFilters` | **hydrate uma vez por scopeKey** + `areTableFiltersEqual` |
+| Configs | `defaultTableConfigs` → `setConfigs` | assinatura estável (`defaultTableConfigsSignature`) |
+
+Helpers exportados: `publishStoreValue`, `assignGetterValue`, `areTableFiltersEqual`.
+
+### Preferências de filtro — regra de hydrate único
+
+Filtros de tabela são lidos de `resolveStoredTableFiltersPreference(tablePreferenceScope)` e aplicados via `sanitizeTableFiltersPreference`.
+
+**`scopeKey`** (estável):
+
+```text
+companyKey :: storeKey :: routeKey :: colunas(key|name)|...
+```
+
+Regras canônicas (app-community#448 / ui-orders OrderHistoryPage):
+
+1. Hydrate de filtros persistidos ocorre **no máximo uma vez** por `scopeKey` (`lastHydratedFiltersKeyRef`).
+2. **Não** reagir a mudanças de `storeFilters` após o hydrate — perseguir o store recria o payload e gera React **#185** (Maximum update depth exceeded).
+3. Antes de `setFilters`, comparar com `areTableFiltersEqual` (JSON estável). Se já for equivalente, só marca o `scopeKey` e sai.
+4. Toggle típico que quebrava: período `today → all → today` em `OrderHistoryPage` (filtro externo de data + DefaultTable). O guard em `useOrderHistoryFilters` (`areHistoryFiltersEqual`) **não basta** se o loop nascer no hydrate do DefaultTable.
+
+```mermaid
+flowchart TD
+  A[DefaultTable mount / columns ready] --> B{stored filters?}
+  B -->|não| C[marca scopeKey]
+  B -->|sim| D[sanitize]
+  D --> E{scopeKey já hydrated?}
+  E -->|sim| F[return — não chase storeFilters]
+  E -->|não| G{areTableFiltersEqual?}
+  G -->|sim| C
+  G -->|não| H[setFilters + marca scopeKey]
+```
+
+### Por que não colocar `storeFilters` nas deps
+
+Incluir `storeFilters` no array de dependências do efeito de hydrate faz:
+
+`setFilters` → nova referência no store → efeito roda de novo → `setFilters` → **#185**.
+
+A correção remove `storeFilters` das deps e usa `storeFiltersRef` só para a comparação de igualdade no momento do hydrate.
+
+### Visões (`APP_TYPE`)
+
+`ui-default` **não** conhece domínio de pedido/CRM/POS. Qualquer tela que use `DefaultTable` + filtros de período (ex.: histórico de pedidos em `ui-orders`, listagens CRM) herda este contrato. O módulo consumidor não deve reaplicar filtros persistidos em todo change do store; o orquestrador já faz o hydrate único.
+
+### Testes mínimos esperados
+
+- Publicação de `data` uma vez por referência de array (Devices / #185 histórico).
+- Hydrate de filtros uma vez; após churn de `storeFilters` (simular today→all→today), `setFilters` continua 1×.
+- `areTableFiltersEqual` trata payloads de período equivalentes como iguais.
+
 ## Limites e cuidados
 
 - Filhos dependem de `configs` no store: não renderize Body isolado sem o orquestrador.
 - Preferências são por **empresa + store + rota**: mudou empresa ou rota, o escopo muda.
 - `stableSerialize` evita loops de `setConfigs`.
+- Hydrate de filtros persistidos é **único por scopeKey** — não recoloque `storeFilters` nas deps do efeito de hydrate (React #185; ver seção `useDefaultTableStoreSync`).
 - List stores com escopo de empresa (`categories`, `paymentType`, `wallet`) recebem `company`/`people` automaticamente nos loads de select/coluna.
 
 ## Arquivos relacionados
 
 - `DefaultTable.js`, `DefaultTable.utils.js`, `DefaultTable.styles.js`
-- Hooks: `useDefaultTablePagination.js`, `useDefaultTableSorting.js`, `useDefaultTableTheme.js`
+- Hooks: `useDefaultTablePagination.js`, `useDefaultTableSorting.js`, `useDefaultTableTheme.js`, **`useDefaultTableStoreSync.js`**
 - Preferências: `src/react/utils/tableVisibleColumnsPreferences`
 - Testes: `src/tests/react/utils/tableVisibleColumnsPreferences.test.js`
+- Testes store sync: `src/tests/react/components/table/useDefaultTableStoreSync.test.js`
