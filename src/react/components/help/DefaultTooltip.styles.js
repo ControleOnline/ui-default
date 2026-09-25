@@ -46,6 +46,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  rows: {
+    gap: 9,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  rowLabel: {
+    color: '#64748B',
+    flex: 1,
+    fontSize: 12,
+  },
+  rowValue: {
+    color: '#0F172A',
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
   closeButton: {
     borderRadius: 999,
     borderWidth: 1,
