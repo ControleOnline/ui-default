@@ -44,6 +44,8 @@ const DefaultTableToolbar = ({ storeName }) => {
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
   const toolbarActions = Array.isArray(configs.toolbarActions) ? configs.toolbarActions : [];
+  const showToolbarActions = configs.showToolbarActions !== false;
+  const showToolbarControls = configs.showToolbarControls !== false;
   const buildTransferAction = (action, fallback) => {
     if (!action) return null;
 
@@ -99,11 +101,9 @@ const DefaultTableToolbar = ({ storeName }) => {
       label: global.t?.t?.('defaultTable', 'button', 'export'),
     },
   );
-  const resolvedToolbarActions = [
-    importTableAction,
-    exportTableAction,
-    ...toolbarActions,
-  ].filter(Boolean);
+  const resolvedToolbarActions = showToolbarActions
+    ? [importTableAction, exportTableAction, ...toolbarActions].filter(Boolean)
+    : [];
   const { tableBorderColors, toolbarColors } = useDefaultTableTheme();
   const {
     backgroundColor: toolbarBackgroundColor,
@@ -178,7 +178,7 @@ const DefaultTableToolbar = ({ storeName }) => {
         <DefaultTableCollapsedSearch storeName={storeName} />
         <View style={styles.toolbarActionGroup}>
           {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}
-          <DefaultTableControls storeName={storeName} />
+          {showToolbarControls ? <DefaultTableControls storeName={storeName} /> : null}
         </View>
       </View>
       <DefaultTableImportModal
