@@ -5,6 +5,8 @@ import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import {
+  canHideVisibleColumn,
+  isRequiredVisibleColumn,
   persistVisibleColumnsPreference,
   resolveDefaultTablePreferenceScope,
   sanitizeVisibleColumnsPreference,
@@ -65,7 +67,20 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
                 storeName,
               });
               const checked = visibleColumns[fieldName] !== false;
+              const required = isRequiredVisibleColumn(column);
+              const locked =
+                required ||
+                (checked &&
+                  !canHideVisibleColumn({
+                    columns,
+                    fieldName,
+                    visibleColumns,
+                  }));
               const toggleColumn = () => {
+                if (locked && checked) {
+                  return;
+                }
+
                 const nextVisibleColumns = sanitizeVisibleColumnsPreference({
                   columns,
                   visibleColumns: {
@@ -87,7 +102,8 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
                 <TouchableOpacity
                   key={fieldName}
                   style={styles.columnMenuItem}
-                  activeOpacity={0.82}
+                  activeOpacity={locked ? 1 : 0.82}
+                  disabled={locked && checked}
                   onPress={toggleColumn}
                 >
                   <Icon
@@ -95,7 +111,9 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
                     size={16}
                     color={checked ? resolvedCheckboxSelectedMarkColor : resolvedCheckboxBorderColor}
                   />
-                  <Text style={[styles.columnMenuText, { color: textColor }]} numberOfLines={1}>{label}</Text>
+                  <Text style={[styles.columnMenuText, { color: textColor }]} numberOfLines={1}>
+                    {required ? `${label} *` : label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

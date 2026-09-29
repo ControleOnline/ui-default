@@ -16,12 +16,11 @@ import {
 } from '../../services/addressGeo';
 import {
   buildMapMarkerPayload,
-  formatCepMask,
   getCurrentCoordinates,
+  GEOCODE_MISS_MESSAGE,
   hasCoordinates,
   hydrateAddressFromRow,
   mergePostalCodeData,
-  normalizeCepDigits,
   onlyDigits,
   parseOptionalCoordinate,
 } from '../../services/addressFormUtils';
@@ -58,6 +57,8 @@ export default function DefaultAddress({
     loadingCep,
     cepError,
     setCepError,
+    geocodeMiss,
+    setGeocodeMiss,
     onCepBlur,
     runLookup,
     cancelPending,
@@ -133,10 +134,9 @@ export default function DefaultAddress({
     (key, value) => {
       setForm(prev => {
         let nextValue = value;
-        if (key === 'cep') {
-          nextValue = normalizeCepDigits(value);
-        } else if (key === 'latitude' || key === 'longitude') {
+        if (key === 'latitude' || key === 'longitude') {
           // Keep raw string while typing so decimals/signs are not truncated mid-edit.
+          // Persist number only when the full token parses; otherwise keep the draft string.
           const parsed = parseOptionalCoordinate(value);
           const trimmed = String(value ?? '').trim();
           const looksComplete =
@@ -150,6 +150,10 @@ export default function DefaultAddress({
             parsed != null && looksComplete ? parsed : value;
         }
         const next = {...prev, [key]: nextValue};
+        // Troca de CEP: número do imóvel anterior não se aplica (#746)
+        if (key === 'cep' && onlyDigits(value) !== onlyDigits(prev.cep)) {
+          next.number = '';
+        }
         onFormChange?.(next);
         return next;
       });
@@ -159,10 +163,11 @@ export default function DefaultAddress({
       if (key === 'cep') {
         setCepError(null);
         setError(null);
+        setGeocodeMiss(false);
         setCoordsManualEdit(false);
       }
     },
-    [onFormChange, setCepError],
+    [onFormChange, setCepError, setGeocodeMiss],
   );
 
   const onSelectCountry = useCallback(async item => {
@@ -269,8 +274,13 @@ export default function DefaultAddress({
       keyboardShouldPersistTaps="handled">
       <View style={[styles.formPane, isDesktop && styles.formPaneDesktop]}>
         {displayError ? <Text style={styles.error}>{displayError}</Text> : null}
+        {geocodeMiss ? (
+          <Text testID="address-geocode-miss" style={styles.hint}>
+            {GEOCODE_MISS_MESSAGE}
+          </Text>
+        ) : null}
         <Text style={styles.hint}>
-          Informe o CEP (8 dígitos) para autopreencher via ERP. Número/complemento/apelido são preservados.
+          Informe o CEP (8 dígitos) para autopreencher via ERP. Complemento/apelido são preservados; o número é limpo ao trocar o CEP.
         </Text>
 
         <Field label="Apelido">
@@ -287,7 +297,7 @@ export default function DefaultAddress({
             <TextInput
               testID="address-cep-input"
               style={[styles.input, styles.flex]}
-              value={formatCepMask(form.cep)}
+              value={form.cep}
               onChangeText={v => onChange('cep', v)}
               onBlur={onCepBlur}
               keyboardType="number-pad"
@@ -399,7 +409,7 @@ export default function DefaultAddress({
           form={form}
           styles={styles}
           Field={Field}
-          editable={!hasCoordinates(form) || coordsManualEdit}
+          editable={!hasCoordinates(form) || geocodeMiss || coordsManualEdit}
           onChange={onChange}
         />
 
@@ -433,3 +443,4 @@ function Field({label, children, style = null}) {
     </View>
   );
 }
+
