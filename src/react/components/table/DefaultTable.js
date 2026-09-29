@@ -80,8 +80,8 @@ const DefaultTable = ({
   showSearch = null,
   showRowActions = true,
   showToolbar = true,
-  showToolbarActions = true,
-  showToolbarControls = true,
+  showToolbarActions = null,
+  showToolbarControls = null,
   showTotalItemsInCompactToolbar = false,
   showTotalItemsInFooter = true,
   sort = null,
@@ -294,8 +294,14 @@ const DefaultTable = ({
       showSearch,
       showRowActions: storeDeclaredConfigs.showRowActions === false ? false : showRowActions,
       showToolbar,
-      showToolbarActions,
-      showToolbarControls,
+      showToolbarActions:
+        showToolbarActions === null
+          ? storeDeclaredConfigs.showToolbarActions !== false
+          : showToolbarActions !== false,
+      showToolbarControls:
+        showToolbarControls === null
+          ? storeDeclaredConfigs.showToolbarControls !== false
+          : showToolbarControls !== false,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
@@ -478,7 +484,13 @@ const DefaultTable = ({
         },
       ]}
     >
-      {showToolbar !== false ? <DefaultTableToolbar storeName={storeName} /> : null}
+      {showToolbar !== false ? (
+        <DefaultTableToolbar
+          storeName={storeName}
+          showToolbarActions={showToolbarActions}
+          showToolbarControls={showToolbarControls}
+        />
+      ) : null}
       <DefaultTableBody storeName={storeName} />
       <DefaultTableFooter storeName={storeName} />
       {shouldRenderBottomAddButton ? (

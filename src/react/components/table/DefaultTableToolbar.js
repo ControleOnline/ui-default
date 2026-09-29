@@ -34,7 +34,11 @@ const resolveConfiguredLabel = config => {
   return global.t?.t?.('defaultTable', 'button', 'import');
 };
 
-const DefaultTableToolbar = ({ storeName }) => {
+const DefaultTableToolbar = ({
+  storeName,
+  showToolbarActions: showToolbarActionsProp,
+  showToolbarControls: showToolbarControlsProp,
+}) => {
   const store = useStore(storeName);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const { width } = useWindowDimensions();
@@ -44,8 +48,14 @@ const DefaultTableToolbar = ({ storeName }) => {
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
   const toolbarActions = Array.isArray(configs.toolbarActions) ? configs.toolbarActions : [];
-  const showToolbarActions = configs.showToolbarActions !== false;
-  const showToolbarControls = configs.showToolbarControls !== false;
+  const showToolbarActions =
+    showToolbarActionsProp === null || showToolbarActionsProp === undefined
+      ? configs.showToolbarActions !== false
+      : showToolbarActionsProp !== false;
+  const showToolbarControls =
+    showToolbarControlsProp === null || showToolbarControlsProp === undefined
+      ? configs.showToolbarControls !== false
+      : showToolbarControlsProp !== false;
   const buildTransferAction = (action, fallback) => {
     if (!action) return null;
 
