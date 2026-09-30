@@ -1,5 +1,20 @@
 const onlyDigits = value => String(value || '').replace(/\D+/g, '');
 
+/** Keep at most 8 CEP digits (Brazilian postal code). */
+export const normalizeCepDigits = value => onlyDigits(value).slice(0, 8);
+
+/**
+ * Display mask #####-### (hyphen is visual only; max 8 digits).
+ * @example formatCepMask('01310100') => '01310-100'
+ */
+export const formatCepMask = value => {
+  const digits = normalizeCepDigits(value);
+  if (digits.length <= 5) {
+    return digits;
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 export const emptyAddressForm = {
   nickname: '',
   cep: '',
@@ -58,21 +73,15 @@ export function hasAddressText(form) {
 }
 
 export function hasCoordinates(form) {
-  const lat = Number(form?.latitude);
-  const lng = Number(form?.longitude);
-  // 0,0 is the API/entity default for "no coordinates"
   return (
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    !(Math.abs(lat) < 0.000001 && Math.abs(lng) < 0.000001)
+    Number.isFinite(Number(form?.latitude)) &&
+    Number.isFinite(Number(form?.longitude))
   );
 }
 
 /**
  * Merge postal-code API payload into form state.
- * Preserves complement and nickname (manual).
- * On CEP lookup (preserveFilledFields=false): clears number and replaces
- * auto-filled address/coords — no residual from previous CEP (#746).
+ * Always preserves number, complement and nickname (manual fields).
  * When preserveFilledFields is true, also keeps non-empty street/city/etc.
  */
 export function mergePostalCodeData(
@@ -80,88 +89,36 @@ export function mergePostalCodeData(
   data,
   {preserveFilledFields = false} = {},
 ) {
-  const pick = (key, nextValue) => {
-    if (preserveFilledFields && String(prev[key] || '').trim()) {
-      return prev[key];
-    }
-    if (
-      nextValue !== undefined &&
-      nextValue !== null &&
-      String(nextValue).trim() !== ''
-    ) {
-      return nextValue;
-    }
-    // Fresh CEP lookup must not keep residual street/city/etc.
-    if (!preserveFilledFields) {
-      return nextValue == null ? '' : String(nextValue);
-    }
-    return prev[key] || '';
-  };
+  const keep = (key, nextValue) =>
+    preserveFilledFields && String(prev[key] || '').trim()
+      ? prev[key]
+      : nextValue || prev[key] || '';
 
   const countryRaw = data?.country;
   const isBrazil =
     countryRaw === 'Brasil' || countryRaw === 'Brazil' || countryRaw === 'BR';
 
-  const latitude =
-    data?.latitude !== undefined
-      ? data.latitude
-      : data?.map?.latitude !== undefined
-        ? data.map.latitude
-        : preserveFilledFields
-          ? prev.latitude
-          : null;
-  const longitude =
-    data?.longitude !== undefined
-      ? data.longitude
-      : data?.map?.longitude !== undefined
-        ? data.map.longitude
-        : preserveFilledFields
-          ? prev.longitude
-          : null;
-
   return {
     ...prev,
-    // Número do imóvel anterior não se aplica ao novo CEP (#746)
-    number: preserveFilledFields ? prev.number : '',
+    // Manual fields never overwritten by lookup
+    number: prev.number,
     complement: prev.complement,
     nickname: prev.nickname,
-    cep: onlyDigits(data?.cep || prev.cep),
-    street: pick('street', data?.street),
-    district: pick('district', data?.district),
-    city: pick('city', data?.city),
-    uf: pick('uf', data?.uf || data?.state),
-    stateName: pick('stateName', data?.state),
-    countryCode: isBrazil ? 'BR' : countryRaw || prev.countryCode || 'BR',
+    cep: normalizeCepDigits(data?.cep || prev.cep),
+    street: keep('street', data?.street),
+    district: keep('district', data?.district),
+    city: keep('city', data?.city),
+    uf: keep('uf', data?.uf || data?.state),
+    stateName: keep('stateName', data?.state),
+    countryCode: isBrazil ? 'BR' : countryRaw || prev.countryCode,
     countryName: isBrazil
       ? 'Brazil'
-      : countryRaw || prev.countryName || 'Brazil',
-    latitude,
-    longitude,
-    mapStaticUrl: preserveFilledFields
-      ? data?.map?.staticUrl || prev.mapStaticUrl || null
-      : data?.map?.staticUrl || null,
-    facadeUrl: preserveFilledFields
-      ? data?.facade?.streetViewUrl || prev.facadeUrl || null
-      : data?.facade?.streetViewUrl || null,
-    provider: data?.provider || (preserveFilledFields ? prev.provider : null) || null,
-  };
-}
-
-/** Clear fields derived from a previous CEP when lookup fails (#746). */
-export function clearPostalCodeDerivedFields(prev) {
-  return {
-    ...prev,
-    number: '',
-    street: '',
-    district: '',
-    city: '',
-    uf: '',
-    stateName: '',
-    latitude: null,
-    longitude: null,
-    mapStaticUrl: null,
-    facadeUrl: null,
-    provider: null,
+      : countryRaw || prev.countryName,
+    latitude: data?.latitude ?? data?.map?.latitude ?? prev.latitude,
+    longitude: data?.longitude ?? data?.map?.longitude ?? prev.longitude,
+    mapStaticUrl: data?.map?.staticUrl || prev.mapStaticUrl || null,
+    facadeUrl: data?.facade?.streetViewUrl || prev.facadeUrl || null,
+    provider: data?.provider || prev.provider || null,
   };
 }
 
@@ -200,37 +157,14 @@ export function buildMapMarkerPayload(form) {
 
 export {onlyDigits};
 
-export const GEOCODE_MISS_MESSAGE =
-  'Não foi possível obter a localização no mapa para este endereço. Você pode ajustar latitude e longitude manualmente.';
-
 export function parseOptionalCoordinate(value) {
   if (value === null || value === undefined || value === '') {
     return null;
   }
 
-  const parsed = Number(String(value).trim().replace(',', '.'));
+  const parsed = Number(String(value).trim());
 
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-/** True when CEP/address text arrived but Nominatim (or API) left coords empty. */
-export function isGeocodeMiss(data) {
-  if (!data || typeof data !== 'object') {
-    return false;
-  }
-  const hasText = [
-    data.street,
-    data.district,
-    data.city,
-    data.uf,
-    data.state,
-  ].some(value => String(value || '').trim().length > 0);
-  if (!hasText) {
-    return false;
-  }
-  const lat = data.latitude ?? data.map?.latitude;
-  const lon = data.longitude ?? data.map?.longitude;
-  return !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon));
 }
 
 export function getCurrentCoordinates() {

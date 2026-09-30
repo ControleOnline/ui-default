@@ -13,7 +13,6 @@ import {
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
-import { isFilledFilterValue } from './filterValue';
 import useDefaultTableTheme from '@controleonline/ui-default/src/react/components/table/useDefaultTableTheme';
 import {
   normalizeCollectionItems,
@@ -62,7 +61,13 @@ const DefaultColumnFilter = ({
 
       const currentFilters = store?.getters?.filters || {};
       const nextFilters = { ...(currentFilters || {}) };
-      if (!isFilledFilterValue(value)) delete nextFilters[nextFieldName];
+      const isEmpty =
+        value === null ||
+        value === undefined ||
+        normalizeText(value) === '' ||
+        (Array.isArray(value) && value.length === 0);
+
+      if (isEmpty) delete nextFilters[nextFieldName];
       else nextFilters[nextFieldName] = value;
 
       const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];

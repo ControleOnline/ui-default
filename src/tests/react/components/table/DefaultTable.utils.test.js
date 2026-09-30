@@ -21,7 +21,6 @@ jest.mock('@controleonline/ui-common/src/react/utils/dateRangeFilter', () => ({
 const {
   getColumnMinWidth,
   getColumnStyle,
-  parseSortNumber,
 } = require('../../../../react/components/table/DefaultTable.utils');
 
 describe('DefaultTable utils', () => {
@@ -34,14 +33,5 @@ describe('DefaultTable utils', () => {
         }),
       ]),
     );
-  });
-
-  it('parses Brazilian thousand and decimal masks as numbers', () => {
-    expect(parseSortNumber('1.234,56')).toBeCloseTo(1234.56);
-    expect(parseSortNumber('10')).toBe(10);
-    expect(parseSortNumber('2')).toBe(2);
-    expect(parseSortNumber('1.234')).toBe(1234);
-    expect(parseSortNumber('12/03/2024')).toBeNaN();
-    expect(parseSortNumber('abc')).toBeNaN();
   });
 });

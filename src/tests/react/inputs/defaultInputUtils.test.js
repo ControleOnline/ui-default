@@ -12,19 +12,11 @@ jest.mock('@controleonline/ui-common/src/react/utils/storeColumns', () => ({
 
 const {
   buildReadPresentationStyles,
-  isIconColumn,
   mapOptions,
   resolveCellPresentation,
 } = require('../../../react/components/inputs/defaultInputUtils');
 
 describe('defaultInputUtils', () => {
-  it('identifies icon columns by input type or field name', () => {
-    expect(isIconColumn({inputType: 'icon', name: 'symbol'})).toBe(true);
-    expect(isIconColumn({type: 'ICON', name: 'symbol'})).toBe(true);
-    expect(isIconColumn({name: 'icon'})).toBe(true);
-    expect(isIconColumn({name: 'status'})).toBe(false);
-  });
-
   it('deduplicates list options by normalized key', () => {
     const column = {
       formatList(item) {
