@@ -18,6 +18,9 @@ import {
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
+// Vertical cards must keep their intrinsic height; zero basis is only for grid rows.
+const intrinsicHeight = {flexBasis: 'auto', flexGrow: 0, flexShrink: 0};
+
 const DefaultTableCards = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
@@ -105,11 +108,12 @@ const DefaultTableCards = ({ storeName }) => {
           key={row?.['@id'] || row?.id}
           style={[
             styles.cardItem,
+            (flatListProps.numColumns || 1) === 1 ? intrinsicHeight : null,
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
           ]}
         >
-          <View style={styles.cardContent}>
+          <View style={[styles.cardContent, hasRowActions ? null : intrinsicHeight]}>
             {configs.renderCard({
               item: row,
               openEdit: () => configs.onEditRow?.(row),

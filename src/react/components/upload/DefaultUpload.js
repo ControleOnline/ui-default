@@ -28,6 +28,8 @@ const DefaultUpload = ({
   attachments = [],
   entityId,
   companyId,
+  company = null,
+  showAttachmentActions = true,
   context = 'products',
   libraryContexts = DEFAULT_LIBRARY_CONTEXTS,
   fileStoreName = 'file',
