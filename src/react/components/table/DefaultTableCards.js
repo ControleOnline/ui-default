@@ -54,6 +54,7 @@ const DefaultTableCards = ({ storeName }) => {
   const tableTextColor = palette.text;
   const hasBottomAddButton = configs.addButtonPlacement === 'bottom';
   const handleListScroll = event => {
+    flatListProps.onScroll?.(event);
     if (shouldTriggerEndReachedFromScroll(event)) {
       configs.onEndReached?.();
     }

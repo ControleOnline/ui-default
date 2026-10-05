@@ -113,6 +113,7 @@ const useAutoPageLoader = ({
       }
 
       const query = buildRequestQuery(page, append);
+      if (refresh && resolvedActions.catalogCache) query.__storeMeta = {catalogRefresh: true};
 
       return Promise.resolve(resolvedActions.getItems(query))
         .then(response => {
@@ -121,11 +122,11 @@ const useAutoPageLoader = ({
           }
 
           const pageItems = normalizeCollectionItems(response);
-          autoPageRef.current = page;
+          autoPageRef.current = Number(response?.catalogPage) || page;
           autoLoadedQueryKeyRef.current = autoQuerySignature;
           autoErroredQueryKeyRef.current = '';
           setAutoHasLoaded(true);
-          setAutoLastPageCount(pageItems.length);
+          setAutoLastPageCount(response?.catalogLastPageCount ?? pageItems.length);
           return pageItems;
         })
         .catch(error => {
