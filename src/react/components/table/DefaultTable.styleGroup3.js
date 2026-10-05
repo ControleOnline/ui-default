@@ -1,6 +1,29 @@
 import {Platform} from 'react-native';
 import {shadow} from './DefaultTable.shadow';
 export default {
+modalCard: {
+    width: '100%',
+    maxWidth: 860,
+    maxHeight: '86%',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    ...shadow,
+  },
+modalHeader: {
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+modalTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '900',
+  },
 modalCloseButton: {
     width: 32,
     height: 32,

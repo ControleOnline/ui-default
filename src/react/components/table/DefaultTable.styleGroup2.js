@@ -1,6 +1,21 @@
 import {Platform} from 'react-native';
 import {shadow} from './DefaultTable.shadow';
 export default {
+cell: {
+    minWidth: 118,
+    flexBasis: 118,
+    flexGrow: 1,
+    flexShrink: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    borderRightWidth: 0,
+  },
+identityCell: {
+    minWidth: 76,
+    flexBasis: 76,
+    flexGrow: 0.62,
+  },
 stickyIdentityCell: {
     backgroundColor: '#FFFFFF',
     zIndex: 5,
@@ -196,9 +211,7 @@ cardItemWithActions: {
     gap: 8,
   },
 cardContent: {
-    flexGrow: 1,
-    flexBasis: 'auto',
-    flexShrink: 0,
+    flex: 1,
     minWidth: 0,
     width: '100%',
   },
@@ -330,28 +343,5 @@ modalOverlay: {
     justifyContent: 'center',
     padding: 16,
     backgroundColor: 'rgba(15,23,42,0.42)',
-  },
-modalCard: {
-    width: '100%',
-    maxWidth: 860,
-    maxHeight: '86%',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    ...shadow,
-  },
-modalHeader: {
-    minHeight: 48,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-modalTitle: {
-    color: '#0F172A',
-    fontSize: 16,
-    fontWeight: '900',
   }
 };

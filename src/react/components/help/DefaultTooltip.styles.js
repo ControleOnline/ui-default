@@ -56,6 +56,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  row: {
+    borderTopColor: '#E2E8F0',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
+  },
+  rowLabel: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  rowValue: {
+    color: '#0F172A',
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 12,
+    textAlign: 'right',
+  },
 });
 
 export default styles;

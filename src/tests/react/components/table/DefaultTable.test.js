@@ -287,6 +287,43 @@ describe('DefaultTable', () => {
     }
   });
 
+  it('can show only search in the toolbar while hiding configured actions and controls', () => {
+    mockWindowDimensions = {width: 375, height: 667};
+    mockStores.categories = {
+      actions: {},
+      getters: {
+        columns: [{key: 'name', label: 'Nome', searchable: true}],
+        configs: {
+          import: {enabled: true, importType: 'product', label: 'Importar CSV'},
+          showSearch: true,
+        },
+        items: [],
+        totalItems: 17,
+      },
+    };
+    let tree;
+
+    renderer.act(() => {
+      tree = renderer.create(
+        React.createElement(DefaultTable, {
+          columns: [{key: 'name', label: 'Nome', searchable: true}],
+          data: [],
+          showToolbarActions: false,
+          showToolbarControls: false,
+          showTotalItemsInFooter: false,
+          storeName: 'categories',
+        }),
+      );
+    });
+
+    const iconNames = tree.root.findAllByType('icon').map(node => node.props.name);
+    expect(iconNames).toContain('search');
+    expect(iconNames).not.toEqual(
+      expect.arrayContaining(['upload', 'code', 'filter', 'list', 'columns']),
+    );
+    expect(tree.root.findAllByType('Text').map(node => node.props.children)).not.toContain('Importar CSV');
+  });
+
   it('keeps the list/card toggle visible on compact layouts even when cards are forced', () => {
     let tree;
 

@@ -331,20 +331,5 @@ row: {
     alignItems: 'stretch',
     borderBottomWidth: 1,
     borderBottomColor: '#EEF2F7',
-  },
-cell: {
-    minWidth: 118,
-    flexBasis: 118,
-    flexGrow: 1,
-    flexShrink: 0,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    justifyContent: 'center',
-    borderRightWidth: 0,
-  },
-identityCell: {
-    minWidth: 76,
-    flexBasis: 76,
-    flexGrow: 0.62,
   }
 };
