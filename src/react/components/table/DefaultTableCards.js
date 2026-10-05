@@ -106,6 +106,7 @@ const DefaultTableCards = ({ storeName }) => {
           key={row?.['@id'] || row?.id}
           style={[
             styles.cardItem,
+            {flexBasis: flatListProps.numColumns > 1 ? 0 : 'auto', flexGrow: flatListProps.numColumns > 1 ? 1 : 0, width: '100%'},
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
           ]}

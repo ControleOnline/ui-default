@@ -196,7 +196,9 @@ cardItemWithActions: {
     gap: 8,
   },
 cardContent: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 'auto',
+    flexShrink: 0,
     minWidth: 0,
     width: '100%',
   },

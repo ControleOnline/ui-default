@@ -10,7 +10,7 @@ const isReactComponentType = value =>
 export const hasDefaultTableRowActionsComponent = component =>
   typeof component === 'function' ||
   React.isValidElement(component) ||
-  isReactComponentType(component);
+  Boolean(isReactComponentType(component));
 
 export const resolveDefaultTableRowActionsWidth = configs => {
   const rawWidth = configs?.rowActionsWidth ?? configs?.actionsColumnWidth;

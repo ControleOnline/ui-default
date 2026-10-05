@@ -130,7 +130,7 @@ export const parseSortNumber = value => {
   if (value == null) return NaN;
 
   const raw = String(value).trim();
-  if (!raw || !/[0-9]/.test(raw)) return NaN;
+  if (!raw || !/[0-9]/.test(raw) || raw.includes('/')) return NaN;
 
   const compact = raw.replace(/[^0-9,.-]/g, '');
   if (!compact) return NaN;
