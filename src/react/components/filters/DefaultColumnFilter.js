@@ -42,7 +42,7 @@ const DefaultColumnFilter = ({
   const store = useStore(storeName);
   const peopleStore = useStore('people');
   const configs = store?.getters?.configs || {};
-  const { resolvedAccentColor } = useDefaultTableTheme(accentColor);
+  const { resolvedAccentColor, themeColors } = useDefaultTableTheme(accentColor);
   const [loadedItems, setLoadedItems] = useState([]);
   const [loadedKey, setLoadedKey] = useState('');
   const fieldName = getColumnKey(column);
@@ -168,7 +168,7 @@ const DefaultColumnFilter = ({
           dense
           store={storeName}
           field={fieldName}
-          labelCaption={global.t?.t(storeName, 'label', column?.label || fieldName)}
+          labelCaption={themeColors.compact ? column?.compactLabel || fieldName : global.t?.t(storeName, 'label', column?.label || fieldName)}
           value={filterValue.shortcut || 'all'}
           customRange={filterValue.customRange || { from: '', to: '' }}
           onChange={optionKey =>
@@ -196,9 +196,9 @@ const DefaultColumnFilter = ({
     const explicitOptions = resolveOptions(column);
     const rawOptions = Array.isArray(explicitOptions)
       ? mapOptions(column, explicitOptions, storeName)
-      : mapOptions(column, loadedItems, storeName);
+      : Array.isArray(column.list) ? buildOptionsFromColumn(column, null, storeName) : mapOptions(column, loadedItems, storeName);
     const options = [
-      { key: '', label: global.t?.t(storeName, 'label', 'select') },
+      { key: '', label: themeColors.compact ? 'Todos' : global.t?.t(storeName, 'label', 'select') },
       ...rawOptions,
     ];
     const selectedKey = normalizeOptionKey(filters?.[fieldName]);
@@ -208,11 +208,12 @@ const DefaultColumnFilter = ({
       <View style={[style, styles.filterCell]}>
         <CompactFilterSelector
           dense
+          title={themeColors.compact ? column?.compactLabel || fieldName : undefined}
           store={storeName}
           field={fieldName}
           icon="filter"
           onBeforeOpen={onBeforeOpen || (() => loadListOptions())}
-          onSearchChange={onSearchChange || (value => loadListOptions(value))}
+          onSearchChange={onSearchChange || (Array.isArray(column.list) || Array.isArray(explicitOptions) ? undefined : value => loadListOptions(value))}
           accentColor={resolvedAccentColor}
           active={Boolean(selectedKey)}
           label={selected?.label || options[0]?.label || ''}
@@ -231,7 +232,8 @@ const DefaultColumnFilter = ({
   return (
     <View style={[style, styles.filterCell]}>
       <TextInput
-        style={styles.filterInput}
+        accessibilityLabel={column?.compactLabel || fieldName}
+        style={[styles.filterInput, themeColors.compact ? {minHeight: 46, borderRadius: 9, fontSize: 14, borderColor: themeColors.inputBorder, color: themeColors.inputText, backgroundColor: themeColors.inputBackground} : null]}
         value={normalizeText(filters?.[fieldName])}
         placeholder={global.t?.t(storeName, 'input', column?.label || fieldName)}
         onChangeText={value => requestChange(fieldName, value)}

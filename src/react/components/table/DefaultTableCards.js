@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
@@ -16,12 +16,14 @@ import {
   shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
+import compactStyles from './DefaultTableCompact.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 // Vertical cards must keep their intrinsic height; zero basis is only for grid rows.
 const intrinsicHeight = {flexBasis: 'auto', flexGrow: 0, flexShrink: 0};
 
 const DefaultTableCards = ({ storeName }) => {
+  const [listWidth, setListWidth] = useState(0);
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { palette } = useDefaultTableTheme();
@@ -38,6 +40,9 @@ const DefaultTableCards = ({ storeName }) => {
     configs.cardListProps && typeof configs.cardListProps === 'object'
       ? configs.cardListProps
       : {};
+  const compact = configs.appearance === 'compact';
+  const gridColumns = cardListProps.numColumns || 1;
+  const compactCardWidth = listWidth ? Math.max(0, (listWidth - 24 - 12 * (gridColumns - 1)) / gridColumns) : undefined;
   const {
     contentContainerStyle,
     key: cardListKey,
@@ -112,9 +117,10 @@ const DefaultTableCards = ({ storeName }) => {
             (flatListProps.numColumns || 1) === 1 ? intrinsicHeight : null,
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
+            compact ? [compactStyles.cardItem, {flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: compactCardWidth, maxWidth: compactCardWidth, backgroundColor: palette.cardBackground || palette.panelBackground, borderColor: palette.cardBorder || palette.inputBorder}] : null,
           ]}
         >
-          <View style={[styles.cardContent, hasRowActions ? null : intrinsicHeight]}>
+          <View style={[styles.cardContent, hasRowActions ? null : intrinsicHeight, compact ? {flex: 0, flexBasis: 'auto', flexGrow: 0} : null]}>
             {configs.renderCard({
               item: row,
               openEdit: () => configs.onEditRow?.(row),
@@ -125,7 +131,7 @@ const DefaultTableCards = ({ storeName }) => {
             })}
           </View>
           {hasRowActions ? (
-            <View style={styles.cardActions}>
+            <View style={compact ? [compactStyles.cardActions, {backgroundColor: palette.tableFooterBackground, borderTopColor: palette.border}] : styles.cardActions}>
               {customRowActions}
               {editButton}
             </View>
@@ -177,6 +183,8 @@ const DefaultTableCards = ({ storeName }) => {
     <FlatList
       key={listKey || cardListKey || `cards-${flatListProps.numColumns || 1}`}
       {...flatListProps}
+      onLayout={event => {flatListProps.onLayout?.(event); setListWidth(event.nativeEvent.layout.width);}}
+      columnWrapperStyle={compact && gridColumns > 1 ? {gap: 12} : flatListProps.columnWrapperStyle}
       data={sortedData}
       keyExtractor={getRowKey}
       renderItem={({ item, index }) => renderCardItem(item, index)}
@@ -184,6 +192,7 @@ const DefaultTableCards = ({ storeName }) => {
       contentContainerStyle={[
         styles.cardsGrid,
         contentContainerStyle,
+        compact ? {padding: 12, gap: 12} : null,
         hasBottomAddButton ? styles.cardsGridWithBottomAdd : null,
       ]}
       ListEmptyComponent={(

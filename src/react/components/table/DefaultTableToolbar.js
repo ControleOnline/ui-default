@@ -1,6 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { useStore } from '@store';
+import DefaultTableCompactToolbar from './DefaultTableCompactToolbar';
 import DefaultTableControls from './DefaultTableControls';
 import DefaultTableImportModal from './DefaultTableImportModal';
 import {
@@ -154,6 +155,12 @@ const DefaultTableToolbar = ({
       </View>
     ) : null;
 
+  if (configs.appearance === 'compact') {
+    return <>
+      <DefaultTableCompactToolbar storeName={storeName} actions={resolvedToolbarActions} showControls={showToolbarControls} />
+      <DefaultTableImportModal onClose={() => setIsImportModalVisible(false)} storeName={storeName} visible={isImportModalVisible} />
+    </>;
+  }
   return (
     <View
       style={[

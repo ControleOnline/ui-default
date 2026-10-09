@@ -23,6 +23,7 @@ import {
   shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
+import {getCompactColumnLabel} from './DefaultTableCompact.helpers';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 /** Row stripes: themes-map listItemEvenRow / listItemOddRow — never status.color. */
@@ -163,6 +164,7 @@ const DefaultTableRows = ({ storeName }) => {
             width: tableWidth,
           },
           rowStyleValue,
+          configs.appearance === 'compact' ? {minHeight: 58} : null,
         ]}
         {...rowPressProps}
       >
@@ -265,17 +267,21 @@ const DefaultTableRows = ({ storeName }) => {
           >
             {tableColumns.map(column => {
               const fieldName = getColumnKey(column);
-              const label = formatStoreColumnLabel({
+              const defaultLabel = formatStoreColumnLabel({
                 columns,
                 fieldName,
                 fallbackLabel: column?.label || fieldName,
                 storeName,
               });
+              const label = configs.appearance === 'compact' ? getCompactColumnLabel(column, defaultLabel) : defaultLabel;
               const sortFieldName = getSortField(column);
 
               return (
                 <TouchableOpacity
                   key={fieldName}
+                  accessibilityRole={isSortableColumn(column) ? 'button' : undefined}
+                  accessibilityLabel={`Ordenar por ${label}`}
+                  accessibilityHint={configs.resolvedSort?.field === sortFieldName ? `Ordem ${configs.resolvedSort.direction === 'asc' ? 'crescente' : 'decrescente'}` : undefined}
                   style={[
                     getColumnStyle(column),
                     column?.isIdentity
@@ -286,7 +292,7 @@ const DefaultTableRows = ({ storeName }) => {
                   onPress={() => configs.requestSort?.(column)}
                 >
                   <View style={styles.sortableHeader}>
-                    <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
+                    <Text style={[styles.headerText, { color: tableTextColor }, configs.appearance === 'compact' ? {fontSize: 12, fontWeight: '600', textTransform: 'none'} : null]} numberOfLines={1}>{label}</Text>
                     {isSortableColumn(column) && configs.resolvedSort?.field === sortFieldName ? (
                       <Icon name={configs.resolvedSort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
                     ) : isSortableColumn(column) ? (
@@ -314,8 +320,8 @@ const DefaultTableRows = ({ storeName }) => {
                   },
                 ]}
               >
-                <Text style={[styles.headerText, { color: tableTextColor }]}>
-                  {global.t?.t(storeName, 'label', 'actions')}
+                <Text style={[styles.headerText, { color: tableTextColor }, configs.appearance === 'compact' ? {fontSize: 12, fontWeight: '600', textTransform: 'none'} : null]}>
+                  {configs.appearance === 'compact' ? 'Ações' : global.t?.t(storeName, 'label', 'actions')}
                 </Text>
               </View>
             ) : null}
