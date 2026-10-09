@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { NavigationRouteContext, useIsFocused } from '@react-navigation/native';
 import { useStore } from '@store';
@@ -16,6 +16,7 @@ import {
 } from './useDefaultTableSorting';
 import useDefaultTableTheme from './useDefaultTableTheme';
 import DefaultTableView from './DefaultTableView';
+import useDefaultTableCreateForm from './useDefaultTableCreateForm';
 
 import {
   assignGetterValue,
@@ -63,6 +64,8 @@ const DefaultTable = ({
   onSelectionChange = null,
   onSortChange = null,
   pageSize = null,
+  appearance = 'default',
+  paginationMode = 'infinite',
   pinRowActions = true,
   renderCard = null,
   requestParams = {},
@@ -86,7 +89,6 @@ const DefaultTable = ({
   toolbarActions = [],
   visibleColumnsPreferenceKey = '',
 }) => {
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const { width } = useWindowDimensions();
   const route = React.useContext(NavigationRouteContext);
   const store = useStore(storeName);
@@ -94,7 +96,7 @@ const DefaultTable = ({
   const isFocused = useIsFocused();
   const storeDeclaredConfigsRef = useRef(null);
   const { showError } = useMessage() || {};
-  const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor);
+  const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor, appearance);
   const tablePanelBorderColor = tableBorderColors.containerBorderColor;
   const floatingAddBackgroundColor =
     themeColors.buttonBackground || themeColors.primary || accentColor;
@@ -165,6 +167,9 @@ const DefaultTable = ({
   const {
     buildRequestQuery,
     currentPage,
+    pageSizeNumber,
+    goToPage,
+    resolvedIsLoading,
     handleEndReached,
     handleRefresh,
     resolvedData,
@@ -180,6 +185,7 @@ const DefaultTable = ({
     onEndReached,
     onRefresh,
     pageSize,
+    paginationMode,
     requestParams: requestParamsSeed,
     resolvedActions,
     resolvedSort,
@@ -194,23 +200,10 @@ const DefaultTable = ({
     storeName,
     tableColumns: columnsForTable,
   });
-  const closeCreateForm = useCallback(() => setIsCreateFormOpen(false), []);
-  const canUseDefaultCreateForm = typeof resolvedActions?.save === 'function';
-  const handleAdd = useCallback(() => {
-    if (typeof onAdd === 'function') {
-      return onAdd();
-    }
-    if (!canUseDefaultCreateForm) {
-      return null;
-    }
-    setIsCreateFormOpen(true);
-    return null;
-  }, [canUseDefaultCreateForm, onAdd]);
-  const resolvedOnAdd = typeof onAdd === 'function' || canUseDefaultCreateForm
-    ? handleAdd
-    : null;
+  const {isCreateFormOpen, closeCreateForm, resolvedOnAdd, handleDefaultCreateSaved} =
+    useDefaultTableCreateForm({onAdd, onSaved, resolvedActions, handleRefresh});
   const hasAddAction =
-    (addConfig === true || add === true) &&
+    add !== false && (addConfig === true || add === true) &&
     typeof resolvedOnAdd === 'function';
   const shouldRenderFloatingAddButton =
     hasAddAction &&
@@ -219,14 +212,6 @@ const DefaultTable = ({
     hasAddAction &&
     showToolbar !== false &&
     normalizedAddButtonPlacement === 'bottom';
-  const handleDefaultCreateSaved = useCallback(
-    savedItem => {
-      closeCreateForm();
-      onSaved?.(savedItem, null);
-      handleRefresh?.();
-    },
-    [closeCreateForm, handleRefresh, onSaved],
-  );
   const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
       return buildRequestQuery(currentPage || 1, false);
@@ -237,7 +222,11 @@ const DefaultTable = ({
       sort: resolvedSort || null,
     };
   }, [autoMode, buildRequestQuery, currentPage, requestParamsSeed, resolvedSort, storeFilters]);
+  const previousCompactRef = useRef(isCompactView);
+  const enteringCompact = isCompactView && !previousCompactRef.current;
+  useEffect(() => {previousCompactRef.current = isCompactView;}, [isCompactView]);
   const effectiveViewMode =
+    enteringCompact && forceCardsOnCompact !== false ? 'cards' :
     currentConfigs.viewMode ||
     storedViewMode ||
     (isCompactView && forceCardsOnCompact !== false ? 'cards' : initialViewMode);
@@ -245,6 +234,12 @@ const DefaultTable = ({
   const defaultTableConfigs = useMemo(
     () => ({
       ...storeDeclaredConfigs,
+      appearance,
+      paginationMode,
+      currentPage,
+      pageSizeNumber,
+      onPageChange: goToPage,
+      paginationLoading: resolvedIsLoading,
       add,
       addButtonPlacement: normalizedAddButtonPlacement,
       addLabel: resolvedAddLabel,
@@ -311,6 +306,7 @@ const DefaultTable = ({
       viewMode: effectiveViewMode,
     }),
     [
+      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -373,6 +369,7 @@ const DefaultTable = ({
   const defaultTableConfigsSignature = useMemo(
     () =>
       stableSerialize({
+        appearance, paginationMode, currentPage, pageSizeNumber, resolvedIsLoading,
         configuredImport: storeDeclaredConfigs.import || null,
         add,
         addButtonPlacement: normalizedAddButtonPlacement,
@@ -408,6 +405,7 @@ const DefaultTable = ({
         toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
       }),
     [
+      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -452,6 +450,8 @@ const DefaultTable = ({
   // opening Adicionar on DefaultTable (categories). Sync only in the hook
   // when defaultTableConfigsSignature changes.
   useDefaultTableStoreSync({
+    filters,
+    onFilterChange,
     columns,
     columnsForTable,
     data,

@@ -12,6 +12,7 @@ const mockSanitizeTableFiltersPreference = jest.fn((args) => {
 });
 
 jest.mock('../../../../react/utils/tableVisibleColumnsPreferences', () => ({
+  persistTableFiltersPreference: jest.fn(),
   resolveStoredTableFiltersPreference: (...args) =>
     mockResolveStoredTableFiltersPreference(...args),
   resolveStoredVisibleColumnsPreference: jest.fn(() => null),
@@ -25,8 +26,10 @@ const {
   useDefaultTableStoreSync,
 } = require('../../../../react/components/table/useDefaultTableStoreSync');
 
-function Harness({data, store, storeFilters, columnsForTable, tablePreferenceScope, configsSignature = 'sig', configs = {}}) {
+function Harness({data, store, storeFilters, columnsForTable, tablePreferenceScope, filters, onFilterChange, configsSignature = 'sig', configs = {}}) {
   useDefaultTableStoreSync({
+    filters,
+    onFilterChange,
     columns: [],
     columnsForTable: columnsForTable || [],
     data,
@@ -161,6 +164,7 @@ describe('useDefaultTableStoreSync', () => {
 
   it('publishes changed same-count table configs but ignores equivalent snapshots', () => {
     const setConfigs = jest.fn();
+    const setItems = jest.fn();
     const store = {actions: {setConfigs, setItems}, getters: {}};
     const first = [{id: 'device:396', configs: [{id: 487}]}];
     const second = [{id: 'device:403', configs: [{id: 510}]}];
@@ -193,5 +197,38 @@ describe('useDefaultTableStoreSync', () => {
     });
     expect(setConfigs).toHaveBeenCalledTimes(2);
     tree.unmount();
+  });
+});
+
+
+describe('controlled history filters and persisted preferences', () => {
+  it('keeps the initial date shown by the dialog aligned with the request owner', () => {
+    mockResolveStoredTableFiltersPreference.mockReturnValue(null);
+    const filters = {alterDate: {shortcut: 'today'}};
+    const store = {getters: {filters: {}}, actions: {setFilters: jest.fn()}};
+    const onFilterChange = jest.fn();
+    let tree;
+    renderer.act(() => {tree = renderer.create(React.createElement(Harness, {
+      store, filters, onFilterChange, columnsForTable: [{key: 'alterDate'}],
+    }));});
+    expect(store.actions.setFilters).toHaveBeenCalledWith(filters);
+    expect(onFilterChange).not.toHaveBeenCalled();
+    renderer.act(() => tree.unmount());
+  });
+  it.each([{}, {alterDate: {shortcut: 'all'}}])('notifies the query owner when restoring all periods: %j', saved => {
+    mockResolveStoredTableFiltersPreference.mockReturnValue(saved);
+    const store = {getters: {}, actions: {setFilters: jest.fn()}};
+    const onFilterChange = jest.fn();
+    const props = {store, storeFilters: {alterDate: {shortcut: 'today'}},
+      filters: {alterDate: {shortcut: 'today'}}, onFilterChange,
+      columnsForTable: [{key: 'alterDate'}]};
+    let tree;
+    renderer.act(() => {tree = renderer.create(React.createElement(Harness, props));});
+    expect(store.actions.setFilters).toHaveBeenCalledWith(saved);
+    expect(onFilterChange).toHaveBeenCalledTimes(1);
+    expect(onFilterChange).toHaveBeenCalledWith(saved);
+    renderer.act(() => {tree.update(React.createElement(Harness, {...props, filters: saved, storeFilters: saved}));});
+    expect(onFilterChange).toHaveBeenCalledTimes(1);
+    renderer.act(() => tree.unmount());
   });
 });

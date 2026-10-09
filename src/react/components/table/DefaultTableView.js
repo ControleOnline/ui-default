@@ -1,11 +1,13 @@
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import DefaultTablePaginationBar from './DefaultTablePaginationBar';
 import DefaultTableBody from './DefaultTableBody';
 import DefaultTableFooter from './DefaultTableFooter';
 import DefaultTableToolbar from './DefaultTableToolbar';
 import DefaultForm from '../form/DefaultForm';
 import styles from './DefaultTable.styles';
+import {DefaultTableThemeContext} from './useDefaultTableTheme';
 
 export default function DefaultTableView({
   tablePanelBorderColor,
@@ -29,7 +31,7 @@ export default function DefaultTableView({
   requestParamsSeed
 }) {
   return (
-    <View
+    <DefaultTableThemeContext.Provider value={themeColors}><View
       style={[
         styles.wrap,
         {
@@ -48,6 +50,7 @@ export default function DefaultTableView({
       ) : null}
       <DefaultTableBody storeName={storeName} />
       <DefaultTableFooter storeName={storeName} />
+      <DefaultTablePaginationBar storeName={storeName} />
       {shouldRenderBottomAddButton ? (
         <View style={styles.bottomAddBar}>
           <TouchableOpacity
@@ -113,6 +116,6 @@ export default function DefaultTableView({
           </View>
         </View>
       </Modal>
-    </View>
+    </View></DefaultTableThemeContext.Provider>
   );
 }

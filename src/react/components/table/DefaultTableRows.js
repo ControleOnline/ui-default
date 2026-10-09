@@ -23,6 +23,8 @@ import {
   shouldIncludeColumn,
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
+import {getCompactColumnLabel} from './DefaultTableCompact.helpers';
+import useDefaultTableRowInteraction from './useDefaultTableRowInteraction';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 /** Row stripes: themes-map listItemEvenRow / listItemOddRow — never status.color. */
@@ -31,6 +33,7 @@ export const resolveRowBackgroundColor = ({ index, tableOddColor, tableEvenColor
 };
 
 const DefaultTableRows = ({ storeName }) => {
+  const {canOpenRow, setRowInteraction} = useDefaultTableRowInteraction();
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { palette, resolvedAccentColor, tableBorderColors, themeTokens } = useDefaultTableTheme();
@@ -140,7 +143,7 @@ const DefaultTableRows = ({ storeName }) => {
     const rowPressProps = hasRowPress
       ? {
         activeOpacity: 0.84,
-        onPress: () => configs.onRowPress(row),
+        onPress: () => {if (canOpenRow(row)) configs.onRowPress(row);},
       }
       : {};
     const rowBackgroundColor = resolveRowBackgroundColor({
@@ -163,6 +166,7 @@ const DefaultTableRows = ({ storeName }) => {
             width: tableWidth,
           },
           rowStyleValue,
+          configs.appearance === 'compact' ? {minHeight: 58} : null,
         ]}
         {...rowPressProps}
       >
@@ -170,7 +174,7 @@ const DefaultTableRows = ({ storeName }) => {
           <React.Fragment key={getColumnKey(column)}>
             <DefaultTableInput
               column={column}
-              options={column?.isIdentity ? {
+              options={{...(column?.isIdentity ? {
                 cellStyle: [
                   styles.pinnedIdentityCell,
                   styles.stickyIdentityCell,
@@ -182,7 +186,7 @@ const DefaultTableRows = ({ storeName }) => {
                 cellStyle: {
                   backgroundColor: rowBackgroundColor,
                 },
-              }}
+              }), onInteractionChange: blocked => setRowInteraction(row, column, blocked)}}
               row={row}
               storeName={storeName}
               variant="cell"
@@ -215,10 +219,10 @@ const DefaultTableRows = ({ storeName }) => {
                   component={RowActionsComponent}
                   helpers={{
                     openEdit: () => configs.onEditRow?.(row),
-                    openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+                    openRow: hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null,
                   }}
                   openEdit={() => configs.onEditRow?.(row)}
-                  openRow={hasRowPress ? () => configs.onRowPress(row) : null}
+                  openRow={hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null}
                   row={row}
                   storeName={storeName}
                 />
@@ -265,17 +269,21 @@ const DefaultTableRows = ({ storeName }) => {
           >
             {tableColumns.map(column => {
               const fieldName = getColumnKey(column);
-              const label = formatStoreColumnLabel({
+              const defaultLabel = formatStoreColumnLabel({
                 columns,
                 fieldName,
                 fallbackLabel: column?.label || fieldName,
                 storeName,
               });
+              const label = configs.appearance === 'compact' ? getCompactColumnLabel(column, defaultLabel) : defaultLabel;
               const sortFieldName = getSortField(column);
 
               return (
                 <TouchableOpacity
                   key={fieldName}
+                  accessibilityRole={isSortableColumn(column) ? 'button' : undefined}
+                  accessibilityLabel={`Ordenar por ${label}`}
+                  accessibilityHint={configs.resolvedSort?.field === sortFieldName ? `Ordem ${configs.resolvedSort.direction === 'asc' ? 'crescente' : 'decrescente'}` : undefined}
                   style={[
                     getColumnStyle(column),
                     column?.isIdentity
@@ -286,7 +294,7 @@ const DefaultTableRows = ({ storeName }) => {
                   onPress={() => configs.requestSort?.(column)}
                 >
                   <View style={styles.sortableHeader}>
-                    <Text style={[styles.headerText, { color: tableTextColor }]} numberOfLines={1}>{label}</Text>
+                    <Text style={[styles.headerText, { color: tableTextColor }, configs.appearance === 'compact' ? {fontSize: 12, fontWeight: '600', textTransform: 'none'} : null]} numberOfLines={1}>{label}</Text>
                     {isSortableColumn(column) && configs.resolvedSort?.field === sortFieldName ? (
                       <Icon name={configs.resolvedSort?.direction === 'desc' ? 'chevron-down' : 'chevron-up'} size={12} color={tableTextColor} />
                     ) : isSortableColumn(column) ? (
@@ -314,8 +322,8 @@ const DefaultTableRows = ({ storeName }) => {
                   },
                 ]}
               >
-                <Text style={[styles.headerText, { color: tableTextColor }]}>
-                  {global.t?.t(storeName, 'label', 'actions')}
+                <Text style={[styles.headerText, { color: tableTextColor }, configs.appearance === 'compact' ? {fontSize: 12, fontWeight: '600', textTransform: 'none'} : null]}>
+                  {configs.appearance === 'compact' ? 'Ações' : global.t?.t(storeName, 'label', 'actions')}
                 </Text>
               </View>
             ) : null}

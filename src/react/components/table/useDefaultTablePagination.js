@@ -76,6 +76,7 @@ const useAutoPageLoader = ({
   showError,
   storeName,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
   const [autoHasLoaded, setAutoHasLoaded] = useState(false);
   const [autoLoading, setAutoLoading] = useState(false);
   const [autoLoadingMore, setAutoLoadingMore] = useState(false);
@@ -123,6 +124,7 @@ const useAutoPageLoader = ({
 
           const pageItems = normalizeCollectionItems(response);
           autoPageRef.current = Number(response?.catalogPage) || page;
+          setCurrentPage(autoPageRef.current);
           autoLoadedQueryKeyRef.current = autoQuerySignature;
           autoErroredQueryKeyRef.current = '';
           setAutoHasLoaded(true);
@@ -161,6 +163,7 @@ const useAutoPageLoader = ({
   );
 
   return {
+    currentPage,
     autoErroredQueryKeyRef,
     autoHasLoaded,
     autoLastPageCount,
@@ -225,6 +228,7 @@ export const useDefaultTablePagination = ({
   onRefresh,
   onEndReached,
   pageSize,
+  paginationMode = 'infinite',
   requestParams,
   resolvedActions,
   resolvedSort,
@@ -275,6 +279,7 @@ export const useDefaultTablePagination = ({
     [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort, resourceEndpoint, storeName, storeReload],
   );
   const {
+    currentPage,
     autoErroredQueryKeyRef,
     autoHasLoaded,
     autoLastPageCount,
@@ -365,6 +370,7 @@ export const useDefaultTablePagination = ({
 
   const handleEndReached = useCallback(() => {
     if (
+      paginationMode === 'pages' ||
       !resolvedHasMore ||
       resolvedIsLoading ||
       endReachedLockRef.current === true
@@ -384,6 +390,7 @@ export const useDefaultTablePagination = ({
       onEndReached();
     }
   }, [
+    paginationMode,
     autoMode,
     autoPageRef,
     loadAutoPage,
@@ -408,7 +415,14 @@ export const useDefaultTablePagination = ({
 
   return {
     buildRequestQuery,
-    currentPage: autoPageRef.current,
+    currentPage,
+    goToPage: page => {
+      const totalPages = Math.max(1, Math.ceil(Number(resolvedTotalItems || 0) / pageSizeNumber));
+      if (autoMode && paginationMode === 'pages' && Number.isInteger(page) && page >= 1 && page <= totalPages && !resolvedIsLoading) {
+        return loadAutoPage(page, {append: false});
+      }
+      return Promise.resolve([]);
+    },
     handleEndReached,
     handleRefresh,
     pageSizeNumber,
