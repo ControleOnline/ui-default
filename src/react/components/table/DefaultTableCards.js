@@ -17,6 +17,7 @@ import {
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import compactStyles from './DefaultTableCompact.styles';
+import useDefaultTableRowInteraction from './useDefaultTableRowInteraction';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 // Vertical cards must keep their intrinsic height; zero basis is only for grid rows.
@@ -24,6 +25,7 @@ const intrinsicHeight = {flexBasis: 'auto', flexGrow: 0, flexShrink: 0};
 
 const DefaultTableCards = ({ storeName }) => {
   const [listWidth, setListWidth] = useState(0);
+  const {canOpenRow, setRowInteraction} = useDefaultTableRowInteraction();
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { palette } = useDefaultTableTheme();
@@ -72,7 +74,7 @@ const DefaultTableCards = ({ storeName }) => {
     const renderField = (fieldName, options = {}) => (
       <DefaultTableInput
         fieldName={fieldName}
-        options={options}
+        options={{...options, onInteractionChange: blocked => {options.onInteractionChange?.(blocked); setRowInteraction(row, {key: fieldName}, blocked);}}}
         row={row}
         storeName={storeName}
         variant="card"
@@ -94,10 +96,10 @@ const DefaultTableCards = ({ storeName }) => {
         component={RowActionsComponent}
         helpers={{
           openEdit: () => configs.onEditRow?.(row),
-          openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+          openRow: hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null,
         }}
         openEdit={() => configs.onEditRow?.(row)}
-        openRow={hasRowPress ? () => configs.onRowPress(row) : null}
+        openRow={hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null}
         row={row}
         storeName={storeName}
       />
@@ -124,7 +126,7 @@ const DefaultTableCards = ({ storeName }) => {
             {configs.renderCard({
               item: row,
               openEdit: () => configs.onEditRow?.(row),
-              openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+              openRow: hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null,
               renderField,
               renderValue,
               row,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useStore } from '@store';
 import DefaultInput from '../inputs/DefaultInput';
@@ -60,6 +60,10 @@ const DefaultTableInput = ({
   const configs = store?.getters?.configs || {};
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  useEffect(() => {
+    options.onInteractionChange?.(isEditing || isSaving);
+    return () => options.onInteractionChange?.(false);
+  }, [isEditing, isSaving, options.onInteractionChange]);
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const hasRowPress = false;
   const { resolvedAccentColor, themeColors } = useDefaultTableTheme();
@@ -92,13 +96,14 @@ const DefaultTableInput = ({
       inputStyle={options.inputStyle}
       label={options.label}
       numberOfLines={options.numberOfLines ?? (dateField ? 2 : undefined)}
-      onCancelEditing={() => setIsEditing(false)}
+      onCancelEditing={() => {options.onInteractionChange?.(isSaving); setIsEditing(false);}}
       onSave={value => {
         if (typeof store?.actions?.save !== 'function') {
           setIsEditing(false);
           return Promise.resolve(null);
         }
 
+        options.onInteractionChange?.(true);
         setIsSaving(true);
         const savedItemPatch = buildSavedItemPatch(column, resolvedFieldName, value);
         const storeMeta =
@@ -122,11 +127,12 @@ const DefaultTableInput = ({
             return savedItem;
           })
           .finally(() => {
-          setIsSaving(false);
-          setIsEditing(false);
-        });
+            options.onInteractionChange?.(false);
+            setIsSaving(false);
+            setIsEditing(false);
+          });
       }}
-      onStartEditing={() => setIsEditing(true)}
+      onStartEditing={() => {options.onInteractionChange?.(true); setIsEditing(true);}}
       readTextStyle={[compactTextStyle, options.readTextStyle || options.textStyle]}
       row={row}
       saving={isSaving}

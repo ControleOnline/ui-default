@@ -164,6 +164,7 @@ describe('useDefaultTableStoreSync', () => {
 
   it('publishes changed same-count table configs but ignores equivalent snapshots', () => {
     const setConfigs = jest.fn();
+    const setItems = jest.fn();
     const store = {actions: {setConfigs, setItems}, getters: {}};
     const first = [{id: 'device:396', configs: [{id: 487}]}];
     const second = [{id: 'device:403', configs: [{id: 510}]}];

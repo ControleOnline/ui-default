@@ -1,3 +1,4 @@
+jest.mock('../../../../react/components/table/DefaultTableCompactToolbar', () => () => null);
 const React = require('react');
 const renderer = require('react-test-renderer');
 global.IS_REACT_ACT_ENVIRONMENT = true;

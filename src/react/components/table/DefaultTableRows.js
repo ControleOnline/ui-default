@@ -24,6 +24,7 @@ import {
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import {getCompactColumnLabel} from './DefaultTableCompact.helpers';
+import useDefaultTableRowInteraction from './useDefaultTableRowInteraction';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 /** Row stripes: themes-map listItemEvenRow / listItemOddRow — never status.color. */
@@ -32,6 +33,7 @@ export const resolveRowBackgroundColor = ({ index, tableOddColor, tableEvenColor
 };
 
 const DefaultTableRows = ({ storeName }) => {
+  const {canOpenRow, setRowInteraction} = useDefaultTableRowInteraction();
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { palette, resolvedAccentColor, tableBorderColors, themeTokens } = useDefaultTableTheme();
@@ -141,7 +143,7 @@ const DefaultTableRows = ({ storeName }) => {
     const rowPressProps = hasRowPress
       ? {
         activeOpacity: 0.84,
-        onPress: () => configs.onRowPress(row),
+        onPress: () => {if (canOpenRow(row)) configs.onRowPress(row);},
       }
       : {};
     const rowBackgroundColor = resolveRowBackgroundColor({
@@ -172,7 +174,7 @@ const DefaultTableRows = ({ storeName }) => {
           <React.Fragment key={getColumnKey(column)}>
             <DefaultTableInput
               column={column}
-              options={column?.isIdentity ? {
+              options={{...(column?.isIdentity ? {
                 cellStyle: [
                   styles.pinnedIdentityCell,
                   styles.stickyIdentityCell,
@@ -184,7 +186,7 @@ const DefaultTableRows = ({ storeName }) => {
                 cellStyle: {
                   backgroundColor: rowBackgroundColor,
                 },
-              }}
+              }), onInteractionChange: blocked => setRowInteraction(row, column, blocked)}}
               row={row}
               storeName={storeName}
               variant="cell"
@@ -217,10 +219,10 @@ const DefaultTableRows = ({ storeName }) => {
                   component={RowActionsComponent}
                   helpers={{
                     openEdit: () => configs.onEditRow?.(row),
-                    openRow: hasRowPress ? () => configs.onRowPress(row) : null,
+                    openRow: hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null,
                   }}
                   openEdit={() => configs.onEditRow?.(row)}
-                  openRow={hasRowPress ? () => configs.onRowPress(row) : null}
+                  openRow={hasRowPress ? () => {if (canOpenRow(row)) configs.onRowPress(row);} : null}
                   row={row}
                   storeName={storeName}
                 />

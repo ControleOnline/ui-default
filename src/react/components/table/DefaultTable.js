@@ -222,7 +222,11 @@ const DefaultTable = ({
       sort: resolvedSort || null,
     };
   }, [autoMode, buildRequestQuery, currentPage, requestParamsSeed, resolvedSort, storeFilters]);
+  const previousCompactRef = useRef(isCompactView);
+  const enteringCompact = isCompactView && !previousCompactRef.current;
+  useEffect(() => {previousCompactRef.current = isCompactView;}, [isCompactView]);
   const effectiveViewMode =
+    enteringCompact && forceCardsOnCompact !== false ? 'cards' :
     currentConfigs.viewMode ||
     storedViewMode ||
     (isCompactView && forceCardsOnCompact !== false ? 'cards' : initialViewMode);
