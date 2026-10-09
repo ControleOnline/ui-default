@@ -26,15 +26,15 @@ const {
   useDefaultTableStoreSync,
 } = require('../../../../react/components/table/useDefaultTableStoreSync');
 
-function Harness({data, store, storeFilters, columnsForTable, tablePreferenceScope, filters, onFilterChange}) {
+function Harness({data, store, storeFilters, columnsForTable, tablePreferenceScope, filters, onFilterChange, configsSignature = 'sig', configs = {}}) {
   useDefaultTableStoreSync({
     filters,
     onFilterChange,
     columns: [],
     columnsForTable: columnsForTable || [],
     data,
-    defaultTableConfigs: {},
-    defaultTableConfigsSignature: 'sig',
+    defaultTableConfigs: configs,
+    defaultTableConfigsSignature: configsSignature,
     store,
     storeColumnsLength: 0,
     storeFilters: storeFilters || {},
@@ -160,6 +160,42 @@ describe('useDefaultTableStoreSync', () => {
     expect(areTableFiltersEqual(a, b)).toBe(true);
     expect(areTableFiltersEqual(a, {alterDate: {shortcut: 'all'}})).toBe(false);
     expect(areTableFiltersEqual({}, {})).toBe(true);
+  });
+
+  it('publishes changed same-count table configs but ignores equivalent snapshots', () => {
+    const setConfigs = jest.fn();
+    const store = {actions: {setConfigs, setItems}, getters: {}};
+    const first = [{id: 'device:396', configs: [{id: 487}]}];
+    const second = [{id: 'device:403', configs: [{id: 510}]}];
+    let tree;
+    renderer.act(() => {
+      tree = renderer.create(React.createElement(Harness, {
+        data: first,
+        store,
+        configs: {sortedData: first},
+        configsSignature: JSON.stringify(first),
+      }));
+    });
+    expect(setConfigs).toHaveBeenCalledTimes(1);
+    renderer.act(() => {
+      tree.update(React.createElement(Harness, {
+        data: second,
+        store,
+        configs: {sortedData: second},
+        configsSignature: JSON.stringify(second),
+      }));
+    });
+    expect(setConfigs).toHaveBeenCalledTimes(2);
+    renderer.act(() => {
+      tree.update(React.createElement(Harness, {
+        data: [{id: 'device:403', configs: [{id: 510}]}],
+        store: {actions: {setConfigs, setItems}, getters: {}},
+        configs: {sortedData: second},
+        configsSignature: JSON.stringify(second),
+      }));
+    });
+    expect(setConfigs).toHaveBeenCalledTimes(2);
+    tree.unmount();
   });
 });
 
