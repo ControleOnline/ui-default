@@ -1,6 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { useStore } from '@store';
+import DefaultTableCompactToolbar from './DefaultTableCompactToolbar';
 import DefaultTableControls from './DefaultTableControls';
 import DefaultTableImportModal from './DefaultTableImportModal';
 import {
@@ -34,7 +35,11 @@ const resolveConfiguredLabel = config => {
   return global.t?.t?.('defaultTable', 'button', 'import');
 };
 
-const DefaultTableToolbar = ({ storeName }) => {
+const DefaultTableToolbar = ({
+  storeName,
+  showToolbarActions: showToolbarActionsProp,
+  showToolbarControls: showToolbarControlsProp,
+}) => {
   const store = useStore(storeName);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const { width } = useWindowDimensions();
@@ -44,6 +49,14 @@ const DefaultTableToolbar = ({ storeName }) => {
   const showTotalItemsInCompactToolbar = configs.showTotalItemsInCompactToolbar === true;
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
   const toolbarActions = Array.isArray(configs.toolbarActions) ? configs.toolbarActions : [];
+  const showToolbarActions =
+    showToolbarActionsProp === null || showToolbarActionsProp === undefined
+      ? configs.showToolbarActions !== false
+      : showToolbarActionsProp !== false;
+  const showToolbarControls =
+    showToolbarControlsProp === null || showToolbarControlsProp === undefined
+      ? configs.showToolbarControls !== false
+      : showToolbarControlsProp !== false;
   const buildTransferAction = (action, fallback) => {
     if (!action) return null;
 
@@ -99,11 +112,9 @@ const DefaultTableToolbar = ({ storeName }) => {
       label: global.t?.t?.('defaultTable', 'button', 'export'),
     },
   );
-  const resolvedToolbarActions = [
-    importTableAction,
-    exportTableAction,
-    ...toolbarActions,
-  ].filter(Boolean);
+  const resolvedToolbarActions = showToolbarActions
+    ? [importTableAction, exportTableAction, ...toolbarActions].filter(Boolean)
+    : [];
   const { tableBorderColors, toolbarColors } = useDefaultTableTheme();
   const {
     backgroundColor: toolbarBackgroundColor,
@@ -144,6 +155,12 @@ const DefaultTableToolbar = ({ storeName }) => {
       </View>
     ) : null;
 
+  if (configs.appearance === 'compact') {
+    return <>
+      <DefaultTableCompactToolbar storeName={storeName} actions={resolvedToolbarActions} showControls={showToolbarControls} />
+      <DefaultTableImportModal onClose={() => setIsImportModalVisible(false)} storeName={storeName} visible={isImportModalVisible} />
+    </>;
+  }
   return (
     <View
       style={[
@@ -178,7 +195,7 @@ const DefaultTableToolbar = ({ storeName }) => {
         <DefaultTableCollapsedSearch storeName={storeName} />
         <View style={styles.toolbarActionGroup}>
           {!shouldRenderCompactToolbarTotalItems ? renderToolbarActions() : null}
-          <DefaultTableControls storeName={storeName} />
+          {showToolbarControls ? <DefaultTableControls storeName={storeName} /> : null}
         </View>
       </View>
       <DefaultTableImportModal

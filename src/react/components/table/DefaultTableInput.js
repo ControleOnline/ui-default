@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useStore } from '@store';
 import DefaultInput from '../inputs/DefaultInput';
+import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {
   formatSaveValue,
   getColumnKey,
   isEditableColumn,
   normalizeId,
+  resolveCellPresentation,
 } from '../inputs/defaultInputUtils';
 import { getColumnStyle } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
@@ -58,34 +60,50 @@ const DefaultTableInput = ({
   const configs = store?.getters?.configs || {};
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  useEffect(() => {
+    options.onInteractionChange?.(isEditing || isSaving);
+    return () => options.onInteractionChange?.(false);
+  }, [isEditing, isSaving, options.onInteractionChange]);
   const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const hasRowPress = false;
-  const { resolvedAccentColor } = useDefaultTableTheme();
+  const { resolvedAccentColor, themeColors } = useDefaultTableTheme();
   const column = columnProp || columns.find(item => getColumnKey(item) === fieldName);
 
   if (!column) return null;
 
   const resolvedFieldName = getColumnKey(column);
+  const compact = configs.appearance === 'compact';
+  const presentation = resolveCellPresentation({column, columns, row, storeName});
+  const statusColor = compact && resolvedFieldName === 'status' && typeof column.compactStatusColor === 'function'
+    ? column.compactStatusColor(row, themeColors) : presentation.color || themeColors.textSecondary;
+  const compactType = storeName === 'orders' && resolvedFieldName === 'orderType' ? ({sale: 'Venda', purchase: 'Compra', transfer: 'Transferência', loss: 'Perda', cart: 'Carrinho', tab: 'Comanda', table: 'Mesa', stamp: 'Carimbo'})[row.orderType] : undefined;
+  const dateField = compact && storeName === 'orders' && ['orderDate', 'alterDate'].includes(resolvedFieldName);
+  const rawValue = row[resolvedFieldName];
+  const time = typeof rawValue === 'string' ? /[T ](\d{2}:\d{2})/.exec(rawValue)?.[1] : '';
+  const compactDisplay = compact && storeName === 'orders' ? (resolvedFieldName === 'price' ? Formatter.formatMoney(rawValue || 0) : dateField && rawValue ? `${Formatter.formatDateYmdTodmY(rawValue, false)}${time && (time !== '00:00' || resolvedFieldName === 'alterDate') ? '\n' + time : ''}` : compactType) : undefined;
+  const compactTextStyle = compact ? {fontSize: 13, fontWeight: column.isIdentity ? '600' : '400', ...(resolvedFieldName === 'status' ? {color: statusColor} : {color: themeColors.textPrimary})} : null;
+  const statusStyle = compact && resolvedFieldName === 'status' ? {width: 'auto', alignSelf: 'flex-start', borderWidth: 1, borderColor: statusColor, borderRadius: 18, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: /^#[0-9a-f]{6}$/i.test(statusColor) ? statusColor + '10' : themeColors.panelBackground} : null;
   const input = (
     <DefaultInput
       accentColor={options.accentColor || resolvedAccentColor}
       column={column}
       columns={columns}
-      containerStyle={options.containerStyle}
+      containerStyle={[options.containerStyle, statusStyle, compact && column.isIdentity ? {alignSelf: 'flex-start', width: 'auto', borderWidth: 1, borderRadius: 8, borderColor: themeColors.border, backgroundColor: themeColors.inputBackground, paddingHorizontal: 9, paddingVertical: 5} : null]}
       defaultColor={options.defaultColor || configs.defaultColor}
-      displayValue={options.displayValue}
+      displayValue={options.displayValue ?? compactDisplay}
       editing={isEditing}
       getOptionsForColumn={configs.getOptionsForColumn}
       inputStyle={options.inputStyle}
       label={options.label}
-      numberOfLines={options.numberOfLines}
-      onCancelEditing={() => setIsEditing(false)}
+      numberOfLines={options.numberOfLines ?? (dateField ? 2 : undefined)}
+      onCancelEditing={() => {options.onInteractionChange?.(isSaving); setIsEditing(false);}}
       onSave={value => {
         if (typeof store?.actions?.save !== 'function') {
           setIsEditing(false);
           return Promise.resolve(null);
         }
 
+        options.onInteractionChange?.(true);
         setIsSaving(true);
         const savedItemPatch = buildSavedItemPatch(column, resolvedFieldName, value);
         const storeMeta =
@@ -109,12 +127,13 @@ const DefaultTableInput = ({
             return savedItem;
           })
           .finally(() => {
-          setIsSaving(false);
-          setIsEditing(false);
-        });
+            options.onInteractionChange?.(false);
+            setIsSaving(false);
+            setIsEditing(false);
+          });
       }}
-      onStartEditing={() => setIsEditing(true)}
-      readTextStyle={options.readTextStyle || options.textStyle}
+      onStartEditing={() => {options.onInteractionChange?.(true); setIsEditing(true);}}
+      readTextStyle={[compactTextStyle, options.readTextStyle || options.textStyle]}
       row={row}
       saving={isSaving}
       showLabel={options.showLabel}

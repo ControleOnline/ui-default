@@ -22,6 +22,7 @@ import {
 import CompactFilterSelector from './CompactFilterSelector';
 import DateShortcutFilter from './DateShortcutFilter';
 import { resolveNextDateFilterValue } from './dateFilterSelection';
+import { isFilledFilterValue, omitEmptyFilters } from './filterValue';
 import {
   persistTableFiltersPreference,
   resolveDefaultTablePreferenceScope,
@@ -106,15 +107,6 @@ const normalizeFilterValue = value => {
   }
 
   return normalizeText(value);
-};
-
-const isFilledFilterValue = value => {
-  if (Array.isArray(value)) return value.length > 0;
-  if (value && typeof value === 'object') {
-    return Object.values(value).some(isFilledFilterValue);
-  }
-
-  return normalizeText(value) !== '';
 };
 
 const resolveDateState = filterValue => {
@@ -222,10 +214,11 @@ const DefaultExternalFilters = ({
   }, [activeCount, onActiveCountChange]);
 
   const applyFilters = useCallback(nextFilters => {
-    const resolvedFilters =
+    const resolvedFilters = omitEmptyFilters(
       nextFilters && typeof nextFilters === 'object' && !Array.isArray(nextFilters)
         ? nextFilters
-        : {};
+        : {},
+    );
     const columns = Array.isArray(externalFilterStore?.getters?.columns)
       ? externalFilterStore.getters.columns
       : [];

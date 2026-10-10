@@ -5,13 +5,17 @@ import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey } from '../inputs/defaultInputUtils';
 import {
+  canHideVisibleColumn,
+  isRequiredVisibleColumn,
   persistVisibleColumnsPreference,
   resolveDefaultTablePreferenceScope,
   sanitizeVisibleColumnsPreference,
 } from '../../utils/tableVisibleColumnsPreferences';
 import styles from './DefaultTable.styles';
+import {getCompactColumnLabel} from './DefaultTableCompact.helpers';
 import { shouldIncludeColumn } from './DefaultTable.utils';
 import useDefaultTableTheme from './useDefaultTableTheme';
+import DefaultCompactDialog from './DefaultCompactDialog';
 
 const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
   const store = useStore(storeName);
@@ -39,15 +43,43 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
     textColor,
   } = modalColors;
 
+  const compact = configs.appearance === 'compact';
+  const items = availableColumns.map(column => {
+    const fieldName = getColumnKey(column);
+    const label = getCompactColumnLabel(column, formatStoreColumnLabel({columns, fieldName, fallbackLabel: column.label || fieldName, storeName}));
+    const checked = visibleColumns[fieldName] !== false;
+    const locked = isRequiredVisibleColumn(column) || (checked && !canHideVisibleColumn({columns, fieldName, visibleColumns}));
+    const toggle = () => {
+      const next = sanitizeVisibleColumnsPreference({columns, visibleColumns: {...visibleColumns, [fieldName]: !checked}});
+      persistVisibleColumnsPreference(tablePreferenceScope, next);
+      if (store.actions?.setVisibleColumns) store.actions.setVisibleColumns(next);
+      else if (store.getters) store.getters.visibleColumns = next;
+    };
+    return <TouchableOpacity key={fieldName} accessibilityRole="checkbox" accessibilityLabel={label}
+      accessibilityState={{checked, disabled: locked && checked}} disabled={locked && checked} onPress={toggle}
+      style={{minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: checked ? themeColors.chipBackground : 'transparent'}}>
+      <Icon name={checked ? 'check-square' : 'square'} size={19} color={checked ? resolvedCheckboxSelectedMarkColor : resolvedCheckboxBorderColor} />
+      <Text style={{flex: 1, fontSize: 14, color: textColor}}>{label}</Text>
+      {locked && checked ? <Text style={{fontSize: 12, color: themeColors.textSecondary}}>Obrigatória</Text> : null}
+    </TouchableOpacity>;
+  });
+  if (compact) return <DefaultCompactDialog visible title="Colunas visíveis" description="Escolha as informações da tabela." onClose={onClose}
+    width={400} bodyHeight={items.length * 60 + 40} footer={<TouchableOpacity accessibilityRole="button" accessibilityLabel="Concluir seleção de colunas" onPress={onClose}
+      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, backgroundColor: themeColors.buttonBackground}}><Text style={{color: themeColors.buttonText, fontSize: 14, fontWeight: '600'}}>Concluir</Text></TouchableOpacity>}>
+    {items.length ? items : <Text style={{color: textColor}}>Nenhuma coluna disponível.</Text>}
+  </DefaultCompactDialog>;
+
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={[styles.modalOverlay, { backgroundColor: overlayColor }]}>
         <View style={[styles.modalCard, styles.columnMenuModalCard, { borderColor, backgroundColor }]}>
           <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
             <Text style={[styles.modalTitle, { color: headerTextColor }]} numberOfLines={1}>
-              {global.t?.t(storeName, 'label', 'columns')}
+              {configs.appearance === 'compact' ? 'Colunas visíveis' : global.t?.t(storeName, 'label', 'columns')}
             </Text>
             <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Fechar seleção de colunas"
               style={[styles.modalCloseButton, { borderColor, backgroundColor }]}
               activeOpacity={0.82}
               onPress={onClose}
@@ -58,14 +90,28 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
           <ScrollView style={styles.columnMenuModalBody} contentContainerStyle={styles.columnMenuModalList}>
             {availableColumns.map(column => {
               const fieldName = getColumnKey(column);
-              const label = formatStoreColumnLabel({
+              const defaultLabel = formatStoreColumnLabel({
                 columns,
                 fieldName,
                 fallbackLabel: column?.label || fieldName,
                 storeName,
               });
+              const label = configs.appearance === 'compact' ? getCompactColumnLabel(column, defaultLabel) : defaultLabel;
               const checked = visibleColumns[fieldName] !== false;
+              const required = isRequiredVisibleColumn(column);
+              const locked =
+                required ||
+                (checked &&
+                  !canHideVisibleColumn({
+                    columns,
+                    fieldName,
+                    visibleColumns,
+                  }));
               const toggleColumn = () => {
+                if (locked && checked) {
+                  return;
+                }
+
                 const nextVisibleColumns = sanitizeVisibleColumnsPreference({
                   columns,
                   visibleColumns: {
@@ -86,8 +132,12 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
               return (
                 <TouchableOpacity
                   key={fieldName}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={label}
+                  accessibilityState={{checked, disabled: locked && checked}}
                   style={styles.columnMenuItem}
-                  activeOpacity={0.82}
+                  activeOpacity={locked ? 1 : 0.82}
+                  disabled={locked && checked}
                   onPress={toggleColumn}
                 >
                   <Icon
@@ -95,7 +145,9 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
                     size={16}
                     color={checked ? resolvedCheckboxSelectedMarkColor : resolvedCheckboxBorderColor}
                   />
-                  <Text style={[styles.columnMenuText, { color: textColor }]} numberOfLines={1}>{label}</Text>
+                  <Text style={[styles.columnMenuText, { color: textColor }]} numberOfLines={1}>
+                    {required ? `${label} *` : label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

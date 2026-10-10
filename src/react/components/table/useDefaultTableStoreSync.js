@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import {
+  persistTableFiltersPreference,
   resolveStoredTableFiltersPreference,
   resolveStoredVisibleColumnsPreference,
   sanitizeTableFiltersPreference,
@@ -48,12 +49,19 @@ export function useDefaultTableStoreSync({
   data,
   defaultTableConfigs,
   defaultTableConfigsSignature,
+  filters,
+  onFilterChange,
   store,
   storeColumnsLength,
   storeFilters,
   storeName,
   tablePreferenceScope,
 }) {
+  const onFilterChangeRef = useRef(onFilterChange);
+  onFilterChangeRef.current = onFilterChange;
+  const controlledFiltersRef = useRef(filters);
+  controlledFiltersRef.current = filters;
+  const lastControlledFiltersRef = useRef(filters);
   const storeRef = useRef(store);
   storeRef.current = store;
   const lastPublishedItemsRef = useRef(undefined);
@@ -123,35 +131,36 @@ export function useDefaultTableStoreSync({
       columnsForTable.map(c => c?.key || c?.name || '').join('|'),
     ].join('::');
 
+    if (lastHydratedFiltersKeyRef.current === scopeKey) return;
+    lastHydratedFiltersKeyRef.current = scopeKey;
     const storedFilters = resolveStoredTableFiltersPreference(tablePreferenceScope);
-    if (!storedFilters) {
-      lastHydratedFiltersKeyRef.current = scopeKey;
-      return;
-    }
-
+    const controlled = typeof onFilterChangeRef.current === 'function';
+    if (!storedFilters && !controlled) return;
     const nextFilters = sanitizeTableFiltersPreference({
       columns: columnsForTable,
-      filters: storedFilters,
+      filters: storedFilters || controlledFiltersRef.current || {},
     });
-
-    if (Object.keys(nextFilters).length === 0) {
-      lastHydratedFiltersKeyRef.current = scopeKey;
-      return;
+    if (!areTableFiltersEqual(storeFiltersRef.current, nextFilters)) {
+      publishStoreValue(storeRef.current, 'setFilters', nextFilters, 'filters');
     }
-
-    // Hydrate once per scope/columns; never chase storeFilters (loop on period toggle).
-    if (lastHydratedFiltersKeyRef.current === scopeKey) {
-      return;
+    // The screen builds requestParams from its controlled filters. Hydration must
+    // notify it too, including saved {}, or the UI and request disagree.
+    if (controlled && !areTableFiltersEqual(controlledFiltersRef.current, nextFilters)) {
+      onFilterChangeRef.current(nextFilters);
     }
-
-    if (areTableFiltersEqual(storeFiltersRef.current, nextFilters)) {
-      lastHydratedFiltersKeyRef.current = scopeKey;
-      return;
-    }
-
-    lastHydratedFiltersKeyRef.current = scopeKey;
-    publishStoreValue(storeRef.current, 'setFilters', nextFilters, 'filters');
   }, [columnsForTable, storeName, tablePreferenceScope]);
+
+  useEffect(() => {
+    if (typeof onFilterChangeRef.current !== 'function') return;
+    if (areTableFiltersEqual(lastControlledFiltersRef.current, filters)) return;
+    lastControlledFiltersRef.current = filters;
+    persistTableFiltersPreference(tablePreferenceScope, sanitizeTableFiltersPreference({
+      columns: columnsForTable, filters: filters || {},
+    }));
+    if (!areTableFiltersEqual(storeFiltersRef.current, filters)) {
+      publishStoreValue(storeRef.current, 'setFilters', filters || {}, 'filters');
+    }
+  }, [filters]);
 
   useEffect(() => {
     if (configsSignatureRef.current === defaultTableConfigsSignature) {

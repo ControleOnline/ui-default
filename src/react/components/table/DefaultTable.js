@@ -1,26 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { NavigationRouteContext, useIsFocused } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
-import Icon from 'react-native-vector-icons/Feather';
 import { normalizeText } from '../inputs/defaultInputUtils';
 import { DEFAULT_COMPACT_BREAKPOINT, isObject, stableSerialize } from './DefaultTable.utils';
 import {
   resolveDefaultTablePreferenceScope,
   resolveStoredTableViewModePreference,
 } from '../../utils/tableVisibleColumnsPreferences';
-import DefaultTableBody from './DefaultTableBody';
-import DefaultTableFooter from './DefaultTableFooter';
-import DefaultTableToolbar from './DefaultTableToolbar';
-import DefaultForm from '../form/DefaultForm';
-import styles from './DefaultTable.styles';
 import { useDefaultTablePagination } from './useDefaultTablePagination';
 import {
   useDefaultTableSortedData,
   useDefaultTableSortState,
 } from './useDefaultTableSorting';
 import useDefaultTableTheme from './useDefaultTableTheme';
+import DefaultTableView from './DefaultTableView';
+import useDefaultTableCreateForm from './useDefaultTableCreateForm';
 
 import {
   assignGetterValue,
@@ -68,6 +64,8 @@ const DefaultTable = ({
   onSelectionChange = null,
   onSortChange = null,
   pageSize = null,
+  appearance = 'default',
+  paginationMode = 'infinite',
   pinRowActions = true,
   renderCard = null,
   requestParams = {},
@@ -80,6 +78,8 @@ const DefaultTable = ({
   showSearch = null,
   showRowActions = true,
   showToolbar = true,
+  showToolbarActions = null,
+  showToolbarControls = null,
   showTotalItemsInCompactToolbar = false,
   showTotalItemsInFooter = true,
   sort = null,
@@ -89,7 +89,6 @@ const DefaultTable = ({
   toolbarActions = [],
   visibleColumnsPreferenceKey = '',
 }) => {
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const { width } = useWindowDimensions();
   const route = React.useContext(NavigationRouteContext);
   const store = useStore(storeName);
@@ -97,7 +96,7 @@ const DefaultTable = ({
   const isFocused = useIsFocused();
   const storeDeclaredConfigsRef = useRef(null);
   const { showError } = useMessage() || {};
-  const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor);
+  const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor, appearance);
   const tablePanelBorderColor = tableBorderColors.containerBorderColor;
   const floatingAddBackgroundColor =
     themeColors.buttonBackground || themeColors.primary || accentColor;
@@ -168,6 +167,9 @@ const DefaultTable = ({
   const {
     buildRequestQuery,
     currentPage,
+    pageSizeNumber,
+    goToPage,
+    resolvedIsLoading,
     handleEndReached,
     handleRefresh,
     resolvedData,
@@ -183,6 +185,7 @@ const DefaultTable = ({
     onEndReached,
     onRefresh,
     pageSize,
+    paginationMode,
     requestParams: requestParamsSeed,
     resolvedActions,
     resolvedSort,
@@ -197,23 +200,10 @@ const DefaultTable = ({
     storeName,
     tableColumns: columnsForTable,
   });
-  const closeCreateForm = useCallback(() => setIsCreateFormOpen(false), []);
-  const canUseDefaultCreateForm = typeof resolvedActions?.save === 'function';
-  const handleAdd = useCallback(() => {
-    if (typeof onAdd === 'function') {
-      return onAdd();
-    }
-    if (!canUseDefaultCreateForm) {
-      return null;
-    }
-    setIsCreateFormOpen(true);
-    return null;
-  }, [canUseDefaultCreateForm, onAdd]);
-  const resolvedOnAdd = typeof onAdd === 'function' || canUseDefaultCreateForm
-    ? handleAdd
-    : null;
+  const {isCreateFormOpen, closeCreateForm, resolvedOnAdd, handleDefaultCreateSaved} =
+    useDefaultTableCreateForm({onAdd, onSaved, resolvedActions, handleRefresh});
   const hasAddAction =
-    (addConfig === true || add === true) &&
+    add !== false && (addConfig === true || add === true) &&
     typeof resolvedOnAdd === 'function';
   const shouldRenderFloatingAddButton =
     hasAddAction &&
@@ -222,14 +212,6 @@ const DefaultTable = ({
     hasAddAction &&
     showToolbar !== false &&
     normalizedAddButtonPlacement === 'bottom';
-  const handleDefaultCreateSaved = useCallback(
-    savedItem => {
-      closeCreateForm();
-      onSaved?.(savedItem, null);
-      handleRefresh?.();
-    },
-    [closeCreateForm, handleRefresh, onSaved],
-  );
   const debugFallbackParameters = useMemo(() => {
     if (autoMode) {
       return buildRequestQuery(currentPage || 1, false);
@@ -240,7 +222,11 @@ const DefaultTable = ({
       sort: resolvedSort || null,
     };
   }, [autoMode, buildRequestQuery, currentPage, requestParamsSeed, resolvedSort, storeFilters]);
+  const previousCompactRef = useRef(isCompactView);
+  const enteringCompact = isCompactView && !previousCompactRef.current;
+  useEffect(() => {previousCompactRef.current = isCompactView;}, [isCompactView]);
   const effectiveViewMode =
+    enteringCompact && forceCardsOnCompact !== false ? 'cards' :
     currentConfigs.viewMode ||
     storedViewMode ||
     (isCompactView && forceCardsOnCompact !== false ? 'cards' : initialViewMode);
@@ -248,6 +234,12 @@ const DefaultTable = ({
   const defaultTableConfigs = useMemo(
     () => ({
       ...storeDeclaredConfigs,
+      appearance,
+      paginationMode,
+      currentPage,
+      pageSizeNumber,
+      onPageChange: goToPage,
+      paginationLoading: resolvedIsLoading,
       add,
       addButtonPlacement: normalizedAddButtonPlacement,
       addLabel: resolvedAddLabel,
@@ -292,6 +284,14 @@ const DefaultTable = ({
       showSearch,
       showRowActions: storeDeclaredConfigs.showRowActions === false ? false : showRowActions,
       showToolbar,
+      showToolbarActions:
+        showToolbarActions === null
+          ? storeDeclaredConfigs.showToolbarActions !== false
+          : showToolbarActions !== false,
+      showToolbarControls:
+        showToolbarControls === null
+          ? storeDeclaredConfigs.showToolbarControls !== false
+          : showToolbarControls !== false,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
@@ -306,6 +306,7 @@ const DefaultTable = ({
       viewMode: effectiveViewMode,
     }),
     [
+      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -352,6 +353,8 @@ const DefaultTable = ({
       showSearch,
       showRowActions,
       showToolbar,
+      showToolbarActions,
+      showToolbarControls,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       sortedData,
@@ -366,6 +369,7 @@ const DefaultTable = ({
   const defaultTableConfigsSignature = useMemo(
     () =>
       stableSerialize({
+        appearance, paginationMode, currentPage, pageSizeNumber, resolvedIsLoading,
         configuredImport: storeDeclaredConfigs.import || null,
         add,
         addButtonPlacement: normalizedAddButtonPlacement,
@@ -391,14 +395,17 @@ const DefaultTable = ({
         showSearch,
         showRowActions,
         showToolbar,
+        showToolbarActions,
+        showToolbarControls,
         showTotalItemsInCompactToolbar,
         showTotalItemsInFooter,
         storedViewMode,
         tableFiltersVisible,
-        sortedDataLength: sortedData.length,
+        sortedData: stableSerialize(sortedData),
         toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
       }),
     [
+      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -427,20 +434,24 @@ const DefaultTable = ({
       showSearch,
       showRowActions,
       showToolbar,
+      showToolbarActions,
+      showToolbarControls,
       showTotalItemsInCompactToolbar,
       showTotalItemsInFooter,
       storedViewMode,
       tableFiltersVisible,
-      sortedData.length,
+      sortedData,
       toolbarActions,
     ],
   );
 
-  if (store?.getters) {
-    assignGetterValue(store, 'configs', defaultTableConfigs);
-  }
-
+  // Do not mutate store.configs during render. A new configs object is built
+  // every pass; writing it here retriggers subscribers and React #185 when
+  // opening Adicionar on DefaultTable (categories). Sync only in the hook
+  // when defaultTableConfigsSignature changes.
   useDefaultTableStoreSync({
+    filters,
+    onFilterChange,
     columns,
     columnsForTable,
     data,
@@ -457,87 +468,27 @@ const DefaultTable = ({
     onDataLoaded?.(sortedData);
   }, [onDataLoaded, sortedData]);
 
-  return (
-    <View
-      style={[
-        styles.wrap,
-        {
-          borderWidth: tablePanelBorderColor ? 1 : 0,
-          borderColor: tablePanelBorderColor,
-          backgroundColor: themeColors.panelBackground,
-        },
-      ]}
-    >
-      {showToolbar !== false ? <DefaultTableToolbar storeName={storeName} /> : null}
-      <DefaultTableBody storeName={storeName} />
-      <DefaultTableFooter storeName={storeName} />
-      {shouldRenderBottomAddButton ? (
-        <View style={styles.bottomAddBar}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={resolvedAddLabel}
-            activeOpacity={0.84}
-            style={[
-              styles.bottomAddButton,
-              { backgroundColor: floatingAddBackgroundColor },
-            ]}
-            onPress={resolvedOnAdd}
-          >
-            <Icon name="plus" size={18} color={floatingAddIconColor} />
-            <Text style={[styles.bottomAddText, { color: floatingAddIconColor }]}>
-              {resolvedAddLabel}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-      {shouldRenderFloatingAddButton ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={resolvedAddLabel}
-          activeOpacity={0.84}
-          style={[
-            styles.floatingAddButton,
-            { backgroundColor: floatingAddBackgroundColor },
-          ]}
-          onPress={resolvedOnAdd}
-        >
-          <Icon name="plus" size={24} color={floatingAddIconColor} />
-        </TouchableOpacity>
-      ) : null}
-      <Modal
-        animationType="fade"
-        onRequestClose={closeCreateForm}
-        transparent
-        visible={isCreateFormOpen}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{resolvedAddLabel}</Text>
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={global.t?.t(storeName, 'button', 'cancel') || 'Cancelar'}
-                onPress={closeCreateForm}
-                style={styles.modalCloseButton}
-              >
-                <Icon name="x" size={16} color={themeColors.textPrimary || '#0F172A'} />
-              </TouchableOpacity>
-            </View>
-            <DefaultForm
-              actions={resolvedActions}
-              columns={columnsForTable}
-              getOptionsForColumn={getOptionsForColumn}
-              mode="create"
-              onCancel={closeCreateForm}
-              onSaved={handleDefaultCreateSaved}
-              row={requestParamsSeed}
-              storeName={storeName}
-            />
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
+  return <DefaultTableView {...{
+    tablePanelBorderColor,
+    themeColors,
+    showToolbar,
+    storeName,
+    showToolbarActions,
+    showToolbarControls,
+    shouldRenderBottomAddButton,
+    resolvedAddLabel,
+    floatingAddBackgroundColor,
+    resolvedOnAdd,
+    floatingAddIconColor,
+    shouldRenderFloatingAddButton,
+    closeCreateForm,
+    isCreateFormOpen,
+    resolvedActions,
+    columnsForTable,
+    getOptionsForColumn,
+    handleDefaultCreateSaved,
+    requestParamsSeed
+  }} />;
 };
 
 export default DefaultTable;
