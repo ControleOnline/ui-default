@@ -4,32 +4,21 @@ import styles from './DefaultTooltip.styles';
 
 const DefaultTooltip = ({
   accentColor = '#0EA5E9',
-  accessibilityLabel = 'Abrir ajuda',
-  backdropTestID,
-  children = null,
-  closeAccessibilityLabel = 'Fechar ajuda',
-  closeLabel = 'Fechar',
-  dialogTestID,
-  hitSlop,
   label = '?',
   message = '',
-  rows = [],
   style = null,
-  testID,
   textStyle = null,
   title = 'Ajuda',
 }) => {
   const [visible, setVisible] = useState(false);
-  const hasRows = Array.isArray(rows) && rows.length > 0;
-  const hasContent = Boolean(message || children || hasRows);
 
   const openTooltip = useCallback(() => {
-    if (!hasContent) {
+    if (!message) {
       return;
     }
 
     setVisible(true);
-  }, [hasContent]);
+  }, [message]);
 
   const closeTooltip = useCallback(() => {
     setVisible(false);
@@ -38,11 +27,9 @@ const DefaultTooltip = ({
   return (
     <>
       <TouchableOpacity
-        accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
         activeOpacity={0.85}
-        disabled={!hasContent}
-        hitSlop={hitSlop}
+        disabled={!message}
         onPress={openTooltip}
         style={[
           styles.button,
@@ -50,17 +37,12 @@ const DefaultTooltip = ({
             borderColor: accentColor,
             backgroundColor: `${accentColor}14`,
           },
-          !hasContent && {opacity: 0.55},
+          !message && {opacity: 0.55},
           style,
-        ]}
-        testID={testID}>
-        {React.isValidElement(label) ? (
-          label
-        ) : (
-          <Text style={[styles.label, {color: accentColor}, textStyle]}>
-            {label}
-          </Text>
-        )}
+        ]}>
+        <Text style={[styles.label, {color: accentColor}, textStyle]}>
+          {label}
+        </Text>
       </TouchableOpacity>
 
       <Modal
@@ -68,25 +50,18 @@ const DefaultTooltip = ({
         onRequestClose={closeTooltip}
         transparent
         visible={visible}>
-        <Pressable
-          style={styles.overlay}
-          onPress={closeTooltip}
-          testID={backdropTestID}>
+        <Pressable style={styles.overlay} onPress={closeTooltip}>
           <View
-            accessibilityLabel={title}
-            accessibilityRole="summary"
             onStartShouldSetResponder={() => true}
             style={[
               styles.card,
               {
                 borderColor: accentColor,
               },
-            ]}
-            testID={dialogTestID}>
+            ]}>
             <View style={styles.cardHeader}>
               <Text style={[styles.title, {color: accentColor}]}>{title}</Text>
               <TouchableOpacity
-                accessibilityLabel={closeAccessibilityLabel}
                 accessibilityRole="button"
                 activeOpacity={0.8}
                 onPress={closeTooltip}
@@ -97,22 +72,11 @@ const DefaultTooltip = ({
                   },
                 ]}>
                 <Text style={[styles.closeButtonText, {color: accentColor}]}>
-                  {closeLabel}
+                  Fechar
                 </Text>
               </TouchableOpacity>
             </View>
-            {message ? <Text style={styles.message}>{message}</Text> : null}
-            {hasRows
-              ? rows.map(row => (
-                  <View key={row.key || row.label} style={styles.row}>
-                    <Text style={styles.rowLabel}>{row.label}</Text>
-                    <Text style={styles.rowValue}>
-                      {String(row.value ?? 'Não configurado')}
-                    </Text>
-                  </View>
-                ))
-              : null}
-            {children}
+            <Text style={styles.message}>{message}</Text>
           </View>
         </Pressable>
       </Modal>
