@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Text, View, useWindowDimensions } from 'react-native';
 import { useStore } from '@store';
 import { formatStoreColumnLabel } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { getColumnKey, resolveCellText } from '../inputs/defaultInputUtils';
@@ -23,6 +23,15 @@ import useDefaultTableTheme from './useDefaultTableTheme';
 // Vertical cards must keep their intrinsic height; zero basis is only for grid rows.
 const intrinsicHeight = {flexBasis: 'auto', flexGrow: 0, flexShrink: 0};
 
+/** Responsive card grid (OrderHistory / compact lists). Explicit cardListProps.numColumns wins. */
+export const resolveResponsiveCardColumns = width => {
+  const w = Number(width) || 0;
+  if (w >= 1280) return 3;
+  if (w >= 800) return 2;
+  return 1;
+};
+
+
 const DefaultTableCards = ({ storeName }) => {
   const [listWidth, setListWidth] = useState(0);
   const {canOpenRow, setRowInteraction} = useDefaultTableRowInteraction();
@@ -43,12 +52,20 @@ const DefaultTableCards = ({ storeName }) => {
       ? configs.cardListProps
       : {};
   const compact = configs.appearance === 'compact';
-  const gridColumns = cardListProps.numColumns || 1;
+  const {width: windowWidth} = useWindowDimensions();
+  const explicitNumColumns = Number(cardListProps.numColumns);
+  const hasExplicitNumColumns = Number.isFinite(explicitNumColumns) && explicitNumColumns > 0;
+  // Default responsive grid for all card tables (same breakpoints as OrderHistory).
+  // Callers may still force a fixed column count via cardListProps.numColumns.
+  const gridColumns = hasExplicitNumColumns
+    ? explicitNumColumns
+    : resolveResponsiveCardColumns(windowWidth);
   const compactCardWidth = listWidth ? Math.max(0, (listWidth - 24 - 12 * (gridColumns - 1)) / gridColumns) : undefined;
   const {
     contentContainerStyle,
     key: cardListKey,
     listKey,
+    numColumns: _ignoredNumColumns,
     ...flatListProps
   } = cardListProps;
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
@@ -116,7 +133,7 @@ const DefaultTableCards = ({ storeName }) => {
           key={row?.['@id'] || row?.id}
           style={[
             styles.cardItem,
-            (flatListProps.numColumns || 1) === 1 ? intrinsicHeight : null,
+            gridColumns === 1 ? intrinsicHeight : null,
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
             compact ? [compactStyles.cardItem, {flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: compactCardWidth, maxWidth: compactCardWidth, backgroundColor: palette.cardBackground || palette.panelBackground, borderColor: palette.cardBorder || palette.inputBorder}] : null,
@@ -183,7 +200,7 @@ const DefaultTableCards = ({ storeName }) => {
 
   // RN FlatList throws if numColumns changes without remount. Always derive key from numColumns
   // and apply it AFTER the spread so callers cannot override it with a stale key.
-  const resolvedNumColumns = Number(flatListProps.numColumns) > 0 ? Number(flatListProps.numColumns) : 1;
+  const resolvedNumColumns = gridColumns;
   const resolvedListKey = listKey || cardListKey || `cards-${resolvedNumColumns}`;
 
   return (
