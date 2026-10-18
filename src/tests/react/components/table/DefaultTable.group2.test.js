@@ -13,6 +13,7 @@ it('gives collapsed search a stable accessible name without a placeholder', () =
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
           storeName: 'orders',
@@ -41,6 +42,7 @@ it('keeps the financial compact toolbar aligned when the total is already in the
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
           showTotalItemsInCompactToolbar: true,
@@ -80,6 +82,7 @@ it('opens the filters modal with filterable columns only', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           data: [],
           storeName: 'orders',
         }),
@@ -117,6 +120,7 @@ it('persists filters and sort under default-table[store][route]', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           storeName: 'orders',
         }),
       );
@@ -195,6 +199,7 @@ it('hydrates the saved sort using a stable preference key on auto tables', async
     await renderer.act(async () => {
       renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           storeName: 'orders',
           visibleColumnsPreferenceKey: 'order-history-page',
         }),
@@ -244,6 +249,7 @@ it('hydrates and persists controlled filters under default-table[store][route]',
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           filters: {},
           onFilterChange,
           storeName: 'product_showcase_items',
@@ -257,6 +263,7 @@ it('hydrates and persists controlled filters under default-table[store][route]',
     renderer.act(() => {
       tree.update(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           filters: {integration: 'ifood'},
           onFilterChange,
           storeName: 'product_showcase_items',
@@ -294,6 +301,7 @@ it('preserves the compact toolbar total when the footer total is disabled', () =
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
           showTotalItemsInCompactToolbar: true,
@@ -307,6 +315,7 @@ it('preserves the compact toolbar total when the footer total is disabled', () =
   });
 it('forces cards when entering compact mode and still toggles between cards and list', () => {
     const props = {
+      appearance: 'default',
       columns: [{key: 'name', label: 'Nome'}],
       data: [{id: 1, name: 'Pedido 1'}],
       showColumnFiltersButton: false,
@@ -360,6 +369,7 @@ it('applies a custom rowStyle to rendered table rows', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [{id: 1, name: 'Pedido 1'}],
           onRowPress: () => {},
@@ -398,6 +408,7 @@ it('blocks row navigation while an inline cell is editing or saving', async () =
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           storeName: 'orders',
           actions: {save},
           columns: [{key: 'name', label: 'Nome', editable: true}],
