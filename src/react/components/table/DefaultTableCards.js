@@ -181,10 +181,16 @@ const DefaultTableCards = ({ storeName }) => {
     );
   };
 
+  // RN FlatList throws if numColumns changes without remount. Always derive key from numColumns
+  // and apply it AFTER the spread so callers cannot override it with a stale key.
+  const resolvedNumColumns = Number(flatListProps.numColumns) > 0 ? Number(flatListProps.numColumns) : 1;
+  const resolvedListKey = listKey || cardListKey || `cards-${resolvedNumColumns}`;
+
   return (
     <FlatList
-      key={listKey || cardListKey || `cards-${flatListProps.numColumns || 1}`}
       {...flatListProps}
+      key={resolvedListKey}
+      numColumns={resolvedNumColumns}
       onLayout={event => {flatListProps.onLayout?.(event); setListWidth(event.nativeEvent.layout.width);}}
       columnWrapperStyle={compact && gridColumns > 1 ? {gap: 12} : flatListProps.columnWrapperStyle}
       data={sortedData}
