@@ -11,6 +11,7 @@ jest.mock('react-native', () => {
     Text: props => React.createElement('Text', props, props.children),
     FlatList: props => React.createElement('List', {}, props.data.map((item, index) => props.renderItem({item, index}))),
     StyleSheet: {create: value => value},
+    useWindowDimensions: () => ({width: 1024, height: 800}),
     Platform: {select: value => value.web},
   };
 });
