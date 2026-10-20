@@ -43,7 +43,7 @@ const DefaultTableControls = ({ storeName }) => {
   const addConfig = store?.getters?.add;
   const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
   const shouldRenderAddButton =
-    addButtonPlacement === 'toolbar' &&
+    configs.add !== false && addButtonPlacement === 'toolbar' &&
     (addConfig === true || configs.add === true) &&
     (typeof configs.onAdd === 'function' || typeof store?.actions?.save === 'function');
   const { tableButtonColors } = useDefaultTableTheme();
@@ -78,7 +78,7 @@ const DefaultTableControls = ({ storeName }) => {
 
   return (
     <>
-      <DefaultDebug storeName={storeName} />
+      {configs.showAdministrativeTools !== false ? <DefaultDebug storeName={storeName} /> : null}
       {/* app-community#811: LISTA (table) e CARD abrem o mesmo DefaultFiltersModal */}
       {hasFilterableColumns ? (
         <DefaultModalButton
