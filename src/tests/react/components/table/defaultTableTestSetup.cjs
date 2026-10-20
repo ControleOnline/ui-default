@@ -73,6 +73,7 @@ jest.mock('react-native', () => {
 
   return {
     FlatList,
+    KeyboardAvoidingView: createComponent('KeyboardAvoidingView'),
     Modal: createComponent('Modal'),
     Platform: {
       OS: 'web',

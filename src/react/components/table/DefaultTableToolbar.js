@@ -76,7 +76,7 @@ const DefaultTableToolbar = ({
 
     return null;
   };
-  const importConfig = configs.import || null;
+  const importConfig = configs.showAdministrativeTools === false ? null : configs.import || null;
   const importActionOverrides =
     configs.importAction && typeof configs.importAction === 'object'
       ? configs.importAction

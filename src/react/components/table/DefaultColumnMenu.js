@@ -19,7 +19,7 @@ import DefaultCompactDialog from './DefaultCompactDialog';
 
 const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
   const store = useStore(storeName);
-  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const columns = Array.isArray(store?.getters?.configs?.presentationColumns) ? store.getters.configs.presentationColumns : Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const visibleColumns = store?.getters?.visibleColumns || {};
   const configs = store?.getters?.configs || {};
   const tablePreferenceScope =

@@ -37,7 +37,7 @@ const DefaultTableRows = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { palette, resolvedAccentColor, tableBorderColors, themeTokens } = useDefaultTableTheme();
-  const columns = Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
+  const columns = Array.isArray(configs.presentationColumns) ? configs.presentationColumns : Array.isArray(store?.getters?.columns) ? store.getters.columns : [];
   const visibleColumns = store?.getters?.visibleColumns || {};
   const tableColumns = columns.filter(
     column => shouldIncludeColumn(column) && visibleColumns[getColumnKey(column)] !== false,

@@ -66,6 +66,8 @@ const DefaultTableCards = ({ storeName }) => {
     key: cardListKey,
     listKey,
     numColumns: _ignoredNumColumns,
+    transformData,
+    unframedCards,
     ...flatListProps
   } = cardListProps;
   const isLoading = Boolean(store?.getters?.isLoadingList || store?.getters?.isLoading);
@@ -137,6 +139,7 @@ const DefaultTableCards = ({ storeName }) => {
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
             compact ? [compactStyles.cardItem, {flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: compactCardWidth, maxWidth: compactCardWidth, backgroundColor: palette.cardBackground || palette.panelBackground, borderColor: palette.cardBorder || palette.inputBorder}] : null,
+            unframedCards ? {borderWidth:0,backgroundColor:'transparent',shadowOpacity:0,elevation:0} : null,
           ]}
         >
           <View style={[styles.cardContent, hasRowActions ? null : intrinsicHeight, compact ? {flex: 0, flexBasis: 'auto', flexGrow: 0} : null]}>
@@ -206,11 +209,11 @@ const DefaultTableCards = ({ storeName }) => {
   return (
     <FlatList
       {...flatListProps}
-      key={resolvedListKey}
+      key={`${resolvedListKey}:columns-${resolvedNumColumns}`}
       numColumns={resolvedNumColumns}
       onLayout={event => {flatListProps.onLayout?.(event); setListWidth(event.nativeEvent.layout.width);}}
       columnWrapperStyle={compact && gridColumns > 1 ? {gap: 12} : flatListProps.columnWrapperStyle}
-      data={sortedData}
+      data={typeof transformData === 'function' ? transformData(sortedData) : sortedData}
       keyExtractor={getRowKey}
       renderItem={({ item, index }) => renderCardItem(item, index)}
       style={styles.cardsScroll}
