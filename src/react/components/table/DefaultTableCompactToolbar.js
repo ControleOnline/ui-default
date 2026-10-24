@@ -83,12 +83,12 @@ export default function DefaultTableCompactToolbar({storeName, actions = [], sho
           <Text numberOfLines={1} style={[s.small, {color: c.chipText || text, flexShrink: 1}]}>{label}</Text><Icon name="x" size={12} color={text} />
         </TouchableOpacity>;
       })}<TouchableOpacity accessibilityRole="button" onPress={() => apply({})}><Text style={[s.small, {color: muted}]}>Limpar filtros</Text></TouchableOpacity></View> : null}
-      <View style={s.secondary}>
+      {configs.showCompactCaption !== false && <View style={s.secondary}>
         <Text style={[s.small, {color: muted}]}>{configs.showTotalItemsInFooter !== false ? `${store.getters?.totalItems ?? 0} ${Number(store.getters?.totalItems) === 1 ? 'resultado' : 'resultados'}` : 'Pedidos'}</Text>
         {showControls ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Escolher ordenação" onPress={() => setModal('sort')} style={s.row}>
           <Icon name="arrow-down" size={14} color={muted} /><Text style={[s.small, {color: text}]}>{sortColumn ? labelFor(sortColumn) : 'Ordenar'} · {configs.resolvedSort?.direction === 'asc' ? '↑' : '↓'}</Text>
         </TouchableOpacity> : null}
-      </View>
+      </View>}
       <DefaultFiltersModal storeName={storeName} visible={modal === 'filters'} deferred onClose={() => setModal('')} />
       <DefaultColumnMenu storeName={storeName} visible={modal === 'columns'} onClose={() => setModal('')} />
       <DefaultCompactDialog visible={modal === 'more' || modal === 'sort'} title={modal === 'sort' ? 'Ordenação' : 'Mais opções'}
