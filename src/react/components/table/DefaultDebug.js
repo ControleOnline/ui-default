@@ -71,7 +71,7 @@ const DefaultDebug = ({
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { showError, showSuccess } = useMessage() || {};
-  const { modalColors, resolvedAccentColor, tableButtonColors } = useDefaultTableTheme();
+  const { modalColors, resolvedAccentColor, tableButtonColors, themeColors } = useDefaultTableTheme();
 
   const resolvedDebug = isObject(store?.getters?.debug) ? store.getters.debug : {};
   const debugQuery = normalizeText(resolvedDebug?.query);
@@ -144,11 +144,12 @@ const DefaultDebug = ({
   return (
     <>
       <TouchableOpacity
-        accessibilityLabel="Debug query"
+        accessibilityLabel={themeColors.compact ? 'Diagnóstico da consulta' : 'Debug query'}
         accessibilityRole="button"
         style={[
           styles.toolbarButton,
           { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor },
+          themeColors.compact ? {width: '100%', minHeight: 48, borderWidth: 0, backgroundColor: themeColors.inputBackground, paddingHorizontal: 12, gap: 8, justifyContent: 'flex-start'} : null,
           isOpen
             ? { backgroundColor: pressedBackgroundColor, borderColor: pressedBorderColor }
             : null,
@@ -156,7 +157,8 @@ const DefaultDebug = ({
         activeOpacity={0.82}
         onPress={() => setIsOpen(true)}
       >
-        <Icon name="code" size={14} color={buttonTextColor} />
+        <Icon name="code" size={16} color={themeColors.compact ? themeColors.textPrimary : buttonTextColor} />
+        {themeColors.compact ? <Text style={{fontSize: 14, color: themeColors.textPrimary}}>Diagnóstico da consulta</Text> : null}
       </TouchableOpacity>
 
       {isOpen ? (

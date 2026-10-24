@@ -1,5 +1,6 @@
 import {
   mergePostalCodeData,
+  clearPostalCodeDerivedFields,
   onlyDigits,
   hydrateAddressFromRow,
   hasCoordinates,
@@ -47,13 +48,13 @@ describe('addressFormUtils', () => {
     expect(next.city).toBe('São Paulo');
     expect(next.uf).toBe('SP');
     expect(next.cep).toBe('01310100');
-    expect(next.number).toBe('100');
+    expect(next.number).toBe(''); // cleared on CEP lookup (#746)
     expect(next.complement).toBe('Apto 1');
     expect(next.nickname).toBe('Casa');
     expect(next.countryCode).toBe('BR');
   });
 
-  test('mergePostalCodeData never clears number/complement/nickname', () => {
+  test('mergePostalCodeData clears number but keeps complement/nickname (#746)', () => {
     const prev = {
       nickname: 'Trabalho',
       number: '42',
@@ -75,7 +76,7 @@ describe('addressFormUtils', () => {
       country: 'Brazil',
     };
     const next = mergePostalCodeData(prev, data);
-    expect(next.number).toBe('42');
+    expect(next.number).toBe('');
     expect(next.complement).toBe('Sala 3');
     expect(next.nickname).toBe('Trabalho');
     expect(next.street).toBe('Av Paulista');
@@ -137,6 +138,8 @@ describe('addressFormUtils', () => {
   test('hasCoordinates requires finite lat/lng', () => {
     expect(hasCoordinates({latitude: -23, longitude: -46})).toBe(true);
     expect(hasCoordinates({latitude: null, longitude: -46})).toBe(false);
+    expect(hasCoordinates({latitude: 0, longitude: 0})).toBe(false);
+    expect(hasCoordinates({latitude: '0', longitude: '0'})).toBe(false);
   });
 
   test('parseOptionalCoordinate returns null for empty/invalid', () => {

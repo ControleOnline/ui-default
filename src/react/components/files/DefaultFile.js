@@ -1,11 +1,14 @@
-import React, {memo, useEffect, useMemo, useRef, useState} from 'react';
+import {readStoredSessionToken} from '@controleonline/ui-common/src/utils/storedSessionToken';
+import React, {memo, createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {Image, Platform} from 'react-native';
 import {useStore} from '@store';
 import {resolveDefaultFileSource} from '@controleonline/ui-common/src/react/utils/fileUrl';
 
+export const DefaultFileCacheContext = createContext(null);
+
 const resolveCompanyFromStore = peopleGetters => {
-  if (peopleGetters?.defaultCompany?.id) {
-    return peopleGetters.defaultCompany;
+  if (peopleGetters?.mainCompany?.id) {
+    return peopleGetters.mainCompany;
   }
 
   if (peopleGetters?.currentCompany?.id) {
@@ -13,27 +16,6 @@ const resolveCompanyFromStore = peopleGetters => {
   }
 
   return null;
-};
-
-/** Sync session token (same source as api.getToken). */
-const readSessionApiToken = () => {
-  try {
-    if (typeof localStorage === 'undefined') {
-      return '';
-    }
-    const sessionString = localStorage.getItem('session');
-    if (!sessionString) {
-      return '';
-    }
-    const cleanString =
-      typeof sessionString === 'string' && sessionString.startsWith('__q_objt|')
-        ? sessionString.substring('__q_objt|'.length)
-        : sessionString;
-    const session = JSON.parse(cleanString);
-    return session?.token || session?.api_key || '';
-  } catch (e) {
-    return '';
-  }
 };
 
 const headersKey = headers => {
@@ -70,11 +52,12 @@ const DefaultFile = ({
   headers = {},
   ...imageProps
 }) => {
+  const imageCache = useContext(DefaultFileCacheContext);
   const peopleStore = useStore('people');
   const peopleGetters = peopleStore?.getters || {};
   const resolvedCompany = company || resolveCompanyFromStore(peopleGetters);
 
-  const sessionToken = useMemo(() => readSessionApiToken(), []);
+  const sessionToken = useMemo(() => readStoredSessionToken(), []);
   const authHeaders = useMemo(
     () => ({
       ...(sessionToken ? {'API-TOKEN': sessionToken} : {}),
@@ -152,6 +135,7 @@ const DefaultFile = ({
 
     const load = async () => {
       try {
+        const loadBlob = async () => {
         const response = await fetch(remoteUri, {
           method: 'GET',
           headers: remoteHeaders,
@@ -170,6 +154,9 @@ const DefaultFile = ({
         if (!blob || blob.size === 0) {
           throw new Error('empty blob');
         }
+        return blob;
+        };
+        const blob = imageCache ? await imageCache.load(remoteUri, remoteHeaders, loadBlob) : await loadBlob();
         if (cancelled || requestId !== requestIdRef.current) {
           return;
         }
@@ -196,7 +183,7 @@ const DefaultFile = ({
       // transient dependency flicker (Strict Mode double-invoke is OK:
       // requestId invalidates the stale response).
     };
-  }, [remoteUri, headersKey(remoteHeaders)]);
+  }, [remoteUri, headersKey(remoteHeaders), imageCache]);
 
   // Unmount: revoke blob
   useEffect(() => {

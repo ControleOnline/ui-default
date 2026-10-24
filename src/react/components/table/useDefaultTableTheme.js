@@ -1,22 +1,25 @@
-import { useMemo } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { useStore } from '@store';
+
+export const DefaultTableThemeContext = createContext(null);
 
 const firstThemeToken = (themeColors, keys) =>
   keys.map(key => themeColors?.[key]).find(Boolean);
 
-const useDefaultTableTheme = (accentColor = null) => {
+const useDefaultTableTheme = (accentColor = null, appearance = 'default') => {
+  const inheritedColors = useContext(DefaultTableThemeContext);
   const themeStore = useStore('theme');
   const rawThemeColors = themeStore?.getters?.colors || {};
   const themeColors = useMemo(
-    () => ({ ...rawThemeColors }),
-    [rawThemeColors],
+    () => inheritedColors || (appearance === 'compact' ? {...rawThemeColors, compact: true} : rawThemeColors),
+    [rawThemeColors, inheritedColors, appearance],
   );
   const themeTokens = useMemo(
     () => ({ ...themeColors }),
     [themeColors],
   );
   const palette = themeColors;
-  const resolvedAccentColor = accentColor ?? themeColors.primary;
+  const resolvedAccentColor = appearance === 'compact' || inheritedColors ? themeColors.primary : accentColor ?? themeColors.primary;
   const tableBorderColors = {
     containerBorderColor: firstThemeToken(themeColors, [
       'tableContainerBorder',
