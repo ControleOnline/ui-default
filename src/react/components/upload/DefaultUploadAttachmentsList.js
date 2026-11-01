@@ -76,20 +76,20 @@ export default function DefaultUploadAttachmentsList({
                   key={row.id || fileId || index}
                   style={[
                     styles.attachmentCard,
-                    // app-community#813: card principal 320x320
-                    {width: 320, padding: 0, overflow: 'hidden'},
+                    // app-community#813: card principal 240x240 (app-community#1275)
+                    {width: 240, padding: 0, overflow: 'hidden'},
                   ]}>
                   <View
                     style={[
                       styles.attachmentThumb,
-                      {width: 320, height: 320, marginBottom: 0},
+                      {width: 240, height: 240, marginBottom: 0},
                     ]}>
                     {file ? (
                       <DefaultFile
                         file={file}
                         company={company}
                         resizeMode="cover"
-                        style={{width: 320, height: 320}}
+                        style={{width: 240, height: 240}}
                       />
                     ) : null}
                   </View>
