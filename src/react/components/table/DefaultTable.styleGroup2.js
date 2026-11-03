@@ -46,7 +46,7 @@ pinnedIdentityCell: {
     zIndex: 6,
     ...Platform.select({
       web: {
-        boxShadow: '2px 0 0 rgba(226,232,240,0.9)',
+        boxShadow: '2px 0 6px rgba(15,23,42,0.08)',
         position: 'relative',
       },
       default: {},
@@ -57,7 +57,7 @@ pinnedActionsCell: {
     zIndex: 6,
     ...Platform.select({
       web: {
-        boxShadow: '-2px 0 0 rgba(226,232,240,0.9)',
+        boxShadow: '-2px 0 6px rgba(15,23,42,0.08)',
         position: 'relative',
       },
       default: {},
