@@ -143,6 +143,9 @@ const DefaultTable = ({
   };
   const storeSelectable = storeDeclaredConfigs.selectable === true;
   const isCompactView = width > 0 && width <= compactBreakpoint;
+  // Mobile: no page buttons — infinite scroll only (desktop keeps pages mode when requested).
+  const resolvedPaginationMode =
+    width > 0 && width <= 768 && paginationMode === 'pages' ? 'infinite' : paginationMode;
   const addConfig = store?.getters?.add;
   const normalizedAddButtonPlacement = normalizeText(addButtonPlacement) || 'toolbar';
   const resolvedAddLabel =
@@ -184,7 +187,7 @@ const DefaultTable = ({
     onEndReached,
     onRefresh,
     pageSize,
-    paginationMode,
+    paginationMode: resolvedPaginationMode,
     requestParams: requestParamsSeed,
     resolvedActions,
     resolvedSort,
@@ -235,7 +238,7 @@ const DefaultTable = ({
     () => ({
       ...storeDeclaredConfigs,
       appearance,
-      paginationMode,
+      paginationMode: resolvedPaginationMode,
       currentPage,
       pageSizeNumber,
       onPageChange: goToPage,
@@ -310,7 +313,7 @@ const DefaultTable = ({
       viewMode: viewMode ? storeDeclaredConfigs.viewMode : effectiveViewMode,
     }),
     [
-      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
+      appearance, resolvedPaginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -376,7 +379,7 @@ const DefaultTable = ({
   const defaultTableConfigsSignature = useMemo(
     () =>
       stableSerialize({
-        appearance, paginationMode, currentPage, pageSizeNumber, resolvedIsLoading,
+        appearance, resolvedPaginationMode, currentPage, pageSizeNumber, resolvedIsLoading,
         configuredImport: storeDeclaredConfigs.import || null,
         add,
         addButtonPlacement: normalizedAddButtonPlacement,
@@ -415,7 +418,7 @@ const DefaultTable = ({
         toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
       }),
     [
-      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
+      appearance, resolvedPaginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,

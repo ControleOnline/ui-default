@@ -276,9 +276,9 @@ emptyBox: {
     gap: 8,
   },
 footerBar: {
-    minHeight: 40,
+    minHeight: 34,
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 3,
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
@@ -311,13 +311,13 @@ footerSummaryItem: {
   },
 footerSummaryLabel: {
     color: '#64748B',
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
 footerSummaryValue: {
     color: '#0F172A',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
   },
 footerCountPill: {
@@ -329,7 +329,7 @@ footerCountPill: {
     paddingVertical: 5,
   },
 footerCountText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
   },
 emptyText: {
