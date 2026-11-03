@@ -27,6 +27,14 @@ import {getCompactColumnLabel} from './DefaultTableCompact.helpers';
 import useDefaultTableRowInteraction from './useDefaultTableRowInteraction';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
+
+const isIdentityColumn = column => {
+  if (!column) return false;
+  if (column.isIdentity === true) return true;
+  const key = String(getColumnKey(column) || '').toLowerCase();
+  return key === 'id' || key === 'uuid';
+};
+
 /** Row stripes: themes-map listItemEvenRow / listItemOddRow — never status.color. */
 export const resolveRowBackgroundColor = ({ index, tableOddColor, tableEvenColor }) => {
   return index % 2 === 0 ? tableOddColor : tableEvenColor;
@@ -96,16 +104,22 @@ const DefaultTableRows = ({ storeName }) => {
         : next;
     });
   };
+  // Body cells live inside FlatList (own overflow). CSS position:sticky breaks there
+  // relative to the outer horizontal ScrollView — pin with translateX instead.
   const stickyBodyTransforms = useMemo(() => {
     const viewportWidth = Number(horizontalMetrics.viewportWidth || 0);
     const contentWidth = Number(horizontalMetrics.contentWidth || 0);
     const x = Number(horizontalMetrics.x || 0);
-    const canScrollHorizontally = viewportWidth > 0 && contentWidth > viewportWidth;
-    const actionsTranslateX = canScrollHorizontally
-      ? x + viewportWidth - contentWidth
-      : 0;
-
+    const canScrollHorizontally = viewportWidth > 0 && contentWidth > viewportWidth + 0.5;
+    if (!canScrollHorizontally) {
+      return { identity: null, actions: null };
+    }
+    // Identity stays at the left edge of the viewport.
+    const identityTranslateX = x;
+    // Actions stay at the right edge of the viewport.
+    const actionsTranslateX = x + viewportWidth - contentWidth;
     return {
+      identity: identityTranslateX !== 0 ? [{ translateX: identityTranslateX }] : null,
       actions:
         shouldPinRowActions && actionsTranslateX !== 0
           ? [{ translateX: actionsTranslateX }]
@@ -174,12 +188,15 @@ const DefaultTableRows = ({ storeName }) => {
           <React.Fragment key={getColumnKey(column)}>
             <DefaultTableInput
               column={column}
-              options={{...(column?.isIdentity ? {
+              options={{...(isIdentityColumn(column) ? {
                 cellStyle: [
                   styles.pinnedIdentityCell,
-                  styles.stickyIdentityCell,
                   {
                     backgroundColor: rowBackgroundColor,
+                    zIndex: 6,
+                    ...(stickyBodyTransforms.identity
+                      ? { transform: stickyBodyTransforms.identity }
+                      : {}),
                   },
                 ],
               } : {
@@ -200,12 +217,12 @@ const DefaultTableRows = ({ storeName }) => {
               styles.cell,
               styles.actionsCell,
               shouldPinRowActions ? styles.pinnedActionsCell : null,
-              shouldPinRowActions ? styles.stickyActionsCell : null,
               {
                 minWidth: actionsCellWidth,
                 width: actionsCellWidth,
                 flexBasis: actionsCellWidth,
                 maxWidth: actionsCellWidth,
+                zIndex: shouldPinRowActions ? 6 : undefined,
                 ...(stickyBodyTransforms.actions
                   ? { transform: stickyBodyTransforms.actions }
                   : {}),
@@ -286,7 +303,7 @@ const DefaultTableRows = ({ storeName }) => {
                   accessibilityHint={configs.resolvedSort?.field === sortFieldName ? `Ordem ${configs.resolvedSort.direction === 'asc' ? 'crescente' : 'decrescente'}` : undefined}
                   style={[
                     getColumnStyle(column),
-                    column?.isIdentity
+                    isIdentityColumn(column)
                       ? [styles.stickyIdentityCell, styles.stickyHeaderCell, { backgroundColor: tableHeaderColor }]
                       : null,
                   ]}
@@ -347,7 +364,7 @@ const DefaultTableRows = ({ storeName }) => {
                     key={`${fieldName}-filter`}
                     style={[
                       getColumnStyle(column),
-                      column?.isIdentity
+                      isIdentityColumn(column)
                         ? [styles.stickyIdentityCell, { backgroundColor: tableHeaderColor }]
                         : null,
                     ]}
