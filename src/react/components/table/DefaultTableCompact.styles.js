@@ -1,13 +1,13 @@
 import {StyleSheet} from 'react-native';
 
 export default StyleSheet.create({
-  toolbar: {padding: 12, gap: 8, borderBottomWidth: 1, flexShrink: 0},
+  toolbar: {paddingHorizontal: 12, paddingVertical: 6, gap: 4, borderBottomWidth: 1, flexShrink: 0},
   row: {flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8},
   search: {flex: 1, maxWidth: 620, minWidth: 210, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10},
   searchMobile: {flexBasis: '100%', maxWidth: '100%', minWidth: 0},
-  input: {flex: 1, minWidth: 0, height: 42, fontSize: 14},
+  input: {flex: 1, minWidth: 0, height: 30, fontSize: 14},
   inputMobile: {fontSize: 16},
-  button: {minHeight: 44, minWidth: 44, paddingHorizontal: 10, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6},
+  button: {minHeight: 32, minWidth: 32, paddingHorizontal: 10, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6},
   label: {fontSize: 12, fontWeight: '600'},
   small: {fontSize: 11},
   chips: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center'},

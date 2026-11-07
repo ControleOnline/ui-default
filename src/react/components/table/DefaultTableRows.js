@@ -180,7 +180,7 @@ const DefaultTableRows = ({ storeName }) => {
             width: tableWidth,
           },
           rowStyleValue,
-          configs.appearance === 'compact' ? {minHeight: 58} : null,
+          configs.appearance === 'compact' ? {minHeight: 29} : null,
         ]}
         {...rowPressProps}
       >
