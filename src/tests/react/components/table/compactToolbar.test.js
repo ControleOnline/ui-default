@@ -35,7 +35,7 @@ it('submits search through the history callback, retaining existing filters', ()
 });
 it('lets explicit add=false override the store default and switches view without clearing filters', () => {
   expect(tree.root.findAllByType('Button').some(b => b.props.accessibilityLabel === 'Adicionar')).toBe(false);
-  renderer.act(() => tree.root.findAllByType('Button').find(b => b.props.accessibilityLabel === 'Tabela').props.onPress());
+  renderer.act(() => tree.root.findAll(n => n.props.action?.label === 'Tabela')[0].props.action.onPress());
   expect(mockStore.actions.setConfigs).toHaveBeenCalledWith(expect.objectContaining({effectiveViewMode: 'table'}));
   expect(mockStore.getters.filters).toEqual({status: 'paid'});
 });
@@ -45,4 +45,15 @@ it('has no results counter or sort caption row; sort lives in the "Mais opções
   expect(texts.some(text => /Ordenar/.test(text))).toBe(false);
   const sortAction = tree.root.findAll(node => node.props.action?.accessibilityLabel === 'Escolher ordenação');
   expect(sortAction.length).toBeGreaterThan(0);
+});
+it('keeps a single non-wrapping row and moves Filtros/Tabela/Cards into "Mais opções" on mobile', () => {
+  const labels = tree.root.findAllByType('Button').map(b => b.props.accessibilityLabel);
+  expect(labels).not.toContain('Filtros');
+  expect(labels).not.toContain('Tabela');
+  expect(labels).not.toContain('Cards');
+  expect(labels).toContain('Mais opções');
+  const row = tree.root.findAll(n => Array.isArray(n.props.style) && n.props.style.some(x => x?.flexWrap === 'nowrap'));
+  expect(row.length).toBeGreaterThan(0);
+  const actions = tree.root.findAll(n => n.props.action?.label).map(n => n.props.action.label);
+  expect(actions).toEqual(expect.arrayContaining(['Filtros', 'Tabela', 'Cards']));
 });
