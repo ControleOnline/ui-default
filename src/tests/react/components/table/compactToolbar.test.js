@@ -2,12 +2,13 @@ const React = require('react');
 const renderer = require('react-test-renderer');
 global.IS_REACT_ACT_ENVIRONMENT = true;
 let mockStore;
+let mockWidth = 393;
 jest.mock('@store', () => ({useStore: () => mockStore, getAllStores: () => ({})}));
 jest.mock('react-native', () => {
   const React = require('react');
   const component = name => props => React.createElement(name, props, props.children);
   return {View: component('View'), Text: component('Text'), TextInput: component('Input'), TouchableOpacity: component('Button'),
-    Modal: component('Modal'), ScrollView: component('Scroll'), useWindowDimensions: () => ({width: 393}),
+    Modal: component('Modal'), ScrollView: component('Scroll'), useWindowDimensions: () => ({width: mockWidth}),
     StyleSheet: {create: value => value}, Platform: {select: value => value.web}};
 });
 jest.mock('react-native-vector-icons/Feather', () => () => null);
@@ -20,6 +21,7 @@ jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () =>
 const Toolbar = require('../../../../react/components/table/DefaultTableCompactToolbar').default;
 let tree;
 beforeEach(() => {
+  mockWidth = 393;
   mockStore = {getters: {add: true, columns: [{name: 'id', sortable: true}], filters: {status: 'paid'}, configs: {
     add: false, onAdd: jest.fn(), effectiveViewMode: 'cards', tablePreferenceScope: {}, onFilterChange: jest.fn(), resolvedSort: {field: 'id', direction: 'desc'},
   }}, actions: {setFilters: jest.fn(), setConfigs: jest.fn()}};
@@ -56,4 +58,18 @@ it('keeps a single non-wrapping row and moves Filtros/Tabela/Cards into "Mais op
   expect(row.length).toBeGreaterThan(0);
   const actions = tree.root.findAll(n => n.props.action?.label).map(n => n.props.action.label);
   expect(actions).toEqual(expect.arrayContaining(['Filtros', 'Tabela', 'Cards']));
+});
+const labelsAt = width => {
+  mockWidth = width;
+  renderer.act(() => tree.update(React.createElement(Toolbar, {storeName: 'orders'})));
+  return tree.root.findAllByType('Button').map(b => b.props.accessibilityLabel);
+};
+it('collapses to search + More options on non-mobile widths under 1000px', () => {
+  const labels = labelsAt(800);
+  ['Filtros', 'Tabela', 'Cards', 'Colunas'].forEach(l => expect(labels).not.toContain(l));
+  expect(labels).toContain('Mais opções');
+});
+it('keeps the full toolbar from 1000px up', () => {
+  const labels = labelsAt(1000);
+  ['Filtros', 'Tabela', 'Cards', 'Colunas', 'Mais opções'].forEach(l => expect(labels).toContain(l));
 });
