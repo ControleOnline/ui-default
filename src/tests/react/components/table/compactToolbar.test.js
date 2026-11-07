@@ -39,3 +39,10 @@ it('lets explicit add=false override the store default and switches view without
   expect(mockStore.actions.setConfigs).toHaveBeenCalledWith(expect.objectContaining({effectiveViewMode: 'table'}));
   expect(mockStore.getters.filters).toEqual({status: 'paid'});
 });
+it('has no results counter or sort caption row; sort lives in the "Mais opções" menu', () => {
+  const texts = tree.root.findAllByType('Text').map(node => [].concat(node.props.children).join(''));
+  expect(texts.some(text => /resultado/.test(text))).toBe(false);
+  expect(texts.some(text => /Ordenar/.test(text))).toBe(false);
+  const sortAction = tree.root.findAll(node => node.props.action?.accessibilityLabel === 'Escolher ordenação');
+  expect(sortAction.length).toBeGreaterThan(0);
+});
