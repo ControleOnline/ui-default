@@ -28,6 +28,8 @@ import useDefaultTableRowInteraction from './useDefaultTableRowInteraction';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 
+// Compact row height (app-community#1444): 40px, ID badge uses the shared 32px control height.
+const TABLE_ROW_MIN_HEIGHT = 40;
 const isIdentityColumn = column => {
   if (!column) return false;
   if (column.isIdentity === true) return true;
@@ -180,7 +182,7 @@ const DefaultTableRows = ({ storeName }) => {
             width: tableWidth,
           },
           rowStyleValue,
-          configs.appearance === 'compact' ? {minHeight: 29} : null,
+          configs.appearance === 'compact' ? {minHeight: TABLE_ROW_MIN_HEIGHT} : null,
         ]}
         {...rowPressProps}
       >

@@ -7,7 +7,7 @@ cell: {
     flexGrow: 1,
     flexShrink: 0,
     paddingHorizontal: 14,
-    paddingVertical: 5,
+    paddingVertical: 4,
     justifyContent: 'center',
     borderRightWidth: 0,
   },
