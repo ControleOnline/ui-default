@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import {
   Image,
   Modal,
@@ -19,6 +19,8 @@ import {
 } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import { isValidFeatherIcon } from '../inputs/defaultInputUtils';
 import createStyles from './CompactFilterSelector.styles';
+import {DefaultTableThemeContext} from '../table/useDefaultTableTheme';
+import DefaultCompactFilterPicker from './DefaultCompactFilterPicker';
 
 const buildTheme = ({ accentColor, themeColors = {} }) => ({
   accentColor: accentColor,
@@ -104,6 +106,7 @@ const CompactFilterSelector = ({
   themeColors = {},
   title = '',
 }) => {
+  const compactTheme = useContext(DefaultTableThemeContext);
   const themeStore = useStore('theme');
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -222,6 +225,12 @@ const CompactFilterSelector = ({
 
     return children;
   }, [children, closeModal, openModal]);
+
+  if (compactTheme?.compact) return <DefaultCompactFilterPicker visible={visible} disabled={disabled}
+    label={label} title={resolvedTitle} selectedKey={selectedKey} options={filteredOptions} searchText={searchText}
+    searchable={searchable} onSearch={handleSearchChange} onOpen={openModal} onClose={closeModal} onSelect={handleSelect}>
+    {resolvedChildren}
+  </DefaultCompactFilterPicker>;
 
   return (
     <>

@@ -3,8 +3,8 @@ import {View, TextInput} from 'react-native';
 
 /**
  * Latitude / longitude fields.
- * Read-only when both coordinates are present and the user has not started
- * a manual edit; editable when coords are missing so the user can type them.
+ * Read-only after a successful geocode; editable when Nominatim misses
+ * so the user can type coordinates and drop a pin.
  */
 export default function LatLonReadonlyFields({
   form,

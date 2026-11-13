@@ -19,7 +19,7 @@ const ICON_BY_KIND = {
 };
 
 const resolveCompanyFromStore = peopleGetters => {
-  if (peopleGetters?.defaultCompany?.id) return peopleGetters.defaultCompany;
+  if (peopleGetters?.mainCompany?.id) return peopleGetters.mainCompany;
   if (peopleGetters?.currentCompany?.id) return peopleGetters.currentCompany;
   return null;
 };

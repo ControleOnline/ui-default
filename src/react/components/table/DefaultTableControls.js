@@ -1,5 +1,7 @@
 // fluxo: outros | etapa: order-history-page-filtro | https://github.com/ControleOnline/app-community/wiki/Smoke-Test-Flows
 import React from 'react';
+/* The repository flat config does not count JSX identifiers as variable usage. */
+/* eslint-disable no-unused-vars */
 import { Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
@@ -7,6 +9,7 @@ import DefaultColumnMenu from './DefaultColumnMenu';
 import DefaultDebug from './DefaultDebug';
 import DefaultFiltersModal from './DefaultFiltersModal';
 import DefaultModalButton from './DefaultModalButton';
+/* eslint-enable no-unused-vars */
 import styles from './DefaultTable.styles';
 import { normalizeText } from '../inputs/defaultInputUtils';
 import {
@@ -40,14 +43,13 @@ const DefaultTableControls = ({ storeName }) => {
   const addConfig = store?.getters?.add;
   const addButtonPlacement = normalizeText(configs.addButtonPlacement) || 'toolbar';
   const shouldRenderAddButton =
-    addButtonPlacement === 'toolbar' &&
+    configs.add !== false && addButtonPlacement === 'toolbar' &&
     (addConfig === true || configs.add === true) &&
     (typeof configs.onAdd === 'function' || typeof store?.actions?.save === 'function');
   const { tableButtonColors } = useDefaultTableTheme();
   const {
     backgroundColor,
     borderColor,
-    iconColor,
     pressedBackgroundColor,
     pressedBorderColor,
     pressedIconColor,
@@ -76,7 +78,7 @@ const DefaultTableControls = ({ storeName }) => {
 
   return (
     <>
-      <DefaultDebug storeName={storeName} />
+      {configs.showAdministrativeTools !== false ? <DefaultDebug storeName={storeName} /> : null}
       {/* app-community#811: LISTA (table) e CARD abrem o mesmo DefaultFiltersModal */}
       {hasFilterableColumns ? (
         <DefaultModalButton

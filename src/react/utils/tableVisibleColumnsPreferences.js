@@ -3,11 +3,44 @@ export const TABLE_VIEW_MODE_PREFERENCES_KEY = 'viewMode';
 export const TABLE_SORT_PREFERENCES_KEY = 'sort';
 export const TABLE_FILTER_PREFERENCES_KEY = 'filters';
 export const DEFAULT_TABLE_PREFERENCES_STORAGE_KEY = 'default-table';
+export const REQUIRED_VISIBLE_COLUMN_KEYS = ['id'];
 
 const isPlainObject = value =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
 const getColumnKey = column => column?.key || column?.name || '';
+
+const normalizeColumnKey = value => String(value || '').trim().toLowerCase();
+
+export const isRequiredVisibleColumn = column => {
+  const key = normalizeColumnKey(getColumnKey(column));
+  if (!key) {
+    return false;
+  }
+
+  if (column?.required === true || column?.hideable === false) {
+    return true;
+  }
+
+  return REQUIRED_VISIBLE_COLUMN_KEYS.includes(key);
+};
+
+export const isRequiredVisibleColumnKey = (key, columns = []) => {
+  const normalizedKey = normalizeColumnKey(key);
+  if (!normalizedKey) {
+    return false;
+  }
+
+  const column = (Array.isArray(columns) ? columns : []).find(
+    item => normalizeColumnKey(getColumnKey(item)) === normalizedKey,
+  );
+
+  if (column) {
+    return isRequiredVisibleColumn(column);
+  }
+
+  return REQUIRED_VISIBLE_COLUMN_KEYS.includes(normalizedKey);
+};
 
 const normalizePreferenceSegment = value =>
   String(value || '')
@@ -141,10 +174,40 @@ export const buildDefaultVisibleColumns = columns =>
   (Array.isArray(columns) ? columns : []).reduce((accumulator, column) => {
     const key = getColumnKey(column);
     if (key) {
-      accumulator[key] = column?.visible !== false;
+      accumulator[key] = isRequiredVisibleColumn(column)
+        ? true
+        : column?.visible !== false;
     }
     return accumulator;
   }, {});
+
+const enforceRequiredVisibleColumns = (columns = [], visibleColumns = {}) => {
+  const nextVisibleColumns = {...visibleColumns};
+  const columnList = Array.isArray(columns) ? columns : [];
+
+  columnList.forEach(column => {
+    const key = getColumnKey(column);
+    if (key && isRequiredVisibleColumn(column)) {
+      nextVisibleColumns[key] = true;
+    }
+  });
+
+  const hasVisibleColumn = Object.keys(nextVisibleColumns).some(
+    key => nextVisibleColumns[key] !== false,
+  );
+
+  if (!hasVisibleColumn) {
+    const fallbackColumn =
+      columnList.find(column => isRequiredVisibleColumn(column)) ||
+      columnList.find(column => getColumnKey(column));
+    const fallbackKey = getColumnKey(fallbackColumn);
+    if (fallbackKey) {
+      nextVisibleColumns[fallbackKey] = true;
+    }
+  }
+
+  return nextVisibleColumns;
+};
 
 export const sanitizeVisibleColumnsPreference = ({
   columns = [],
@@ -153,16 +216,34 @@ export const sanitizeVisibleColumnsPreference = ({
   const defaultVisibleColumns = buildDefaultVisibleColumns(columns);
 
   if (!isPlainObject(visibleColumns)) {
-    return defaultVisibleColumns;
+    return enforceRequiredVisibleColumns(columns, defaultVisibleColumns);
   }
 
-  return Object.keys(defaultVisibleColumns).reduce((accumulator, key) => {
+  const sanitized = Object.keys(defaultVisibleColumns).reduce((accumulator, key) => {
     accumulator[key] =
       typeof visibleColumns[key] === 'boolean'
         ? visibleColumns[key]
         : defaultVisibleColumns[key];
     return accumulator;
   }, {});
+
+  return enforceRequiredVisibleColumns(columns, sanitized);
+};
+
+export const canHideVisibleColumn = ({
+  columns = [],
+  fieldName = '',
+  visibleColumns = {},
+} = {}) => {
+  if (isRequiredVisibleColumnKey(fieldName, columns)) {
+    return false;
+  }
+
+  const visibleCount = Object.keys(visibleColumns || {}).filter(
+    key => visibleColumns[key] !== false,
+  ).length;
+
+  return visibleCount > 1;
 };
 
 export const sanitizeTableFiltersPreference = ({

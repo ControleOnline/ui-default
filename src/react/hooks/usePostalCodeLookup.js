@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {lookupPostalCode, listStates} from '../services/addressGeo';
 import {
+  clearPostalCodeDerivedFields,
+  isGeocodeMiss,
   mergePostalCodeData,
   onlyDigits,
 } from '../services/addressFormUtils';
@@ -9,7 +11,8 @@ const DEBOUNCE_MS = 450;
 
 /**
  * CEP lookup with debounce (8 digits), race-token protection and loading/error state.
- * Never overwrites number/complement/nickname (via mergePostalCodeData).
+ * Clears number on lookup; clears derived address/coords on failure (#746).
+ * Preserves complement/nickname.
  */
 export default function usePostalCodeLookup({
   formCep,
@@ -20,6 +23,7 @@ export default function usePostalCodeLookup({
 }) {
   const [loadingCep, setLoadingCep] = useState(false);
   const [cepError, setCepError] = useState(null);
+  const [geocodeMiss, setGeocodeMiss] = useState(false);
   const requestIdRef = useRef(0);
   const debounceRef = useRef(null);
   const lastRequestedRef = useRef('');
@@ -35,12 +39,14 @@ export default function usePostalCodeLookup({
       lastRequestedRef.current = digits;
       setLoadingCep(true);
       setCepError(null);
+      setGeocodeMiss(false);
 
       try {
         const data = await lookupPostalCode(digits);
         if (requestId !== requestIdRef.current) {
           return null; // stale response
         }
+        setGeocodeMiss(isGeocodeMiss(data));
         setForm(prev => {
           const next = mergePostalCodeData(
             {...prev, cep: digits},
@@ -76,6 +82,12 @@ export default function usePostalCodeLookup({
           e?.response?.data?.detail ||
           'CEP inválido ou serviço indisponível';
         setCepError(message);
+        // CEP não encontrado: zera residual de endereço/coords/número (#746)
+        setForm(prev => {
+          const next = clearPostalCodeDerivedFields(prev);
+          onFormChange?.(next);
+          return next;
+        });
         return null;
       } finally {
         if (requestId === requestIdRef.current) {
@@ -138,6 +150,8 @@ export default function usePostalCodeLookup({
     loadingCep,
     cepError,
     setCepError,
+    geocodeMiss,
+    setGeocodeMiss,
     onCepBlur,
     runLookup,
     cancelPending,

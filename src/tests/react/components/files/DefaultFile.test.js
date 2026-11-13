@@ -20,6 +20,7 @@ jest.mock('@store', () => ({
 }));
 
 jest.mock('react-native', () => ({
+  Platform: {OS: 'android'},
   Image: props => React.createElement('image', props, props.children),
 }));
 
@@ -77,4 +78,19 @@ describe('DefaultFile', () => {
 
     expect(tree.toJSON()).toBeNull();
   });
+});
+
+it('uses the domain company from the store when another company is selected', () => {
+  require('@store').useStore.mockReturnValue({getters: {
+    mainCompany: {id: 1, domain: 'domain.example'},
+    currentCompany: {id: 2, domain: 'selected.example'},
+  }});
+  let tree;
+  renderer.act(() => {
+    tree = renderer.create(React.createElement(DefaultFile, {file: {id: 7, url: '/files/7/download'}}));
+  });
+  const source = tree.root.findByType('image').props.source;
+  expect(source.uri).toBe('https://api.controleonline.com/domain.example/files/7/download');
+  expect(source.headers['app-domain']).toBe('domain.example');
+  renderer.act(() => tree.unmount());
 });
