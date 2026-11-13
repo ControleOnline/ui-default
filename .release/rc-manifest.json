@@ -1,0 +1,17 @@
+{
+  "version": "1.0.290",
+  "rc": 2,
+  "branch": "rc/1.0.290-rc.2",
+  "baseMaster": "ac8c0ecc9aca008ab4fd70142374d58eff408135",
+  "tasks": [
+    64
+  ],
+  "frozen": true,
+  "repositories": {
+    "ControleOnline/ui-default": "a357b6413f46302c8ae0a4d637aba4b9dc59be4b"
+  },
+  "validation": {
+    "scope": "Mapa nativo: importa buildGoogleMapsNavigationUrl/buildWazeNavigationUrl de DefaultMap.shared (ui-default#64).",
+    "checks": "DefaultNativeMap.imports.test.js 3/3 (falha na v1.0.289, passa com a correcao); Security aceito (#64). Base v1.0.289."
+  }
+}
