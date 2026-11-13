@@ -1,7 +1,6 @@
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import DefaultTablePaginationBar from './DefaultTablePaginationBar';
 import DefaultTableBody from './DefaultTableBody';
 import DefaultTableFooter from './DefaultTableFooter';
 import DefaultTableToolbar from './DefaultTableToolbar';
@@ -50,7 +49,6 @@ export default function DefaultTableView({
       ) : null}
       <DefaultTableBody storeName={storeName} />
       <DefaultTableFooter storeName={storeName} />
-      <DefaultTablePaginationBar storeName={storeName} />
       {shouldRenderBottomAddButton ? (
         <View style={styles.bottomAddBar}>
           <TouchableOpacity

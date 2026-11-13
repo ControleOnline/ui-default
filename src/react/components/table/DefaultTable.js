@@ -17,18 +17,15 @@ import {
 import useDefaultTableTheme from './useDefaultTableTheme';
 import DefaultTableView from './DefaultTableView';
 import useDefaultTableCreateForm from './useDefaultTableCreateForm';
-
 import {
-  assignGetterValue,
+  assignGetterValue, publishStoreValue,
   useDefaultTableStoreSync,
 } from './useDefaultTableStoreSync';
-
 export {
   mergeSortedDataWithLiveItems,
   resolveColumnListLoadParams,
   shouldTriggerEndReachedFromScroll,
 } from './DefaultTable.utils';
-
 const DefaultTable = ({
   accentColor = null,
   actions = {},
@@ -38,6 +35,7 @@ const DefaultTable = ({
   compactBreakpoint = DEFAULT_COMPACT_BREAKPOINT,
   cardListProps = {},
   columns = [],
+  presentationColumns = null,
   data = undefined,
   defaultColor = '',
   filters = {},
@@ -64,7 +62,7 @@ const DefaultTable = ({
   onSelectionChange = null,
   onSortChange = null,
   pageSize = null,
-  appearance = 'default',
+  appearance = 'compact',
   paginationMode = 'infinite',
   pinRowActions = true,
   renderCard = null,
@@ -78,15 +76,18 @@ const DefaultTable = ({
   showSearch = null,
   showRowActions = true,
   showToolbar = true,
+  showCompactCaption = true,
+  showAdministrativeTools = true,
   showToolbarActions = null,
   showToolbarControls = null,
   showTotalItemsInCompactToolbar = false,
   showTotalItemsInFooter = true,
   sort = null,
   storeName = '',
-  summary = undefined,
+  summary = undefined, totalItems = undefined,
   summaryLabels = {},
   toolbarActions = [],
+  viewMode = null,
   visibleColumnsPreferenceKey = '',
 }) => {
   const { width } = useWindowDimensions();
@@ -128,13 +129,13 @@ const DefaultTable = ({
   const columnsForTable = storeColumns.length > 0 ? storeColumns : columns;
   const storeFilters = isObject(store?.getters?.filters) ? store.getters.filters : {};
   const requestParamsSeed = isObject(requestParams) ? requestParams : {};
-  const resolvedTotalItems = store?.getters?.totalItems;
+  const resolvedTotalItems = totalItems ?? (!autoMode && paginationMode === 'pages' ? data.length : store?.getters?.totalItems);
+  useEffect(() => {if ((!autoMode && paginationMode === 'pages') || totalItems !== undefined) publishStoreValue(store, 'setTotalItems', resolvedTotalItems, 'totalItems');}, [autoMode, paginationMode, totalItems, resolvedTotalItems, storeName, store?.actions?.setTotalItems]);
   if (storeDeclaredConfigsRef.current === null) {
     storeDeclaredConfigsRef.current = isObject(store?.getters?.configs)
       ? store.getters.configs
       : {};
   }
-
   const storeDeclaredConfigs = storeDeclaredConfigsRef.current || {};
   const currentConfigs = {
     ...storeDeclaredConfigs,
@@ -142,17 +143,18 @@ const DefaultTable = ({
   };
   const storeSelectable = storeDeclaredConfigs.selectable === true;
   const isCompactView = width > 0 && width <= compactBreakpoint;
+  // Mobile: no page buttons — infinite scroll only (desktop keeps pages mode when requested).
+  const resolvedPaginationMode =
+    width > 0 && width <= 768 && paginationMode === 'pages' ? 'infinite' : paginationMode;
   const addConfig = store?.getters?.add;
   const normalizedAddButtonPlacement = normalizeText(addButtonPlacement) || 'toolbar';
   const resolvedAddLabel =
     normalizeText(addLabel) ||
     normalizeText(global.t?.t(storeName, 'button', 'add')) ||
     'Adicionar';
-
   if (storeColumns.length === 0 && Array.isArray(columns) && columns.length > 0) {
     assignGetterValue(store, 'columns', columns);
   }
-
   if (data !== undefined && Array.isArray(data)) {
     assignGetterValue(store, 'items', data);
   }
@@ -167,7 +169,7 @@ const DefaultTable = ({
   const {
     buildRequestQuery,
     currentPage,
-    pageSizeNumber,
+    pageSizeNumber, paginateData,
     goToPage,
     resolvedIsLoading,
     handleEndReached,
@@ -185,7 +187,7 @@ const DefaultTable = ({
     onEndReached,
     onRefresh,
     pageSize,
-    paginationMode,
+    paginationMode: resolvedPaginationMode,
     requestParams: requestParamsSeed,
     resolvedActions,
     resolvedSort,
@@ -194,12 +196,13 @@ const DefaultTable = ({
     store,
     storeName,
   });
-  const sortedData = useDefaultTableSortedData({
+  const sortedItems = useDefaultTableSortedData({
     resolvedData,
     resolvedSort,
     storeName,
     tableColumns: columnsForTable,
   });
+  const sortedData = useMemo(() => paginateData(sortedItems), [paginateData, sortedItems]);
   const {isCreateFormOpen, closeCreateForm, resolvedOnAdd, handleDefaultCreateSaved} =
     useDefaultTableCreateForm({onAdd, onSaved, resolvedActions, handleRefresh});
   const hasAddAction =
@@ -225,17 +228,17 @@ const DefaultTable = ({
   const previousCompactRef = useRef(isCompactView);
   const enteringCompact = isCompactView && !previousCompactRef.current;
   useEffect(() => {previousCompactRef.current = isCompactView;}, [isCompactView]);
-  const effectiveViewMode =
+  const effectiveViewMode = viewMode || (
     enteringCompact && forceCardsOnCompact !== false ? 'cards' :
     currentConfigs.viewMode ||
     storedViewMode ||
-    (isCompactView && forceCardsOnCompact !== false ? 'cards' : initialViewMode);
+    (isCompactView && forceCardsOnCompact !== false ? 'cards' : initialViewMode));
   const tableFiltersVisible = Boolean(currentConfigs.tableFiltersVisible);
   const defaultTableConfigs = useMemo(
     () => ({
       ...storeDeclaredConfigs,
       appearance,
-      paginationMode,
+      paginationMode: resolvedPaginationMode,
       currentPage,
       pageSizeNumber,
       onPageChange: goToPage,
@@ -247,7 +250,7 @@ const DefaultTable = ({
       compactBreakpoint,
       debugFallbackParameters,
       defaultColor,
-      effectiveViewMode,
+      effectiveViewMode, viewMode,
       filters,
       footerComponent,
       forceCardsOnCompact,
@@ -274,6 +277,7 @@ const DefaultTable = ({
       requestParams: requestParamsSeed,
       requestSort,
       resolvedSort,
+      presentationColumns,
       rowActionsComponent,
       rowActionsWidth,
       rowStyle,
@@ -282,8 +286,10 @@ const DefaultTable = ({
       selectable: storeSelectable,
       showColumnFiltersButton,
       showSearch,
-      showRowActions: storeDeclaredConfigs.showRowActions === false ? false : showRowActions,
+      showRowActions: presentationColumns !== null ? showRowActions : storeDeclaredConfigs.showRowActions === false ? false : showRowActions,
+      showAdministrativeTools,
       showToolbar,
+      showCompactCaption,
       showToolbarActions:
         showToolbarActions === null
           ? storeDeclaredConfigs.showToolbarActions !== false
@@ -303,10 +309,11 @@ const DefaultTable = ({
       refreshing: resolvedIsRefreshing,
       tablePreferenceScope,
       toolbarActions,
-      viewMode: effectiveViewMode,
+      // A controlled presentation must not replace the saved list mode.
+      viewMode: viewMode ? storeDeclaredConfigs.viewMode : effectiveViewMode,
     }),
     [
-      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
+      appearance, resolvedPaginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -314,7 +321,7 @@ const DefaultTable = ({
       compactBreakpoint,
       debugFallbackParameters,
       defaultColor,
-      effectiveViewMode,
+      effectiveViewMode, viewMode,
       filters,
       footerComponent,
       forceCardsOnCompact,
@@ -344,6 +351,7 @@ const DefaultTable = ({
       requestSort,
       resolvedIsRefreshing,
       resolvedSort,
+      presentationColumns,
       rowActionsComponent,
       rowActionsWidth,
       rowStyle,
@@ -352,7 +360,9 @@ const DefaultTable = ({
       showColumnFiltersButton,
       showSearch,
       showRowActions,
+      showAdministrativeTools,
       showToolbar,
+      showCompactCaption,
       showToolbarActions,
       showToolbarControls,
       showTotalItemsInCompactToolbar,
@@ -369,7 +379,7 @@ const DefaultTable = ({
   const defaultTableConfigsSignature = useMemo(
     () =>
       stableSerialize({
-        appearance, paginationMode, currentPage, pageSizeNumber, resolvedIsLoading,
+        appearance, resolvedPaginationMode, currentPage, pageSizeNumber, resolvedIsLoading,
         configuredImport: storeDeclaredConfigs.import || null,
         add,
         addButtonPlacement: normalizedAddButtonPlacement,
@@ -384,6 +394,7 @@ const DefaultTable = ({
         hasImportAction: Boolean(storeDeclaredConfigs.import || importAction || onImport),
         initialViewMode,
         pinRowActions,
+        presentationColumns,
         rowActionsComponentType: rowActionsComponent ? typeof rowActionsComponent : '',
         rowActionsWidth,
         resolvedIsRefreshing,
@@ -394,18 +405,20 @@ const DefaultTable = ({
         showColumnFiltersButton,
         showSearch,
         showRowActions,
+        showAdministrativeTools,
         showToolbar,
+      showCompactCaption,
         showToolbarActions,
         showToolbarControls,
         showTotalItemsInCompactToolbar,
         showTotalItemsInFooter,
-        storedViewMode,
+        storedViewMode, controlledViewMode: viewMode,
         tableFiltersVisible,
         sortedData: stableSerialize(sortedData),
         toolbarActionsLength: Array.isArray(toolbarActions) ? toolbarActions.length : 0,
       }),
     [
-      appearance, paginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
+      appearance, resolvedPaginationMode, currentPage, pageSizeNumber, goToPage, resolvedIsLoading,
       add,
       normalizedAddButtonPlacement,
       resolvedAddLabel,
@@ -413,7 +426,7 @@ const DefaultTable = ({
       compactBreakpoint,
       defaultColor,
       debugFallbackParameters,
-      effectiveViewMode,
+      effectiveViewMode, viewMode,
       filters,
       forceCardsOnCompact,
       storeDeclaredConfigs,
@@ -424,6 +437,7 @@ const DefaultTable = ({
       onExport,
       onImport,
       pinRowActions,
+      presentationColumns,
       rowActionsComponent,
       rowActionsWidth,
       resolvedIsRefreshing,
@@ -433,7 +447,9 @@ const DefaultTable = ({
       showColumnFiltersButton,
       showSearch,
       showRowActions,
+      showAdministrativeTools,
       showToolbar,
+      showCompactCaption,
       showToolbarActions,
       showToolbarControls,
       showTotalItemsInCompactToolbar,
@@ -444,7 +460,6 @@ const DefaultTable = ({
       toolbarActions,
     ],
   );
-
   // Do not mutate store.configs during render. A new configs object is built
   // every pass; writing it here retriggers subscribers and React #185 when
   // opening Adicionar on DefaultTable (categories). Sync only in the hook
@@ -490,5 +505,4 @@ const DefaultTable = ({
     requestParamsSeed
   }} />;
 };
-
 export default DefaultTable;

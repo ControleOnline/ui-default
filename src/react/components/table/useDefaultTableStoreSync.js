@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   persistTableFiltersPreference,
   resolveStoredTableFiltersPreference,
@@ -65,7 +65,15 @@ export function useDefaultTableStoreSync({
   const storeRef = useRef(store);
   storeRef.current = store;
   const lastPublishedItemsRef = useRef(undefined);
-  const configsSignatureRef = useRef('');
+  // Keep custom presentation closures current (for example after a theme switch)
+  // without publishing configs for every new callback identity and reintroducing #185.
+  const cardOwner = useMemo(() => {
+    const owner = {current: null, signature: ''};
+    owner.render = (...args) => owner.current?.(...args);
+    return owner;
+  }, [storeName, store?.actions?.setConfigs]);
+  cardOwner.current = defaultTableConfigs.renderCard;
+  const hasRenderCard = typeof defaultTableConfigs.renderCard === 'function';
   const lastHydratedFiltersKeyRef = useRef('');
   const storeFiltersRef = useRef(storeFilters);
   storeFiltersRef.current = storeFilters;
@@ -163,11 +171,15 @@ export function useDefaultTableStoreSync({
   }, [filters]);
 
   useEffect(() => {
-    if (configsSignatureRef.current === defaultTableConfigsSignature) {
+    const signature = `${storeName}:${defaultTableConfigsSignature}:render-card:${hasRenderCard}`;
+    if (cardOwner.signature === signature) {
       return;
     }
 
-    configsSignatureRef.current = defaultTableConfigsSignature;
-    publishStoreValue(storeRef.current, 'setConfigs', defaultTableConfigs, 'configs');
-  }, [defaultTableConfigs, defaultTableConfigsSignature, storeName]);
+    cardOwner.signature = signature;
+    publishStoreValue(storeRef.current, 'setConfigs', {
+      ...defaultTableConfigs,
+      renderCard: hasRenderCard ? cardOwner.render : defaultTableConfigs.renderCard,
+    }, 'configs');
+  }, [defaultTableConfigs, defaultTableConfigsSignature, storeName, hasRenderCard, cardOwner]);
 }

@@ -12,6 +12,7 @@ import {
 } from './DefaultTable.utils';
 import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
+import DefaultTablePaginationBar from './DefaultTablePaginationBar';
 
 const DefaultTableFooter = ({ storeName }) => {
   const store = useStore(storeName);
@@ -119,9 +120,15 @@ const DefaultTableFooter = ({ storeName }) => {
       : React.createElement(footerComponent, footerProps);
   }
 
-  if (!shouldRenderFooterBar) {
+  // Keep a single footer row even when only pagination (pages mode, desktop) is present.
+  // PaginationBar returns null on mobile / infinite mode.
+  if (!shouldRenderFooterBar && configs.paginationMode !== 'pages') {
     return null;
   }
+
+  const hasSummaryOrCount =
+    (shouldRenderFooterTotalItems && !shouldRenderCompactToolbarTotalItems) ||
+    summaryEntries.length > 0;
 
   return (
     <View
@@ -174,6 +181,7 @@ const DefaultTableFooter = ({ storeName }) => {
           </Text>
         </View>
       ) : null}
+      <DefaultTablePaginationBar storeName={storeName} embedded />
     </View>
   );
 };

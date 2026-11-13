@@ -75,6 +75,7 @@ const useAutoPageLoader = ({
   resolvedActions,
   showError,
   storeName,
+  store,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [autoHasLoaded, setAutoHasLoaded] = useState(false);
@@ -84,6 +85,7 @@ const useAutoPageLoader = ({
   const [autoLastPageCount, setAutoLastPageCount] = useState(0);
   const autoRequestIdRef = useRef(0);
   const autoLoadedQueryKeyRef = useRef('');
+  const autoLoadedStoreKeyRef = useRef(null);
   const autoErroredQueryKeyRef = useRef('');
   const autoPageRef = useRef(0);
   const isFetchingRef = useRef(false);
@@ -116,13 +118,22 @@ const useAutoPageLoader = ({
       const query = buildRequestQuery(page, append);
       if (refresh && resolvedActions.catalogCache) query.__storeMeta = {catalogRefresh: true};
 
-      return Promise.resolve(resolvedActions.getItems(query))
+      const request = resolvedActions.getItems(query);
+      const owningRequestKey = store?.getters?.activeRequestKey;
+      return Promise.resolve(request)
         .then(response => {
           if (autoRequestIdRef.current !== requestId) {
             return response;
           }
 
           const pageItems = normalizeCollectionItems(response);
+          // A retained screen must not present another screen's shared-store result.
+          if (owningRequestKey && store?.getters?.lastCompletedRequest?.requestKey !== owningRequestKey) {
+            autoLoadedQueryKeyRef.current = '';
+            setAutoHasLoaded(false);
+            return pageItems;
+          }
+          autoLoadedStoreKeyRef.current = owningRequestKey || store?.getters?.lastCompletedRequest?.requestKey || null;
           autoPageRef.current = Number(response?.catalogPage) || page;
           setCurrentPage(autoPageRef.current);
           autoLoadedQueryKeyRef.current = autoQuerySignature;
@@ -159,6 +170,7 @@ const useAutoPageLoader = ({
       resolvedActions,
       showError,
       storeName,
+      store,
     ],
   );
 
@@ -168,6 +180,7 @@ const useAutoPageLoader = ({
     autoHasLoaded,
     autoLastPageCount,
     autoLoadedQueryKeyRef,
+    autoLoadedStoreKeyRef,
     autoLoading,
     autoLoadingMore,
     autoRefreshing,
@@ -188,21 +201,30 @@ const useAutoPageEffect = ({
   isFocused,
   loadAutoPage,
   resolvedActions,
+  ownsStoreResult,
+  autoPageRef,
 }) => {
+  const wasFocused = useRef(false);
   useEffect(() => {
+    const entering = isFocused && !wasFocused.current;
+    wasFocused.current = isFocused;
     if (!autoMode || !isFocused) return;
     if (typeof resolvedActions.getItems !== 'function') return;
+    // A failed visit may retry on the next focus, but never spin while still focused.
+    if (entering) autoErroredQueryKeyRef.current = '';
     if (
       autoLoading ||
       autoLoadingMore ||
-      autoLoadedQueryKeyRef.current === autoQuerySignature ||
+      (autoLoadedQueryKeyRef.current === autoQuerySignature && ownsStoreResult && !(entering && resolvedActions.catalogCache)) ||
       autoErroredQueryKeyRef.current === autoQuerySignature
     ) {
       return;
     }
 
     endReachedLockRef.current = false;
-    loadAutoPage(1, { append: false });
+    const retainedPage = autoLoadedQueryKeyRef.current === autoQuerySignature && (!ownsStoreResult || resolvedActions.catalogCache)
+      ? Math.max(1, autoPageRef.current) : 1;
+    loadAutoPage(retainedPage, { append: false });
   }, [
     autoErroredQueryKeyRef,
     autoLoadedQueryKeyRef,
@@ -214,6 +236,8 @@ const useAutoPageEffect = ({
     isFocused,
     loadAutoPage,
     resolvedActions,
+    ownsStoreResult,
+  autoPageRef,
   ]);
 };
 
@@ -245,6 +269,10 @@ export const useDefaultTablePagination = ({
     sortField: resolvedSort?.field,
   });
   const pageSizeNumber = Number(requestParams.itemsPerPage || pageSize || 50) || 50;
+  const [localPage, setLocalPage] = useState({key: '', page: 1});
+  const localQueryKey = stableSerialize([storeName, pageSizeNumber, filters, resolvedSort,
+    Array.isArray(data) ? data.map(item => item?.['@id'] ?? item?.id) : []]);
+  const localPages = Math.max(1, Math.ceil((Array.isArray(data) ? data.length : 0) / pageSizeNumber));
   const resourceEndpoint = store?.getters?.resourceEndpoint || '';
   const storeReload = store?.getters?.reload;
   const buildRequestQuery = useCallback(
@@ -279,11 +307,12 @@ export const useDefaultTablePagination = ({
     [columnsForTable, filters, pageSizeNumber, requestParams, resolvedSort, resourceEndpoint, storeName, storeReload],
   );
   const {
-    currentPage,
+    currentPage: autoCurrentPage,
     autoErroredQueryKeyRef,
     autoHasLoaded,
     autoLastPageCount,
     autoLoadedQueryKeyRef,
+    autoLoadedStoreKeyRef,
     autoLoading,
     autoLoadingMore,
     autoRefreshing,
@@ -298,7 +327,16 @@ export const useDefaultTablePagination = ({
     resolvedActions,
     showError,
     storeName,
+    store,
   });
+
+  const currentPage = autoMode ? autoCurrentPage : Math.min(localPages, localPage.key === localQueryKey ? localPage.page : 1);
+  const paginateData = useCallback(items => !autoMode && paginationMode === 'pages'
+    ? items.slice((currentPage - 1) * pageSizeNumber, currentPage * pageSizeNumber) : items,
+  [autoMode, paginationMode, currentPage, pageSizeNumber]);
+
+  const ownsStoreResult = !autoLoadedStoreKeyRef.current ||
+    autoLoadedStoreKeyRef.current === store?.getters?.lastCompletedRequest?.requestKey;
 
   useAutoPageEffect({
     autoErroredQueryKeyRef,
@@ -311,6 +349,8 @@ export const useDefaultTablePagination = ({
     isFocused,
     loadAutoPage,
     resolvedActions,
+    ownsStoreResult,
+    autoPageRef,
   });
 
   useEffect(() => {
@@ -326,7 +366,7 @@ export const useDefaultTablePagination = ({
     ? autoRefreshing
     : false;
   const resolvedData = autoMode
-    ? (autoHasLoaded && Array.isArray(store?.getters?.items) ? store.getters.items : [])
+    ? (autoHasLoaded && ownsStoreResult && Array.isArray(store?.getters?.items) ? store.getters.items : [])
     : (Array.isArray(data) ? data : []);
   const resolvedHasMore = useMemo(
     () => {
@@ -416,8 +456,10 @@ export const useDefaultTablePagination = ({
   return {
     buildRequestQuery,
     currentPage,
+    paginateData,
     goToPage: page => {
-      const totalPages = Math.max(1, Math.ceil(Number(resolvedTotalItems || 0) / pageSizeNumber));
+      const totalPages = autoMode ? Math.max(1, Math.ceil(Number(resolvedTotalItems || 0) / pageSizeNumber)) : localPages;
+      if (!autoMode && paginationMode === 'pages' && Number.isInteger(page) && page >= 1 && page <= totalPages && !resolvedIsLoading) setLocalPage({key: localQueryKey, page});
       if (autoMode && paginationMode === 'pages' && Number.isInteger(page) && page >= 1 && page <= totalPages && !resolvedIsLoading) {
         return loadAutoPage(page, {append: false});
       }

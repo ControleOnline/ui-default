@@ -7,6 +7,7 @@ it('protects custom card openRow while a card field is editing', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome', editable: true}],
           data: [{id: 1, name: 'Cliente'}],
           onRowPress,
@@ -44,6 +45,7 @@ it('protects both custom row action navigation callbacks during inline editing',
   mockState.windowDimensions = {width: 1024, height: 800};
   let tree;
   renderer.act(() => {tree = renderer.create(React.createElement(DefaultTable, {
+          appearance: 'default',
     columns: [{key: 'name', label: 'Nome', editable: true}],
     data: [{id: 1, name: 'Cliente'}], onRowPress,
     rowActionsComponent: props => React.createElement('CustomRowActions', props),
@@ -82,6 +84,7 @@ it('renders a custom footer component when provided', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [{id: 1, name: 'Pedido 1'}],
           footerComponent: FooterComponent,
@@ -113,6 +116,7 @@ it('keeps infinite scroll loading transparent over existing rows', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           showColumnFiltersButton: false,
           showRowActions: false,
           storeName: 'invoices',
@@ -157,6 +161,7 @@ it('uses the configured summary and labels before the store summary', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'status', label: 'Situação'}],
           data: [{id: 332, status: 'Pago'}],
           showColumnFiltersButton: false,
@@ -200,6 +205,7 @@ it('opens a debug query modal when the store exposes debug.query', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           requestParams: {itemsPerPage: 50},
           storeName: 'orders',
         }),
@@ -239,6 +245,7 @@ it('uses store actions when no explicit table actions are passed', async () => {
     await renderer.act(async () => {
       renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [
             {
               key: 'jobTitle',

@@ -83,12 +83,12 @@ const DefaultTableInput = ({
   const compactDisplay = compact && storeName === 'orders' ? (resolvedFieldName === 'price' ? Formatter.formatMoney(rawValue || 0) : dateField && rawValue ? `${Formatter.formatDateYmdTodmY(rawValue, false)}${time && (time !== '00:00' || resolvedFieldName === 'alterDate') ? '\n' + time : ''}` : compactType) : undefined;
   const compactTextStyle = compact ? {fontSize: 13, fontWeight: column.isIdentity ? '600' : '400', ...(resolvedFieldName === 'status' ? {color: statusColor} : {color: themeColors.textPrimary})} : null;
   const statusStyle = compact && resolvedFieldName === 'status' ? {width: 'auto', alignSelf: 'flex-start', borderWidth: 1, borderColor: statusColor, borderRadius: 18, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: /^#[0-9a-f]{6}$/i.test(statusColor) ? statusColor + '10' : themeColors.panelBackground} : null;
-  const input = (
+  const input = column.cellComponent ? React.createElement(column.cellComponent,{row,column}) : (
     <DefaultInput
       accentColor={options.accentColor || resolvedAccentColor}
       column={column}
       columns={columns}
-      containerStyle={[options.containerStyle, statusStyle, compact && column.isIdentity ? {alignSelf: 'flex-start', width: 'auto', borderWidth: 1, borderRadius: 8, borderColor: themeColors.border, backgroundColor: themeColors.inputBackground, paddingHorizontal: 9, paddingVertical: 5} : null]}
+      containerStyle={[options.containerStyle, statusStyle, compact && column.isIdentity ? {alignSelf: 'flex-start', width: 'auto', borderWidth: 1, borderRadius: 8, borderColor: themeColors.border, backgroundColor: themeColors.inputBackground, paddingHorizontal: 9, paddingVertical: 0, minHeight: 32, justifyContent: 'center'} : null]}
       defaultColor={options.defaultColor || configs.defaultColor}
       displayValue={options.displayValue ?? compactDisplay}
       editing={isEditing}

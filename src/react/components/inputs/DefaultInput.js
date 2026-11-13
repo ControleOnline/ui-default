@@ -39,6 +39,8 @@ const DefaultInput = ({
   getOptionsForColumn = null,
   inputStyle = null,
   label = '',
+  maxLength,
+  onSubmitEditing = null,
   numberOfLines = 1,
   onBeforeOpen = null,
   onCancelEditing = null,
@@ -395,7 +397,8 @@ const DefaultInput = ({
             placeholder={global.t?.t(storeName, 'input', column?.label || fieldName)}
             onBlur={autoSave ? saveDraft : undefined}
             onChangeText={updateDraft}
-            onSubmitEditing={saveDraft}
+            maxLength={maxLength}
+            onSubmitEditing={() => { saveDraft(); onSubmitEditing?.(draftValue); }}
             autoFocus={autoFocus && !isForm}
             selectTextOnFocus
           />

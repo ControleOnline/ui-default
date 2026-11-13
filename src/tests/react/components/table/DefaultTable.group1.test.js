@@ -19,6 +19,7 @@ it('can show only search in the toolbar while hiding configured actions and cont
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome', searchable: true}],
           data: [],
           showToolbarActions: false,
@@ -42,6 +43,7 @@ it('keeps the list/card toggle visible on compact layouts even when cards are fo
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
           showColumnFiltersButton: false,
@@ -68,6 +70,7 @@ it('respects the compact grid/list toggle in the table body', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           data: [{id: 1, name: 'Pedido'}],
           showColumnFiltersButton: false,
           storeName: 'orders',
@@ -87,6 +90,7 @@ it('respects the compact grid/list toggle in the table body', () => {
       toggleViewButton.props.onPress();
       tree.update(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           data: [{id: 1, name: 'Pedido'}],
           showColumnFiltersButton: false,
           storeName: 'orders',
@@ -118,6 +122,7 @@ it('pins identity and action columns on table view', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           rowActionsComponent,
           storeName: 'orders',
         }),
@@ -178,6 +183,7 @@ it('renders a custom row actions component with the configured actions width', (
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           onEditRow: jest.fn(),
           rowActionsComponent,
           rowActionsWidth: 180,
@@ -231,6 +237,7 @@ it('keeps only the identity column pinned when row actions are not pinned', () =
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           pinRowActions: false,
           rowActionsComponent,
           storeName: 'orders',
@@ -293,6 +300,7 @@ it('keeps the complete search aligned in the toolbar when there is enough room',
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
           storeName: 'orders',
@@ -316,6 +324,7 @@ it('hides the toolbar when the screen disables it', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome', searchable: true}],
           data: [],
           showToolbar: false,
@@ -344,6 +353,7 @@ it('keeps add available as a floating button when the toolbar is hidden', () => 
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome', searchable: true}],
           data: [],
           onAdd,
@@ -380,6 +390,7 @@ it('opens the default create form when add has no custom handler', () => {
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           requestParams: {receiver: 21},
           showToolbar: false,
           storeName: 'invoice',
@@ -418,6 +429,7 @@ it('collapses search into an icon on narrow toolbars and opens the search modal'
     renderer.act(() => {
       tree = renderer.create(
         React.createElement(DefaultTable, {
+          appearance: 'default',
           columns: [{key: 'name', label: 'Nome'}],
           data: [],
           storeName: 'orders',

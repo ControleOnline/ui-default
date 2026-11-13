@@ -214,6 +214,7 @@ export const getColumnStyle = column => {
   if (Number.isFinite(columnWidth) && columnWidth > 0) {
     customSize.width = columnWidth;
     customSize.flexBasis = columnWidth;
+    if(column?.cellComponent){customSize.flexGrow=0;customSize.maxWidth=columnWidth;}
   }
 
   if (Number.isFinite(columnMinWidth) && columnMinWidth > 0) {

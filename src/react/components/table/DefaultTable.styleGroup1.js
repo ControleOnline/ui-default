@@ -325,7 +325,7 @@ filterRow: {
     borderBottomColor: '#E2E8F0',
   },
 row: {
-    minHeight: 48,
+    minHeight: 24,
     width: '100%',
     flexDirection: 'row',
     alignItems: 'stretch',
