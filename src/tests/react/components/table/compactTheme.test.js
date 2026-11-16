@@ -17,7 +17,7 @@ it('uses configured theme colors in compact mode and responds to changes without
   renderer.act(() => tree.unmount());
 });
 it('shares configured theme colors with nested controls', () => {
-  const colors = {primary: '#abcdef', modalBackground: '#123abc'};
+  const colors = {defaultTable_primary: '#abcdef', defaultTable_modalBackground: '#123abc'};
   let tree;
   renderer.act(() => {tree = renderer.create(React.createElement(DefaultTableThemeContext.Provider, {value: colors}, React.createElement(Probe)));});
   expect(result.themeColors).toBe(colors);

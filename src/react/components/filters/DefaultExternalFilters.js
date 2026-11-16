@@ -189,11 +189,11 @@ const DefaultExternalFilters = ({
   const borderColor = palette.border;
   const textColor = palette.text;
   const textSecondaryColor = palette.textSecondary;
-  const buttonBackgroundColor = themeColors.buttonBackground;
-  const buttonTextColor = themeColors.buttonText;
-  const tableFilterBackgroundColor = themeColors.tableFilterBackground;
-  const tableFilterBorderColor = themeColors.tableFilterBorder;
-  const tableFilterTextColor = themeColors.tableFilterText;
+  const buttonBackgroundColor = themeColors.defaultFilter_buttonBackground;
+  const buttonTextColor = themeColors.defaultFilter_buttonText;
+  const tableFilterBackgroundColor = themeColors.defaultFilter_tableFilterBackground;
+  const tableFilterBorderColor = themeColors.defaultFilter_tableFilterBorder;
+  const tableFilterTextColor = themeColors.defaultFilter_tableFilterText;
   const onAccentColor = palette.secondary || palette.text;
   const isCompactView = width > 0 && width <= compactBreakpoint;
   const resolvedColumns = useMemo(() => {
