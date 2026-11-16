@@ -4,13 +4,15 @@ import {env} from '@env';
 
 import styles from './DefaultNativeMap.styles';
 import {
-  buildGoogleMapsNavigationUrl,
-  buildWazeNavigationUrl,
   buildAndroidWebMapHtml,
   resolveWebViewBaseUrlForDomain,
   resolveMapPopupTheme,
 } from './DefaultNativeMap.shared';
-import {extractMapCoordinates} from './DefaultMap.shared';
+import {
+  buildGoogleMapsNavigationUrl,
+  buildWazeNavigationUrl,
+  extractMapCoordinates,
+} from './DefaultMap.shared';
 
 const getNativeMapComponents = () => {
   if (Platform.OS === 'android') {

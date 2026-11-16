@@ -25,31 +25,31 @@ import DefaultCompactFilterPicker from './DefaultCompactFilterPicker';
 const buildTheme = ({ accentColor, themeColors = {} }) => ({
   accentColor: accentColor,
   activeBackgroundColor:
-    themeColors.activeBackgroundColor || (accentColor ? `${accentColor}14` : themeColors.backgroundColor),
+    themeColors.defaultFilter_activeBackgroundColor || (accentColor ? `${accentColor}14` : themeColors.defaultFilter_backgroundColor),
   activeIconBackgroundColor:
-    themeColors.activeIconBackgroundColor || (accentColor ? `${accentColor}24` : themeColors.iconBackgroundColor),
+    themeColors.defaultFilter_activeIconBackgroundColor || (accentColor ? `${accentColor}24` : themeColors.defaultFilter_iconBackgroundColor),
   activeChevronColor:
-    themeColors.activeChevronColor ||
-    themeColors.activeIconColor ||
+    themeColors.defaultFilter_activeChevronColor ||
+    themeColors.defaultFilter_activeIconColor ||
     accentColor,
-  activeIconColor: themeColors.activeIconColor || accentColor,
-  activeTextColor: themeColors.activeTextColor || accentColor,
-  backgroundColor: themeColors.backgroundColor || '#F8FAFC',
-  borderColor: themeColors.borderColor || '#E2E8F0',
-  captionColor: themeColors.captionColor || '#94A3B8',
-  chevronColor: themeColors.chevronColor || '#94A3B8',
-  closeIconColor: themeColors.closeIconColor || '#64748B',
-  iconBackgroundColor: themeColors.iconBackgroundColor || '#E2E8F0',
-  iconColor: themeColors.iconColor || '#64748B',
-  modalBackgroundColor: themeColors.modalBackgroundColor || '#FFFFFF',
+  activeIconColor: themeColors.defaultFilter_activeIconColor || accentColor,
+  activeTextColor: themeColors.defaultFilter_activeTextColor || accentColor,
+  backgroundColor: themeColors.defaultFilter_backgroundColor || '#F8FAFC',
+  borderColor: themeColors.defaultFilter_borderColor || '#E2E8F0',
+  captionColor: themeColors.defaultFilter_captionColor || '#94A3B8',
+  chevronColor: themeColors.defaultFilter_chevronColor || '#94A3B8',
+  closeIconColor: themeColors.defaultFilter_closeIconColor || '#64748B',
+  iconBackgroundColor: themeColors.defaultFilter_iconBackgroundColor || '#E2E8F0',
+  iconColor: themeColors.defaultFilter_iconColor || '#64748B',
+  modalBackgroundColor: themeColors.defaultFilter_modalBackgroundColor || '#FFFFFF',
   modalOverlayColor:
-    themeColors.modalOverlayColor || 'rgba(15, 23, 42, 0.35)',
-  modalTitleColor: themeColors.modalTitleColor || '#0F172A',
-  optionBackgroundColor: themeColors.optionBackgroundColor || '#F8FAFC',
-  optionBorderColor: themeColors.optionBorderColor || '#E2E8F0',
+    themeColors.defaultFilter_modalOverlayColor || 'rgba(15, 23, 42, 0.35)',
+  modalTitleColor: themeColors.defaultFilter_modalTitleColor || '#0F172A',
+  optionBackgroundColor: themeColors.defaultFilter_optionBackgroundColor || '#F8FAFC',
+  optionBorderColor: themeColors.defaultFilter_optionBorderColor || '#E2E8F0',
   optionSelectedTextColor:
-    themeColors.optionSelectedTextColor || accentColor,
-  textColor: themeColors.textColor || '#0F172A',
+    themeColors.defaultFilter_optionSelectedTextColor || accentColor,
+  textColor: themeColors.defaultFilter_textColor || '#0F172A',
 });
 
 const noop = () => {};
@@ -114,10 +114,10 @@ const CompactFilterSelector = ({
   const themeStoreColors = themeStore?.getters?.colors || {};
   const resolvedAccentColor =
     accentColor ||
-    themeColors.primary ||
-    themeColors.accent ||
-    themeStoreColors.primary ||
-    themeStoreColors.accent ||
+    themeColors.defaultFilter_primary ||
+    themeColors.defaultFilter_accent ||
+    themeStoreColors.defaultFilter_primary ||
+    themeStoreColors.defaultFilter_accent ||
     '';
   const resolvedTheme = useMemo(
     () => buildTheme({

@@ -28,6 +28,8 @@ import useDefaultTableRowInteraction from './useDefaultTableRowInteraction';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 
+// Compact row height (app-community#1444): 40px, ID badge uses the shared 32px control height.
+const TABLE_ROW_MIN_HEIGHT = 40;
 const isIdentityColumn = column => {
   if (!column) return false;
   if (column.isIdentity === true) return true;
@@ -61,12 +63,12 @@ const DefaultTableRows = ({ storeName }) => {
     : global.t?.t(storeName, 'label', 'empty');
   const tableBorderColor = tableBorderColors.rowBorderColor;
   const tableHeaderBorderColor = tableBorderColors.headerBorderColor || tableBorderColor;
-  const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
+  const tableEvenColor = themeTokens.defaultTable_listItemEvenRow || themeTokens['bg-even-light'] || palette.defaultTable_background;
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
-  const tableMutedColor = palette.textSecondary;
-  const tableOddColor = themeTokens.listItemOddRow || themeTokens['bg-odd-light'] || palette.background;
-  const tableSurfaceColor = palette.background;
-  const tableTextColor = palette.text;
+  const tableMutedColor = palette.defaultTable_textSecondary;
+  const tableOddColor = themeTokens.defaultTable_listItemOddRow || themeTokens['bg-odd-light'] || palette.defaultTable_background;
+  const tableSurfaceColor = palette.defaultTable_background;
+  const tableTextColor = palette.defaultTable_text;
   const rowStyle = configs.rowStyle;
   const hasRowPress = typeof configs.onRowPress === 'function';
   const hasCustomRowActions = hasDefaultTableRowActionsComponent(configs.rowActionsComponent);
@@ -180,7 +182,7 @@ const DefaultTableRows = ({ storeName }) => {
             width: tableWidth,
           },
           rowStyleValue,
-          configs.appearance === 'compact' ? {minHeight: 29} : null,
+          configs.appearance === 'compact' ? {minHeight: TABLE_ROW_MIN_HEIGHT} : null,
         ]}
         {...rowPressProps}
       >

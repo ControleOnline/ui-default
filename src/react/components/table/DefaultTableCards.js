@@ -74,10 +74,10 @@ const DefaultTableCards = ({ storeName }) => {
   const emptyStateLabel = isLoading
     ? global.t?.t(storeName, 'label', 'loading')
     : global.t?.t(storeName, 'label', 'empty');
-  const tableBorderColor = palette.border;
-  const tableMutedColor = palette.textSecondary;
-  const tableSurfaceColor = palette.background;
-  const tableTextColor = palette.text;
+  const tableBorderColor = palette.defaultTable_border;
+  const tableMutedColor = palette.defaultTable_textSecondary;
+  const tableSurfaceColor = palette.defaultTable_background;
+  const tableTextColor = palette.defaultTable_text;
   const hasBottomAddButton = configs.addButtonPlacement === 'bottom';
   const handleListScroll = event => {
     flatListProps.onScroll?.(event);
@@ -138,7 +138,7 @@ const DefaultTableCards = ({ storeName }) => {
             gridColumns === 1 ? intrinsicHeight : null,
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
-            compact ? [compactStyles.cardItem, {flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: compactCardWidth, maxWidth: compactCardWidth, backgroundColor: palette.cardBackground || palette.panelBackground, borderColor: palette.cardBorder || palette.inputBorder}] : null,
+            compact ? [compactStyles.cardItem, {flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: compactCardWidth, maxWidth: compactCardWidth, backgroundColor: palette.defaultTable_cardBackground || palette.defaultTable_panelBackground, borderColor: palette.defaultTable_cardBorder || palette.defaultTable_inputBorder}] : null,
             unframedCards ? {borderWidth:0,backgroundColor:'transparent',shadowOpacity:0,elevation:0} : null,
           ]}
         >
@@ -153,7 +153,7 @@ const DefaultTableCards = ({ storeName }) => {
             })}
           </View>
           {hasRowActions ? (
-            <View style={compact ? [compactStyles.cardActions, {backgroundColor: palette.tableFooterBackground, borderTopColor: palette.border}] : styles.cardActions}>
+            <View style={compact ? [compactStyles.cardActions, {backgroundColor: palette.defaultTable_tableFooterBackground, borderTopColor: palette.defaultTable_border}] : styles.cardActions}>
               {customRowActions}
               {editButton}
             </View>
