@@ -17,7 +17,7 @@ jest.mock('../../../../react/components/table/DefaultFiltersModal', () => () => 
 jest.mock('../../../../react/components/table/DefaultColumnMenu', () => () => null);
 jest.mock('../../../../react/components/table/DefaultDebug', () => () => null);
 jest.mock('../../../../react/components/table/DefaultToolbarAction', () => () => null);
-jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({themeColors: {defaultTable_textPrimary: 'theme-text', defaultTable_inputBackground: 'theme-input'}}));
+jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({themeColors: {defaultFilter_textPrimary: 'theme-text', defaultFilter_inputBackground: 'theme-input'}}));
 const Toolbar = require('../../../../react/components/table/DefaultTableCompactToolbar').default;
 let tree;
 beforeEach(() => {
