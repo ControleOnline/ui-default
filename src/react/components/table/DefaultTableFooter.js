@@ -24,11 +24,11 @@ const DefaultTableFooter = ({ storeName }) => {
   const showTotalItemsInFooter = configs.showTotalItemsInFooter !== false;
   const tableColumns = columns;
   const { themeColors } = useDefaultTableTheme();
-  const tableFooterBackgroundColor = themeColors.tableFooterBackground;
-  const tableFooterBorderColor = themeColors.tableFooterBorder;
-  const tableFooterTextColor = themeColors.tableFooterText;
-  const toolbarCountBackgroundColor = themeColors.badgeBackground;
-  const toolbarCountTextColor = themeColors.badgeText;
+  const tableFooterBackgroundColor = themeColors.defaultTable_tableFooterBackground;
+  const tableFooterBorderColor = themeColors.defaultTable_tableFooterBorder;
+  const tableFooterTextColor = themeColors.defaultTable_tableFooterText;
+  const toolbarCountBackgroundColor = themeColors.defaultTable_badgeBackground;
+  const toolbarCountTextColor = themeColors.defaultTable_badgeText;
   const storeTotalItems = store?.getters?.totalItems;
   const resolvedTotalItems = storeTotalItems;
   const totalItemsNumber = Number(resolvedTotalItems);

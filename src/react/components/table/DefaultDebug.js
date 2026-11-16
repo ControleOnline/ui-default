@@ -149,7 +149,7 @@ const DefaultDebug = ({
         style={[
           styles.toolbarButton,
           { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor },
-          themeColors.compact ? {width: '100%', minHeight: 48, borderWidth: 0, backgroundColor: themeColors.inputBackground, paddingHorizontal: 12, gap: 8, justifyContent: 'flex-start'} : null,
+          themeColors.compact ? {width: '100%', minHeight: 48, borderWidth: 0, backgroundColor: themeColors.defaultTable_inputBackground, paddingHorizontal: 12, gap: 8, justifyContent: 'flex-start'} : null,
           isOpen
             ? { backgroundColor: pressedBackgroundColor, borderColor: pressedBorderColor }
             : null,
@@ -157,8 +157,8 @@ const DefaultDebug = ({
         activeOpacity={0.82}
         onPress={() => setIsOpen(true)}
       >
-        <Icon name="code" size={16} color={themeColors.compact ? themeColors.textPrimary : buttonTextColor} />
-        {themeColors.compact ? <Text style={{fontSize: 14, color: themeColors.textPrimary}}>Diagnóstico da consulta</Text> : null}
+        <Icon name="code" size={16} color={themeColors.compact ? themeColors.defaultTable_textPrimary : buttonTextColor} />
+        {themeColors.compact ? <Text style={{fontSize: 14, color: themeColors.defaultTable_textPrimary}}>Diagnóstico da consulta</Text> : null}
       </TouchableOpacity>
 
       {isOpen ? (
