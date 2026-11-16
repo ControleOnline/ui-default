@@ -1,17 +1,17 @@
 {
-  "version": "1.0.290",
-  "rc": 2,
-  "branch": "rc/1.0.290-rc.2",
-  "baseMaster": "ac8c0ecc9aca008ab4fd70142374d58eff408135",
+  "version": "1.0.291",
+  "rc": 1,
+  "branch": "rc/1.0.291-rc.1",
+  "baseMaster": "17ae683bd49985ddc8f7aaa0dc828cd6b126cf90",
   "tasks": [
-    64
+    776
   ],
   "frozen": true,
   "repositories": {
-    "ControleOnline/ui-default": "a357b6413f46302c8ae0a4d637aba4b9dc59be4b"
+    "ControleOnline/ui-default": "9b7ddf330d7567a1d5fc9d56f193ff1c62c09ef6"
   },
   "validation": {
-    "scope": "Mapa nativo: importa buildGoogleMapsNavigationUrl/buildWazeNavigationUrl de DefaultMap.shared (ui-default#64).",
-    "checks": "DefaultNativeMap.imports.test.js 3/3 (falha na v1.0.289, passa com a correcao); Security aceito (#64). Base v1.0.289."
+    "scope": "Temas: prefixa tokens de defaultTable_ e defaultFilter_ (blocos 1 e 2 da CON-776). Tokens ja criados no tema 12 (staging).",
+    "checks": "Renomeacao mecanica; testes nao executados localmente (sem node no ui-default). Validacao visual em staging."
   }
 }
