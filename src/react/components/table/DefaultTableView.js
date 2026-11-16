@@ -98,7 +98,7 @@ export default function DefaultTableView({
                 onPress={closeCreateForm}
                 style={styles.modalCloseButton}
               >
-                <Icon name="x" size={16} color={themeColors.defaultTable_textPrimary || '#0F172A'} />
+                <Icon name="x" size={16} color={themeColors.defaultTable_modalCloseIcon} />
               </TouchableOpacity>
             </View>
             <DefaultForm

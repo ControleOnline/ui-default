@@ -21,9 +21,7 @@ export default function DefaultTablePaginationBar({storeName, embedded = false})
   const total = Number(store.getters.totalItems || 0);
   const pages = Math.max(1, Math.ceil(total / size));
   const busy = Boolean(configs.paginationLoading);
-  const text = c.defaultTable_tableFooterText || c.defaultTable_textPrimary;
-  const background = c.defaultTable_tableFooterBackground || c.defaultTable_panelBackground;
-  const border = c.defaultTable_tableFooterBorder || c.defaultTable_inputBorder;
+  const text = c.defaultTable_tableFooterText;
   const button = (value, icon, label, disabled = false) => (
     <TouchableOpacity
       key={label}
@@ -35,12 +33,12 @@ export default function DefaultTablePaginationBar({storeName, embedded = false})
       style={[
         s.page,
         {
-          backgroundColor: !icon && page === value ? c.defaultTable_chipSelectedBackground || c.defaultTable_badgeBackground : background,
-          borderColor: border,
+          backgroundColor: !icon && page === value ? c.defaultTable_buttonPressedBackground : c.defaultTable_buttonBackgroundSecondary,
+          borderColor: !icon && page === value ? c.defaultTable_buttonPressedBorder : c.defaultTable_buttonBorderSecondary,
         },
         (disabled || busy) && s.disabled,
       ]}>
-      {icon ? <Icon name={icon} size={13} color={text} /> : <Text style={[s.small, {color: text, fontSize: 11}]}>{value}</Text>}
+      {icon ? <Icon name={icon} size={13} color={c.defaultTable_buttonIconSecondary} /> : <Text style={[s.small, {color: page === value ? c.defaultTable_buttonPressedText : c.defaultTable_buttonTextSecondary, fontSize: 11}]}>{value}</Text>}
     </TouchableOpacity>
   );
   const t = global.t?.t;

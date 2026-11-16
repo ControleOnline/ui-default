@@ -115,7 +115,7 @@ const DefaultTableToolbar = ({
   const resolvedToolbarActions = showToolbarActions
     ? [importTableAction, exportTableAction, ...toolbarActions].filter(Boolean)
     : [];
-  const { tableBorderColors, toolbarColors } = useDefaultTableTheme();
+  const { filterToolbarColors: toolbarColors } = useDefaultTableTheme();
   const {
     backgroundColor: toolbarBackgroundColor,
     borderColor: toolbarBorderColor,
@@ -123,7 +123,7 @@ const DefaultTableToolbar = ({
     countTextColor: toolbarCountTextColor,
   } = toolbarColors;
   const resolvedToolbarBorderColor =
-    tableBorderColors.toolbarBorderColor || toolbarBorderColor;
+    toolbarBorderColor;
   const storeTotalItems = store?.getters?.totalItems;
   const resolvedTotalItems = storeTotalItems;
   const totalItemsNumber = Number(resolvedTotalItems);

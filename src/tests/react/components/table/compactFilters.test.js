@@ -12,7 +12,7 @@ jest.mock('react-native', () => {
 jest.mock('react-native-vector-icons/Feather', () => () => null);
 jest.mock('@controleonline/ui-common/src/react/utils/storeColumns', () => ({formatStoreColumnLabel: ({fallbackLabel}) => fallbackLabel}));
 jest.mock('../../../../react/components/filters/DefaultColumnFilter', () => props => require('react').createElement('Filter', props));
-jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({modalColors: {}, resolvedAccentColor: 'theme-accent'}));
+jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({filterModalColors: {}, filterButtonColors: {}, filterButtonSecondaryColors: {}, modalColors: {}, resolvedAccentColor: 'theme-accent'}));
 jest.mock('../../../../react/utils/tableVisibleColumnsPreferences', () => ({
   persistTableFiltersPreference: jest.fn(), resolveDefaultTablePreferenceScope: () => ({}), sanitizeTableFiltersPreference: ({filters}) => filters,
 }));

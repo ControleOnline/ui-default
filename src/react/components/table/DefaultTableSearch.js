@@ -83,7 +83,7 @@ export const DefaultTableCollapsedSearch = ({ storeName }) => {
   const store = useStore(storeName);
   const configs = store?.getters?.configs || {};
   const { collapses, renders, rendersCompactTotal } = useSearchState(storeName);
-  const { tableButtonColors } = useDefaultTableTheme();
+  const { filterButtonSecondaryColors } = useDefaultTableTheme();
 
   if (!renders || rendersCompactTotal || !collapses) {
     return null;
@@ -96,8 +96,8 @@ export const DefaultTableCollapsedSearch = ({ storeName }) => {
           style={[
             styles.toolbarSearchButton,
             {
-              borderColor: tableButtonColors.borderColor,
-              backgroundColor: tableButtonColors.backgroundColor,
+              borderColor: filterButtonSecondaryColors.borderColor,
+              backgroundColor: filterButtonSecondaryColors.backgroundColor,
             },
           ]}
           accessibilityLabel={global.t?.t(storeName, 'label', 'search')}
@@ -105,7 +105,7 @@ export const DefaultTableCollapsedSearch = ({ storeName }) => {
           activeOpacity={0.82}
           onPress={open}
         >
-          <Icon name="search" size={14} color={tableButtonColors.iconColor} />
+          <Icon name="search" size={14} color={filterButtonSecondaryColors.iconColor} />
         </TouchableOpacity>
       )}
     >
