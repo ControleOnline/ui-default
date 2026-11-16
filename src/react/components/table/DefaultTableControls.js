@@ -46,15 +46,17 @@ const DefaultTableControls = ({ storeName }) => {
     configs.add !== false && addButtonPlacement === 'toolbar' &&
     (addConfig === true || configs.add === true) &&
     (typeof configs.onAdd === 'function' || typeof store?.actions?.save === 'function');
-  const { tableButtonColors } = useDefaultTableTheme();
+  const { filterButtonColors, filterButtonPressedColors, filterButtonSecondaryColors } = useDefaultTableTheme();
   const {
     backgroundColor,
     borderColor,
-    pressedBackgroundColor,
-    pressedBorderColor,
-    pressedIconColor,
+    iconColor,
     textColor,
-  } = tableButtonColors;
+  } = filterButtonSecondaryColors;
+  const pressedBackgroundColor = filterButtonPressedColors.backgroundColor;
+  const pressedBorderColor = filterButtonPressedColors.borderColor;
+  const pressedIconColor = filterButtonPressedColors.iconColor;
+  const pressedTextColor = filterButtonPressedColors.textColor;
 
   const buttonStyle = [
     styles.toolbarButton,
@@ -96,13 +98,13 @@ const DefaultTableControls = ({ storeName }) => {
               <Icon
                 name="filter"
                 size={14}
-                color={isOpen ? pressedIconColor : textColor}
+                color={isOpen ? pressedIconColor : iconColor}
               />
               {activeFilterCount > 0 ? (
                 <Text
                   style={[
                     styles.toolbarBadgeText,
-                    { color: isOpen ? pressedIconColor : textColor },
+                    { color: isOpen ? pressedTextColor : textColor },
                   ]}
                 >
                   {activeFilterCount}
@@ -137,7 +139,7 @@ const DefaultTableControls = ({ storeName }) => {
         <Icon
           name={nextViewMode === 'cards' ? 'grid' : 'list'}
           size={14}
-          color={textColor}
+          color={iconColor}
         />
       </TouchableOpacity>
       <DefaultModalButton
@@ -150,7 +152,7 @@ const DefaultTableControls = ({ storeName }) => {
             activeOpacity={0.82}
             onPress={toggle}
           >
-            <Icon name="columns" size={14} color={isOpen ? pressedIconColor : textColor} />
+            <Icon name="columns" size={14} color={isOpen ? pressedIconColor : iconColor} />
           </TouchableOpacity>
         )}
       >
@@ -167,12 +169,12 @@ const DefaultTableControls = ({ storeName }) => {
           style={[
             styles.toolbarButton,
             styles.toolbarAddButton,
-            { backgroundColor: backgroundColor, borderColor: backgroundColor },
+            { backgroundColor: filterButtonColors.backgroundColor, borderColor: filterButtonColors.borderColor },
           ]}
           activeOpacity={0.85}
           onPress={() => configs.onAdd?.()}
         >
-          <Icon name="plus" size={16} color={textColor} />
+          <Icon name="plus" size={16} color={filterButtonColors.iconColor} />
         </TouchableOpacity>
       ) : null}
     </>
