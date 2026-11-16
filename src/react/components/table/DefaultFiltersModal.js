@@ -84,8 +84,8 @@ const DefaultFiltersModal = ({ storeName, visible = false, deferred = false, onC
   if (configs.appearance === 'compact') {
     const fields = columns.filter(column => column.compactFilter !== false);
     const action = (label, onPress, primary = false) => <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
-      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, borderWidth: 1, borderColor, backgroundColor: primary ? themeColors.buttonBackground : themeColors.modalBackground}}>
-      <Text style={{color: primary ? themeColors.buttonText : textColor, fontSize: 14, fontWeight: '600'}}>{label}</Text>
+      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, borderWidth: 1, borderColor, backgroundColor: primary ? themeColors.defaultTable_buttonBackground : themeColors.defaultTable_modalBackground}}>
+      <Text style={{color: primary ? themeColors.defaultTable_buttonText : textColor, fontSize: 14, fontWeight: '600'}}>{label}</Text>
     </TouchableOpacity>;
     return <DefaultCompactDialog visible title="Filtros" description="Combine os filtros e aplique para atualizar os resultados." onClose={onClose}
       bodyHeight={fields.length * 86 + 40} footer={<>{action(clearLabel, () => setDraft({}))}{action(applyLabel, () => {applyFilters(draft); onClose?.();}, true)}</>}>

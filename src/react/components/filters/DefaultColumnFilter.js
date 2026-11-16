@@ -233,7 +233,7 @@ const DefaultColumnFilter = ({
     <View style={[style, styles.filterCell]}>
       <TextInput
         accessibilityLabel={column?.compactLabel || fieldName}
-        style={[styles.filterInput, themeColors.compact ? {minHeight: 46, borderRadius: 9, fontSize: 14, borderColor: themeColors.inputBorder, color: themeColors.inputText, backgroundColor: themeColors.inputBackground} : null]}
+        style={[styles.filterInput, themeColors.compact ? {minHeight: 46, borderRadius: 9, fontSize: 14, borderColor: themeColors.defaultFilter_inputBorder, color: themeColors.defaultFilter_inputText, backgroundColor: themeColors.defaultFilter_inputBackground} : null]}
         value={normalizeText(filters?.[fieldName])}
         placeholder={global.t?.t(storeName, 'input', column?.label || fieldName)}
         onChangeText={value => requestChange(fieldName, value)}

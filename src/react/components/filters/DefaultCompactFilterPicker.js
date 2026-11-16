@@ -9,19 +9,19 @@ export default function DefaultCompactFilterPicker({visible, disabled, label, ti
   const {themeColors: c} = useDefaultTableTheme();
   return <>
     <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Selecionar ${title}`} accessibilityState={{expanded: visible, disabled}}
-      disabled={disabled} onPress={onOpen} style={[s.trigger, {borderColor: c.inputBorder, backgroundColor: c.inputBackground}]}>
-      <Text numberOfLines={1} style={{flex: 1, color: c.inputText, fontSize: 14}}>{label || 'Todos'}</Text><Icon name="chevron-down" size={17} color={c.textSecondary} />
+      disabled={disabled} onPress={onOpen} style={[s.trigger, {borderColor: c.defaultFilter_inputBorder, backgroundColor: c.defaultFilter_inputBackground}]}>
+      <Text numberOfLines={1} style={{flex: 1, color: c.defaultFilter_inputText, fontSize: 14}}>{label || 'Todos'}</Text><Icon name="chevron-down" size={17} color={c.defaultFilter_textSecondary} />
     </TouchableOpacity>
     <DefaultCompactDialog visible={visible} title={title} onClose={onClose} bodyHeight={Math.min(460, 40 + options.length * 48 + (searchable ? 60 : 0) + (children ? 220 : 0))}>
-      {searchable ? <TextInput accessibilityLabel={`Buscar em ${title}`} placeholder="Buscar opções" placeholderTextColor={c.inputPlaceholderText}
-        value={searchText} onChangeText={onSearch} style={[s.search, {borderColor: c.inputBorder, color: c.inputText, backgroundColor: c.inputBackground}]} /> : null}
-      {options.length === 0 ? <Text style={{color: c.textSecondary}}>Nenhuma opção encontrada.</Text> : null}
+      {searchable ? <TextInput accessibilityLabel={`Buscar em ${title}`} placeholder="Buscar opções" placeholderTextColor={c.defaultFilter_inputPlaceholderText}
+        value={searchText} onChangeText={onSearch} style={[s.search, {borderColor: c.defaultFilter_inputBorder, color: c.defaultFilter_inputText, backgroundColor: c.defaultFilter_inputBackground}]} /> : null}
+      {options.length === 0 ? <Text style={{color: c.defaultFilter_textSecondary}}>Nenhuma opção encontrada.</Text> : null}
       {options.map(option => <TouchableOpacity key={option.key} accessibilityRole="radio" accessibilityLabel={option.label || 'Todos'} accessibilityState={{selected: option.key === selectedKey}}
-        onPress={() => onSelect(option.key)} style={[s.option, {backgroundColor: option.key === selectedKey ? c.chipSelectedBackground : 'transparent', borderColor: c.tableRowBorder}]}>
+        onPress={() => onSelect(option.key)} style={[s.option, {backgroundColor: option.key === selectedKey ? c.defaultFilter_chipSelectedBackground : 'transparent', borderColor: c.defaultFilter_tableRowBorder}]}>
         {option.image ? <Image source={option.image} style={{width: 24, height: 24}} resizeMode="contain" /> : null}
         {option.color ? <View style={[s.dot, {backgroundColor: option.color}]} /> : null}
-        <Text style={{flex: 1, color: c.textPrimary, fontSize: 14}}>{option.label || 'Todos'}</Text>
-        {option.key === selectedKey ? <Icon name="check" size={17} color={c.primary} /> : null}
+        <Text style={{flex: 1, color: c.defaultFilter_textPrimary, fontSize: 14}}>{option.label || 'Todos'}</Text>
+        {option.key === selectedKey ? <Icon name="check" size={17} color={c.defaultFilter_primary} /> : null}
       </TouchableOpacity>)}
       {children}
     </DefaultCompactDialog>

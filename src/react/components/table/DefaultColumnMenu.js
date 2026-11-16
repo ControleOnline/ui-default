@@ -57,15 +57,15 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
     };
     return <TouchableOpacity key={fieldName} accessibilityRole="checkbox" accessibilityLabel={label}
       accessibilityState={{checked, disabled: locked && checked}} disabled={locked && checked} onPress={toggle}
-      style={{minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: checked ? themeColors.chipBackground : 'transparent'}}>
+      style={{minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: checked ? themeColors.defaultTable_chipBackground : 'transparent'}}>
       <Icon name={checked ? 'check-square' : 'square'} size={19} color={checked ? resolvedCheckboxSelectedMarkColor : resolvedCheckboxBorderColor} />
       <Text style={{flex: 1, fontSize: 14, color: textColor}}>{label}</Text>
-      {locked && checked ? <Text style={{fontSize: 12, color: themeColors.textSecondary}}>Obrigatória</Text> : null}
+      {locked && checked ? <Text style={{fontSize: 12, color: themeColors.defaultTable_textSecondary}}>Obrigatória</Text> : null}
     </TouchableOpacity>;
   });
   if (compact) return <DefaultCompactDialog visible title="Colunas visíveis" description="Escolha as informações da tabela." onClose={onClose}
     width={400} bodyHeight={items.length * 60 + 40} footer={<TouchableOpacity accessibilityRole="button" accessibilityLabel="Concluir seleção de colunas" onPress={onClose}
-      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, backgroundColor: themeColors.buttonBackground}}><Text style={{color: themeColors.buttonText, fontSize: 14, fontWeight: '600'}}>Concluir</Text></TouchableOpacity>}>
+      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, backgroundColor: themeColors.defaultTable_buttonBackground}}><Text style={{color: themeColors.defaultTable_buttonText, fontSize: 14, fontWeight: '600'}}>Concluir</Text></TouchableOpacity>}>
     {items.length ? items : <Text style={{color: textColor}}>Nenhuma coluna disponível.</Text>}
   </DefaultCompactDialog>;
 
@@ -84,7 +84,7 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
               activeOpacity={0.82}
               onPress={onClose}
             >
-              <Icon name="x" size={16} color={themeColors.iconWarning || closeIconColor} />
+              <Icon name="x" size={16} color={themeColors.defaultTable_iconWarning || closeIconColor} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.columnMenuModalBody} contentContainerStyle={styles.columnMenuModalList}>
