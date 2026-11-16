@@ -21,9 +21,9 @@ export default function DefaultTablePaginationBar({storeName, embedded = false})
   const total = Number(store.getters.totalItems || 0);
   const pages = Math.max(1, Math.ceil(total / size));
   const busy = Boolean(configs.paginationLoading);
-  const text = c.tableFooterText || c.textPrimary;
-  const background = c.tableFooterBackground || c.panelBackground;
-  const border = c.tableFooterBorder || c.inputBorder;
+  const text = c.defaultTable_tableFooterText || c.defaultTable_textPrimary;
+  const background = c.defaultTable_tableFooterBackground || c.defaultTable_panelBackground;
+  const border = c.defaultTable_tableFooterBorder || c.defaultTable_inputBorder;
   const button = (value, icon, label, disabled = false) => (
     <TouchableOpacity
       key={label}
@@ -35,7 +35,7 @@ export default function DefaultTablePaginationBar({storeName, embedded = false})
       style={[
         s.page,
         {
-          backgroundColor: !icon && page === value ? c.chipSelectedBackground || c.badgeBackground : background,
+          backgroundColor: !icon && page === value ? c.defaultTable_chipSelectedBackground || c.defaultTable_badgeBackground : background,
           borderColor: border,
         },
         (disabled || busy) && s.disabled,

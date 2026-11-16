@@ -30,10 +30,10 @@ export default function DefaultTableCompactToolbar({storeName, actions = [], sho
   const [draft, setDraft] = useState(String(filters[searchKey] || ''));
   useEffect(() => setDraft(String(filters[searchKey] || '')), [filters[searchKey]]);
   const entries = Object.entries(filters).filter(([, value]) => isActiveTableFilter(value));
-  const text = c.textPrimary || c.text;
-  const muted = c.textSecondary || text;
-  const panel = c.panelBackground || c.cardBackground || c.appBackground;
-  const border = c.inputBorder || c.cardBorder || c.border;
+  const text = c.defaultFilter_textPrimary || c.defaultFilter_text;
+  const muted = c.defaultFilter_textSecondary || text;
+  const panel = c.defaultFilter_panelBackground || c.defaultFilter_cardBackground || c.defaultFilter_appBackground;
+  const border = c.defaultFilter_inputBorder || c.defaultFilter_cardBorder || c.defaultFilter_border;
   const apply = next => {
     persistTableFiltersPreference(configs.tablePreferenceScope, next);
     if (configs.onFilterChange) configs.onFilterChange(next);
@@ -43,9 +43,9 @@ export default function DefaultTableCompactToolbar({storeName, actions = [], sho
   const submit = () => {const next = {...filters}; if (draft.trim()) next[searchKey] = draft.trim(); else delete next[searchKey]; apply(next);};
   const button = (label, icon, onPress, selected = false, primary = false) => (
     <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} accessibilityState={{selected}} onPress={onPress}
-      style={[s.button, {backgroundColor: primary ? c.buttonBackground : selected ? c.chipSelectedBackground || panel : panel, borderColor: border}, !mobile && icon === 'sliders' ? {marginLeft: 'auto'} : null]}>
-      <Icon name={icon} size={16} color={primary ? c.buttonIcon || c.buttonText : text} />
-      {label && (!collapsed || width >= 360 && (label === 'Filtros' || primary)) ? <Text style={[s.label, {color: primary ? c.buttonText : text}]}>{primary && collapsed ? 'Novo' : label}</Text> : null}
+      style={[s.button, {backgroundColor: primary ? c.defaultFilter_buttonBackground : selected ? c.defaultFilter_chipSelectedBackground || panel : panel, borderColor: border}, !mobile && icon === 'sliders' ? {marginLeft: 'auto'} : null]}>
+      <Icon name={icon} size={16} color={primary ? c.defaultFilter_buttonIcon || c.defaultFilter_buttonText : text} />
+      {label && (!collapsed || width >= 360 && (label === 'Filtros' || primary)) ? <Text style={[s.label, {color: primary ? c.defaultFilter_buttonText : text}]}>{primary && collapsed ? 'Novo' : label}</Text> : null}
     </TouchableOpacity>
   );
   const mode = configs.effectiveViewMode || 'table';
@@ -60,12 +60,12 @@ export default function DefaultTableCompactToolbar({storeName, actions = [], sho
   const sortColumn = columns.find(column => getSortField(column) === configs.resolvedSort?.field);
   const labelFor = column => getCompactColumnLabel(column, formatStoreColumnLabel({columns, fieldName: getColumnKey(column), fallbackLabel: column?.label || getColumnKey(column), storeName}));
   return (
-    <View style={[s.toolbar, {backgroundColor: c.toolbarBackground || panel, borderBottomColor: border}]}>
+    <View style={[s.toolbar, {backgroundColor: c.defaultFilter_toolbarBackground || panel, borderBottomColor: border}]}>
       <View style={[s.row, {gap: collapsed ? 6 : 8, flexWrap: 'nowrap'}]}>
-        {configs.showSearch !== false ? <View style={[s.search, mobile && s.searchMobile, {borderColor: border, backgroundColor: c.inputBackground || panel}]}>
-          <Icon name="search" size={16} color={c.inputIcon || muted} />
-          <TextInput accessibilityLabel={configs.searchPlaceholder || 'Buscar'} placeholder={configs.searchPlaceholder || 'Buscar'} placeholderTextColor={c.inputPlaceholderText || muted}
-            value={draft} onChangeText={setDraft} onSubmitEditing={submit} returnKeyType="search" style={[s.input, mobile && s.inputMobile, {color: c.inputText || text}]} />
+        {configs.showSearch !== false ? <View style={[s.search, mobile && s.searchMobile, {borderColor: border, backgroundColor: c.defaultFilter_inputBackground || panel}]}>
+          <Icon name="search" size={16} color={c.defaultFilter_inputIcon || muted} />
+          <TextInput accessibilityLabel={configs.searchPlaceholder || 'Buscar'} placeholder={configs.searchPlaceholder || 'Buscar'} placeholderTextColor={c.defaultFilter_inputPlaceholderText || muted}
+            value={draft} onChangeText={setDraft} onSubmitEditing={submit} returnKeyType="search" style={[s.input, mobile && s.inputMobile, {color: c.defaultFilter_inputText || text}]} />
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Pesquisar" onPress={submit} style={{padding: 4}}><Icon name="arrow-right" size={16} color={text} /></TouchableOpacity>
         </View> : null}
         {showControls ? <>
@@ -81,8 +81,8 @@ export default function DefaultTableCompactToolbar({storeName, actions = [], sho
         const options = column ? configs.getOptionsForColumn?.(column) || column.options || [] : [];
         const valueLabel = Array.isArray(options) ? (Array.isArray(value) ? value : [value]).map(item => options.find(option => String(option.value ?? option.key) === String(item))?.label || getCompactFilterLabel(item)).join(', ') : getCompactFilterLabel(value);
         const label = `${column ? labelFor(column) + ': ' : key === searchKey ? 'Busca: ' : key + ': '}${valueLabel}`;
-        return <TouchableOpacity key={key} accessibilityRole="button" accessibilityLabel={`Remover filtro ${label}`} onPress={() => remove(key)} style={[s.chip, {borderColor: border, backgroundColor: c.chipBackground || panel}]}>
-          <Text numberOfLines={1} style={[s.small, {color: c.chipText || text, flexShrink: 1}]}>{label}</Text><Icon name="x" size={12} color={text} />
+        return <TouchableOpacity key={key} accessibilityRole="button" accessibilityLabel={`Remover filtro ${label}`} onPress={() => remove(key)} style={[s.chip, {borderColor: border, backgroundColor: c.defaultFilter_chipBackground || panel}]}>
+          <Text numberOfLines={1} style={[s.small, {color: c.defaultFilter_chipText || text, flexShrink: 1}]}>{label}</Text><Icon name="x" size={12} color={text} />
         </TouchableOpacity>;
       })}<TouchableOpacity accessibilityRole="button" onPress={() => apply({})}><Text style={[s.small, {color: muted}]}>Limpar filtros</Text></TouchableOpacity></View> : null}
       <DefaultFiltersModal storeName={storeName} visible={modal === 'filters'} deferred onClose={() => setModal('')} />
@@ -91,19 +91,19 @@ export default function DefaultTableCompactToolbar({storeName, actions = [], sho
         description={modal === 'sort' ? 'Escolha a coluna. Toque novamente para inverter a ordem.' : undefined}
         onClose={() => setModal('')} bodyHeight={modal === 'sort' ? columns.filter(isSortableColumn).length * 54 + 32 : collapsed ? 400 : 236}>
         {modal === 'sort' ? columns.filter(isSortableColumn).map(column => <TouchableOpacity key={getColumnKey(column)} accessibilityRole="button"
-          accessibilityLabel={`Ordenar por ${labelFor(column)}`} style={[s.option, {borderBottomWidth: 1, borderBottomColor: c.tableRowBorder}]}
+          accessibilityLabel={`Ordenar por ${labelFor(column)}`} style={[s.option, {borderBottomWidth: 1, borderBottomColor: c.defaultFilter_tableRowBorder}]}
           onPress={() => {configs.requestSort?.(column); setModal('');}}>
           <Text style={{color: text, fontSize: 14}}>{labelFor(column)}</Text><Text style={{color: muted}}>{getSortField(column) === configs.resolvedSort?.field ? configs.resolvedSort.direction === 'asc' ? '↑' : '↓' : '↕'}</Text>
         </TouchableOpacity>) : <View style={{gap: 8}}>{showControls ? <DefaultToolbarAction action={{label: `Ordenar: ${sortColumn ? labelFor(sortColumn) : 'Ordenar'} ${configs.resolvedSort?.direction === 'asc' ? '↑' : '↓'}`, accessibilityLabel: 'Escolher ordenação', icon: 'arrow-down', onPress: () => setModal('sort'), color: text,
-          style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: c.inputBackground}, labelStyle: {fontSize: 14}}} /> : null}{collapsed ? ['filters', 'table', 'cards'].map(key => <DefaultToolbarAction key={key} action={{
+          style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: c.defaultFilter_inputBackground}, labelStyle: {fontSize: 14}}} /> : null}{collapsed ? ['filters', 'table', 'cards'].map(key => <DefaultToolbarAction key={key} action={{
             label: key === 'filters' ? 'Filtros' : key === 'table' ? 'Tabela' : 'Cards', icon: key === 'filters' ? 'sliders' : key === 'table' ? 'list' : 'grid', color: text,
             onPress: () => {if (key === 'filters') setModal('filters'); else {setMode(key); setModal('');}},
-            style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: key === mode ? c.chipSelectedBackground || c.inputBackground : c.inputBackground}, labelStyle: {fontSize: 14}}} />) : null}
+            style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: key === mode ? c.defaultFilter_chipSelectedBackground || c.defaultFilter_inputBackground : c.defaultFilter_inputBackground}, labelStyle: {fontSize: 14}}} />) : null}
           {collapsed ? <DefaultToolbarAction action={{label: 'Colunas visíveis', icon: 'columns', onPress: () => setModal('columns'), color: text,
-          style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: c.inputBackground}, labelStyle: {fontSize: 14}}} /> : null}
+          style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: c.defaultFilter_inputBackground}, labelStyle: {fontSize: 14}}} /> : null}
           {actions.filter(action => !action.hidden).map(action => <DefaultToolbarAction key={action.key || action.icon}
             action={{...action, label: action.label || action.accessibilityLabel, color: text,
-              style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: c.inputBackground}, labelStyle: {fontSize: 14, fontWeight: '400'},
+              style: {width: '100%', minHeight: 48, justifyContent: 'flex-start', paddingHorizontal: 12, borderWidth: 0, backgroundColor: c.defaultFilter_inputBackground}, labelStyle: {fontSize: 14, fontWeight: '400'},
               onPress: () => {setModal(''); action.onPress?.();}}} />)}
           <DefaultDebug storeName={storeName} />
         </View>}
