@@ -1,18 +1,17 @@
 {
-  "version": "1.0.295",
+  "version": "1.0.296",
   "rc": 1,
-  "branch": "rc/1.0.295-rc.1",
-  "baseMaster": "17ae683bd49985ddc8f7aaa0dc828cd6b126cf90",
+  "branch": "rc/1.0.296-rc.1",
+  "baseMaster": "65808ff79f677ae5287bfdf7c222ca3794388eda",
   "tasks": [
-    776
+    780
   ],
   "frozen": true,
   "repositories": {
-    "ControleOnline/ui-default": "66ae6b90b9280843639c1eec8bf89171e0441ec5"
+    "ControleOnline/ui-default": "df80bfda75074a6387bff803cebd838412944de4"
   },
   "validation": {
-    "scope": "Task 776: tokens defaultTable_/defaultFilter_ (prefixos e correcao de papeis), toolbar compacto com botoes secondary/pressed/primary, chips de status e badge do ID com 30px.",
-    "checks": "Testes de table 73/73 (grouping.test ja falhava antes por caminho de modulo). Validado em staging (app-community rc.11, ui-default 1.0.294 com o mesmo conteudo).",
-    "note": "Conteudo identico ao 1.0.294 publicado a partir de dev; versao 1.0.295 evita colisao com a tag v1.0.294."
+    "scope": "DefaultTable: ordenar coluna ao clicar no header sem onSortChange (CON-780).",
+    "checks": "Teste novo em DefaultTable.group2.test.js; suite table 74/74 local."
   }
 }
