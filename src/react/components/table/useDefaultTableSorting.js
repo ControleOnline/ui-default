@@ -39,10 +39,11 @@ export const useDefaultTableSortState = ({
   );
   const [autoSort, setAutoSort] = useState(() => storedSortSeed);
   const appliedSortSeedSignatureRef = useRef(storedSortSeedSignature);
-  const resolvedSort = autoMode ? autoSort : sort;
+  const isUncontrolled = autoMode || typeof onSortChange !== 'function';
+  const resolvedSort = isUncontrolled ? autoSort : sort;
 
   useEffect(() => {
-    if (!autoMode) return;
+    if (!isUncontrolled) return;
     if (appliedSortSeedSignatureRef.current === storedSortSeedSignature) return;
 
     appliedSortSeedSignatureRef.current = storedSortSeedSignature;
@@ -51,7 +52,7 @@ export const useDefaultTableSortState = ({
         ? prev
         : storedSortSeed,
     );
-  }, [autoMode, storedSortSeed, storedSortSeedSignature]);
+  }, [isUncontrolled, storedSortSeed, storedSortSeedSignature]);
 
   const requestSort = useCallback(column => {
     if (!isSortableColumn(column)) return;
@@ -68,14 +69,10 @@ export const useDefaultTableSortState = ({
 
     persistTableSortPreference(tablePreferenceScope, nextSort);
 
-    if (autoMode) {
-      setAutoSort(nextSort);
-      return;
-    }
-
+    if (isUncontrolled) setAutoSort(nextSort);
     onSortChange?.(nextSort);
   }, [
-    autoMode,
+    isUncontrolled,
     onSortChange,
     resolvedSort?.direction,
     resolvedSort?.field,
