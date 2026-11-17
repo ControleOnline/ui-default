@@ -22,6 +22,8 @@ export default function DefaultTablePaginationBar({storeName, embedded = false})
   const pages = Math.max(1, Math.ceil(total / size));
   const busy = Boolean(configs.paginationLoading);
   const text = c.defaultTable_tableFooterText;
+  const background = c.defaultTable_tableFooterBackground;
+  const border = c.defaultTable_tableFooterBorder;
   const button = (value, icon, label, disabled = false) => (
     <TouchableOpacity
       key={label}
