@@ -1,17 +1,17 @@
 {
-  "version": "1.0.291",
+  "version": "1.0.296",
   "rc": 1,
-  "branch": "rc/1.0.291-rc.1",
-  "baseMaster": "17ae683bd49985ddc8f7aaa0dc828cd6b126cf90",
+  "branch": "rc/1.0.296-rc.1",
+  "baseMaster": "65808ff79f677ae5287bfdf7c222ca3794388eda",
   "tasks": [
-    776
+    780
   ],
   "frozen": true,
   "repositories": {
-    "ControleOnline/ui-default": "9b7ddf330d7567a1d5fc9d56f193ff1c62c09ef6"
+    "ControleOnline/ui-default": "df80bfda75074a6387bff803cebd838412944de4"
   },
   "validation": {
-    "scope": "Temas: prefixa tokens de defaultTable_ e defaultFilter_ (blocos 1 e 2 da CON-776). Tokens ja criados no tema 12 (staging).",
-    "checks": "Renomeacao mecanica; testes nao executados localmente (sem node no ui-default). Validacao visual em staging."
+    "scope": "DefaultTable: ordenar coluna ao clicar no header sem onSortChange (CON-780).",
+    "checks": "Teste novo em DefaultTable.group2.test.js; suite table 74/74 local."
   }
 }

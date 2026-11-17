@@ -9,17 +9,17 @@ export default function DefaultCompactDialog({visible, title, description, onClo
   const {themeColors: c} = useDefaultTableTheme();
   const scrollHeight = Math.max(80, Math.min(bodyHeight, height - (footer ? 220 : 160)));
   return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-    <View style={[s.backdrop, {backgroundColor: c.modalOverlay}]}>
-      <View accessibilityViewIsModal style={[s.dialog, {maxWidth: width, backgroundColor: c.modalBackground, borderColor: c.modalBorder}]}>
-        <View style={[s.header, {borderBottomColor: c.border}]}>
-          <View style={{flex: 1, gap: 5}}><Text accessibilityRole="header" style={[s.title, {color: c.textPrimary}]}>{title}</Text>
-            {description ? <Text style={[s.description, {color: c.textSecondary}]}>{description}</Text> : null}</View>
+    <View style={[s.backdrop, {backgroundColor: c.defaultFilter_modalOverlay}]}>
+      <View accessibilityViewIsModal style={[s.dialog, {maxWidth: width, backgroundColor: c.defaultFilter_modalBackground, borderColor: c.defaultFilter_modalBorder}]}>
+        <View style={[s.header, {borderBottomColor: c.defaultFilter_modalBorder}]}>
+          <View style={{flex: 1, gap: 5}}><Text accessibilityRole="header" style={[s.title, {color: c.defaultFilter_modalHeaderText}]}>{title}</Text>
+            {description ? <Text style={[s.description, {color: c.defaultFilter_modalText}]}>{description}</Text> : null}</View>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Fechar ${title.toLowerCase()}`} onPress={onClose} style={s.close}>
-            <Icon name="x" size={20} color={c.textSecondary} />
+            <Icon name="x" size={20} color={c.defaultFilter_modalCloseIcon} />
           </TouchableOpacity>
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" style={{height: scrollHeight, flexGrow: 0, flexShrink: 1}} contentContainerStyle={s.content}>{children}</ScrollView>
-        {footer ? <View style={[s.footer, {borderTopColor: c.border, backgroundColor: c.tableFooterBackground}]}>{footer}</View> : null}
+        {footer ? <View style={[s.footer, {borderTopColor: c.defaultFilter_modalBorder, backgroundColor: c.defaultFilter_modalBackground}]}>{footer}</View> : null}
       </View>
     </View>
   </Modal>;

@@ -11,7 +11,7 @@ jest.mock('react-native', () => {
 });
 jest.mock('react-native-vector-icons/Feather', () => () => null);
 jest.mock('@controleonline/ui-common/src/react/utils/storeColumns', () => ({formatStoreColumnLabel: ({fallbackLabel}) => fallbackLabel}));
-jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({themeColors: {compact: true, defaultTable_border: '#ddd', defaultTable_textPrimary: '#123'}, checkboxSelectedMarkColor: '#987', modalColors: {textColor: '#123'}}));
+jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({themeColors: {compact: true, defaultFilter_border: '#ddd', defaultFilter_textPrimary: '#123'}, filterCheckboxSelectedMarkColor: '#987', filterCheckboxBorderColor: '#654', filterModalColors: {textColor: '#123'}}));
 jest.mock('../../../../react/components/filters/CompactFilterSelector', () => p => require('react').createElement('Picker', p));
 jest.mock('../../../../react/components/filters/DateShortcutFilter', () => () => null);
 const Columns = require('../../../../react/components/table/DefaultColumnMenu').default;
