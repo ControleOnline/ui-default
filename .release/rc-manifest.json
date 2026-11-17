@@ -1,7 +1,7 @@
 {
-  "version": "1.0.296",
+  "version": "1.0.298",
   "rc": 1,
-  "branch": "rc/1.0.296-rc.1",
+  "branch": "rc/1.0.298-rc.1",
   "baseMaster": "65808ff79f677ae5287bfdf7c222ca3794388eda",
   "tasks": [
     780
@@ -12,6 +12,6 @@
   },
   "validation": {
     "scope": "DefaultTable: ordenar coluna ao clicar no header sem onSortChange (CON-780).",
-    "checks": "Teste novo em DefaultTable.group2.test.js; suite table 74/74 local."
+    "checks": "Teste novo em DefaultTable.group2.test.js; suite table 74/74 local. Renumerada de 1.0.296 (tag/npm ja ocupados por dev); conteudo funcional identico ao homologado."
   }
 }
