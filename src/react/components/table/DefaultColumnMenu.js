@@ -57,7 +57,7 @@ const DefaultColumnMenu = ({ storeName, visible = false, onClose }) => {
     };
     return <TouchableOpacity key={fieldName} accessibilityRole="checkbox" accessibilityLabel={label}
       accessibilityState={{checked, disabled: locked && checked}} disabled={locked && checked} onPress={toggle}
-      style={{minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: checked ? themeColors.defaultFilter_chipBackground : 'transparent'}}>
+      style={{minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: checked ? themeColors.defaultFilter_chipBackground : undefined}}>
       <Icon name={checked ? 'check-square' : 'square'} size={19} color={checked ? resolvedCheckboxSelectedMarkColor : resolvedCheckboxBorderColor} />
       <Text style={{flex: 1, fontSize: 14, color: textColor}}>{label}</Text>
       {locked && checked ? <Text style={{fontSize: 12, color: themeColors.defaultFilter_textSecondary}}>Obrigatória</Text> : null}

@@ -17,11 +17,11 @@ export default function DefaultCompactFilterPicker({visible, disabled, label, ti
         value={searchText} onChangeText={onSearch} style={[s.search, {borderColor: c.defaultFilter_inputBorder, color: c.defaultFilter_inputText, backgroundColor: c.defaultFilter_inputBackground}]} /> : null}
       {options.length === 0 ? <Text style={{color: c.defaultFilter_textSecondary}}>Nenhuma opção encontrada.</Text> : null}
       {options.map(option => <TouchableOpacity key={option.key} accessibilityRole="radio" accessibilityLabel={option.label || 'Todos'} accessibilityState={{selected: option.key === selectedKey}}
-        onPress={() => onSelect(option.key)} style={[s.option, {backgroundColor: option.key === selectedKey ? c.defaultFilter_chipSelectedBackground : 'transparent', borderColor: c.defaultFilter_tableRowBorder}]}>
+        onPress={() => onSelect(option.key)} style={[s.option, {backgroundColor: option.key === selectedKey ? c.defaultFilter_chipSelectedBackground : undefined, borderColor: c.defaultFilter_tableRowBorder}]}>
         {option.image ? <Image source={option.image} style={{width: 24, height: 24}} resizeMode="contain" /> : null}
         {option.color ? <View style={[s.dot, {backgroundColor: option.color}]} /> : null}
         <Text style={{flex: 1, color: c.defaultFilter_textPrimary, fontSize: 14}}>{option.label || 'Todos'}</Text>
-        {option.key === selectedKey ? <Icon name="check" size={17} color={c.defaultFilter_primary} /> : null}
+        {option.key === selectedKey ? <Icon name="check" size={17} color={c.defaultFilter_buttonPressedIcon} /> : null}
       </TouchableOpacity>)}
       {children}
     </DefaultCompactDialog>
