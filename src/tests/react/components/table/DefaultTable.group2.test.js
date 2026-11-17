@@ -99,6 +99,32 @@ it('opens the filters modal with filterable columns only', () => {
     expect(tree.root.findAllByType('DefaultColumnFilter')).toHaveLength(2);
     expect([...new Set(mockState.capturedColumnFilterProps.map(props => props.column.key))]).toEqual(['name', 'status']);
   });
+it('sorts locally asc then desc on header click when data is passed without onSortChange', () => {
+    mockState.windowDimensions = {width: 1024, height: 800};
+    const data = [{id: 1, name: 'B'}, {id: 2, name: 'A'}, {id: 3, name: 'C'}];
+    const onDataLoaded = jest.fn();
+    let tree;
+    renderer.act(() => {
+      tree = renderer.create(React.createElement(DefaultTable, {
+        appearance: 'default',
+        columns: [{key: 'name', label: 'Nome', sortable: true}],
+        data,
+        onDataLoaded,
+      }));
+    });
+    const header = () => tree.root.findAllByType('TouchableOpacity')
+      .find(node => node.findAllByType('Text').some(text => text.props.children === 'Nome'));
+    const icon = () => header().findAllByType('icon').map(i => i.props.name);
+    const names = () => onDataLoaded.mock.calls.at(-1)[0].map(row => row.name);
+
+    renderer.act(() => header().props.onPress());
+    expect(names()).toEqual(['A', 'B', 'C']);
+    expect(icon()).toContain('chevron-up');
+
+    renderer.act(() => header().props.onPress());
+    expect(names()).toEqual(['C', 'B', 'A']);
+    expect(icon()).toContain('chevron-down');
+  });
 it('persists filters and sort under default-table[store][route]', () => {
     const setFilters = jest.fn();
     mockState.windowDimensions = {width: 1024, height: 800};
