@@ -17,7 +17,7 @@ jest.mock('../../../../react/components/table/DefaultTableImportModal', () => ()
 jest.mock('../../../../react/components/table/DefaultTableSearch', () => ({
  DefaultTableCollapsedSearch: () => null, DefaultTableCompactSearch: () => null, DefaultTableInlineSearch: () => require('react').createElement('search'),
 }));
-jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({tableBorderColors: {}, toolbarColors: {}}));
+jest.mock('../../../../react/components/table/useDefaultTableTheme', () => () => ({tableBorderColors: {}, toolbarColors: {}, filterToolbarColors: {}}));
 const Toolbar = require('../../../../react/components/table/DefaultTableToolbar').default;
 let tree;
 beforeEach(() => {mockConfigs = {toolbarActions: [{key: 'custom', onPress: jest.fn()}], importAction: jest.fn(), exportAction: jest.fn()};});

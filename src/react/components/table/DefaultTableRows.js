@@ -63,12 +63,14 @@ const DefaultTableRows = ({ storeName }) => {
     : global.t?.t(storeName, 'label', 'empty');
   const tableBorderColor = tableBorderColors.rowBorderColor;
   const tableHeaderBorderColor = tableBorderColors.headerBorderColor || tableBorderColor;
-  const tableEvenColor = themeTokens.listItemEvenRow || themeTokens['bg-even-light'] || palette.background;
+  const tableEvenColor = themeTokens.defaultTable_tableRowEvenBackground || themeTokens['bg-even-light'];
   const tableHeaderColor = themeTokens['bg-headers-light'] || resolvedAccentColor;
-  const tableMutedColor = palette.textSecondary;
-  const tableOddColor = themeTokens.listItemOddRow || themeTokens['bg-odd-light'] || palette.background;
-  const tableSurfaceColor = palette.background;
-  const tableTextColor = palette.text;
+  const tableMutedColor = palette.defaultTable_tableRowMutedText;
+  const tableOddColor = themeTokens.defaultTable_tableRowOddBackground || themeTokens['bg-odd-light'];
+  const tableSurfaceColor = palette.defaultTable_tableActionBackground;
+  const tableActionBorderColor = palette.defaultTable_tableActionBorder;
+  const tableActionIconColor = palette.defaultTable_tableActionIcon;
+  const tableTextColor = palette.defaultTable_tableHeaderText;
   const rowStyle = configs.rowStyle;
   const hasRowPress = typeof configs.onRowPress === 'function';
   const hasCustomRowActions = hasDefaultTableRowActionsComponent(configs.rowActionsComponent);
@@ -248,11 +250,11 @@ const DefaultTableRows = ({ storeName }) => {
               ) : null}
               {hasEditAction ? (
                 <TouchableOpacity
-                  style={[styles.iconButton, { borderColor: tableBorderColor, backgroundColor: tableSurfaceColor }]}
+                  style={[styles.iconButton, { borderColor: tableActionBorderColor, backgroundColor: tableSurfaceColor }]}
                   activeOpacity={0.82}
                   onPress={() => configs.onEditRow?.(row)}
                 >
-                  <Icon name="edit-2" size={14} color={tableMutedColor} />
+                  <Icon name="edit-2" size={14} color={tableActionIconColor} />
                 </TouchableOpacity>
               ) : null}
             </View>

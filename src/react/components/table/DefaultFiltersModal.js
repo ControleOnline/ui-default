@@ -69,7 +69,7 @@ const DefaultFiltersModal = ({ storeName, visible = false, deferred = false, onC
   const applyLabel = deferred ? 'Aplicar filtros' : global.t?.t(storeName, 'button', 'apply');
   const clearLabel = deferred ? 'Limpar' : global.t?.t(storeName, 'button', 'clear');
   const title = deferred ? 'Filtros' : global.t?.t(storeName, 'label', 'filters');
-  const { modalColors, resolvedAccentColor, themeColors } = useDefaultTableTheme();
+  const { filterModalColors: modalColors, filterButtonColors, filterButtonSecondaryColors, resolvedAccentColor, themeColors } = useDefaultTableTheme();
   if (!visible) return null;
 
   const {
@@ -84,8 +84,8 @@ const DefaultFiltersModal = ({ storeName, visible = false, deferred = false, onC
   if (configs.appearance === 'compact') {
     const fields = columns.filter(column => column.compactFilter !== false);
     const action = (label, onPress, primary = false) => <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
-      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, borderWidth: 1, borderColor, backgroundColor: primary ? themeColors.buttonBackground : themeColors.modalBackground}}>
-      <Text style={{color: primary ? themeColors.buttonText : textColor, fontSize: 14, fontWeight: '600'}}>{label}</Text>
+      style={{minHeight: 44, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 9, borderWidth: 1, borderColor: primary ? filterButtonColors.borderColor : filterButtonSecondaryColors.borderColor, backgroundColor: primary ? filterButtonColors.backgroundColor : filterButtonSecondaryColors.backgroundColor}}>
+      <Text style={{color: primary ? filterButtonColors.textColor : filterButtonSecondaryColors.textColor, fontSize: 14, fontWeight: '600'}}>{label}</Text>
     </TouchableOpacity>;
     return <DefaultCompactDialog visible title="Filtros" description="Combine os filtros e aplique para atualizar os resultados." onClose={onClose}
       bodyHeight={fields.length * 86 + 40} footer={<>{action(clearLabel, () => setDraft({}))}{action(applyLabel, () => {applyFilters(draft); onClose?.();}, true)}</>}>

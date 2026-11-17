@@ -26,15 +26,15 @@ const DefaultSearch = ({
   const resolvedChangeFilters = onChangeFilters || store?.actions?.setFilters || null;
   const palette = useMemo(
     () => ({
-      buttonBackgroundSecondary: themeColors.buttonBackgroundSecondary,
-      buttonBorder: themeColors.buttonBorder,
-      buttonIcon: themeColors.buttonIcon,
-      buttonIconSecondary: themeColors.buttonIconSecondary,
-      inputBackground: themeColors.inputBackground,
-      inputBorder: themeColors.inputBorder,
-      inputIcon: themeColors.inputIcon,
-      inputPlaceholderText: themeColors.inputPlaceholderText,
-      inputText: themeColors.inputText,
+      buttonBackgroundSecondary: themeColors.defaultFilter_buttonBackgroundSecondary,
+      buttonBorder: themeColors.defaultFilter_buttonBorder,
+      buttonIcon: themeColors.defaultFilter_buttonIcon,
+      buttonIconSecondary: themeColors.defaultFilter_buttonIconSecondary,
+      inputBackground: themeColors.defaultFilter_inputBackground,
+      inputBorder: themeColors.defaultFilter_inputBorder,
+      inputIcon: themeColors.defaultFilter_inputIcon,
+      inputPlaceholderText: themeColors.defaultFilter_inputPlaceholderText,
+      inputText: themeColors.defaultFilter_inputText,
     }),
     [themeColors],
   );
