@@ -362,7 +362,6 @@ const DefaultExternalFilters = ({
             optionKeys={dateOptionKeys}
             colors={{
               accent: resolvedAccentColor,
-              appBg: 'transparent',
               border: borderColor,
               borderSoft: withOpacity(borderColor, 0.72),
               cardBg: palette.background,

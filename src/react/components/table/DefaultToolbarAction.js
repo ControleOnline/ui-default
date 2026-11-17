@@ -6,7 +6,7 @@ import styles from './DefaultTable.styles';
 import useDefaultTableTheme from './useDefaultTableTheme';
 
 const DefaultToolbarAction = ({ action }) => {
-  const { tableActionColors } = useDefaultTableTheme();
+  const { filterButtonSecondaryColors: tableActionColors } = useDefaultTableTheme();
   const {
     backgroundColor: tableActionBackgroundColor,
     borderColor: tableActionBorderColor,

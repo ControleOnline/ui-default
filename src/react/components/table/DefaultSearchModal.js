@@ -17,7 +17,7 @@ const DefaultSearchModal = ({
   value,
   title,
 }) => {
-  const { modalColors } = useDefaultTableTheme();
+  const { filterModalColors: modalColors } = useDefaultTableTheme();
   if (!visible) return null;
 
   const {
