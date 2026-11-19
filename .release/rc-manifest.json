@@ -1,17 +1,17 @@
 {
-  "version": "1.0.298",
+  "version": "1.0.301",
   "rc": 1,
-  "branch": "rc/1.0.298-rc.1",
-  "baseMaster": "65808ff79f677ae5287bfdf7c222ca3794388eda",
+  "branch": "rc/1.0.301-rc.1",
+  "baseMaster": "e47d9acf48bf0b241ba06f24880e2304e7e44a70",
   "tasks": [
-    780
+    1711
   ],
   "frozen": true,
   "repositories": {
-    "ControleOnline/ui-default": "df80bfda75074a6387bff803cebd838412944de4"
+    "ControleOnline/ui-default": "4db22b41cc90122af859bd30bfbe5aa7a5b415de"
   },
   "validation": {
-    "scope": "DefaultTable: ordenar coluna ao clicar no header sem onSortChange (CON-780).",
-    "checks": "Teste novo em DefaultTable.group2.test.js; suite table 74/74 local. Renumerada de 1.0.296 (tag/npm ja ocupados por dev); conteudo funcional identico ao homologado."
+    "scope": "Task 1711 (app-community): DefaultFeatherIconPicker com 32px de altura. Validado no staging como 1.0.300 (base v1.0.297); esta e a mesma mudanca sobre o master (1.0.298). O app segue pinado na 1.0.300.",
+    "checks": "Teste de contrato DefaultFeatherIconPicker.height.test.mjs 2/2."
   }
 }
