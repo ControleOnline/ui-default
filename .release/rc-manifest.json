@@ -1,17 +1,17 @@
 {
-  "version": "1.0.290",
-  "rc": 2,
-  "branch": "rc/1.0.290-rc.2",
-  "baseMaster": "ac8c0ecc9aca008ab4fd70142374d58eff408135",
+  "version": "1.0.300",
+  "rc": 1,
+  "branch": "rc/1.0.300-rc.1",
+  "baseMaster": "e47d9acf48bf0b241ba06f24880e2304e7e44a70",
   "tasks": [
-    64
+    1711
   ],
   "frozen": true,
   "repositories": {
-    "ControleOnline/ui-default": "a357b6413f46302c8ae0a4d637aba4b9dc59be4b"
+    "ControleOnline/ui-default": "b3f6b66a178eec6fee0dce5ff955f9819fb42905"
   },
   "validation": {
-    "scope": "Mapa nativo: importa buildGoogleMapsNavigationUrl/buildWazeNavigationUrl de DefaultMap.shared (ui-default#64).",
-    "checks": "DefaultNativeMap.imports.test.js 3/3 (falha na v1.0.289, passa com a correcao); Security aceito (#64). Base v1.0.289."
+    "scope": "Task 1711 (app-community): DefaultFeatherIconPicker com 32px de altura. Base v1.0.297 (pin do app) para nao levar a task 780 da 1.0.298; a 1.0.299 foi publicada sobre master e fica sem uso.",
+    "checks": "Teste de contrato DefaultFeatherIconPicker.height.test.mjs 2/2."
   }
 }
