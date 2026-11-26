@@ -100,7 +100,7 @@ const DefaultTable = ({
   const { tableBorderColors, themeColors } = useDefaultTableTheme(accentColor, appearance);
   const tablePanelBorderColor = tableBorderColors.containerBorderColor;
   const floatingAddBackgroundColor =
-    themeColors.defaultTable_buttonBackground || themeColors.defaultTable_primary || accentColor;
+    themeColors.defaultTable_buttonBackground || themeColors.primary || accentColor;
   const floatingAddIconColor = themeColors.defaultTable_buttonText;
   const currentCompanyId = peopleStore?.getters?.currentCompany?.id;
   const tablePreferenceScope = useMemo(
