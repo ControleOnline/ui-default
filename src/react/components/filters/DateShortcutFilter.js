@@ -17,7 +17,6 @@ import {
 
 const createDefaultColors = colors => ({
   accent: colors?.accent,
-  appBg: colors?.appBg || 'transparent',
   border: colors?.border,
   borderSoft: colors?.borderSoft,
   cardBg: colors?.cardBg,

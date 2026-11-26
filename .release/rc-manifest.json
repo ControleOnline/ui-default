@@ -1,17 +1,20 @@
 {
-  "version": "1.0.301",
+  "version": "1.0.302",
   "rc": 1,
-  "branch": "rc/1.0.301-rc.1",
-  "baseMaster": "e47d9acf48bf0b241ba06f24880e2304e7e44a70",
+  "branch": "rc/1.0.302-rc.1",
+  "baseMaster": "480c12bbbc10e67a7e6c821e4df160ee9677e300",
+  "baseTag": "v1.0.301",
   "tasks": [
-    1711
+    1761
   ],
+  "taskRepository": "ControleOnline/app-community",
   "frozen": true,
   "repositories": {
-    "ControleOnline/ui-default": "4db22b41cc90122af859bd30bfbe5aa7a5b415de"
+    "ControleOnline/ui-default": "786660dd16a245b644fd7eed68ab7fc4e6b61b2e"
   },
-  "validation": {
-    "scope": "Task 1711 (app-community): DefaultFeatherIconPicker com 32px de altura. Validado no staging como 1.0.300 (base v1.0.297); esta e a mesma mudanca sobre o master (1.0.298). O app segue pinado na 1.0.300.",
-    "checks": "Teste de contrato DefaultFeatherIconPicker.height.test.mjs 2/2."
+  "sources": {
+    "versão de produção v1.0.300": "e9c946bf6cc316686696dffc2cd21845af8287ea",
+    "staging": "524ab1a6c66df4f91a6b4000b079beb8677c4e6b",
+    "dev": "4bb0be74c3e4de4aa4237a35a0c05998a706bd13"
   }
 }

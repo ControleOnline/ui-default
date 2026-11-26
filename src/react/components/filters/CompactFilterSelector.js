@@ -22,34 +22,28 @@ import createStyles from './CompactFilterSelector.styles';
 import {DefaultTableThemeContext} from '../table/useDefaultTableTheme';
 import DefaultCompactFilterPicker from './DefaultCompactFilterPicker';
 
-const buildTheme = ({ accentColor, themeColors = {} }) => ({
-  accentColor: accentColor,
-  activeBackgroundColor:
-    themeColors.defaultFilter_activeBackgroundColor || (accentColor ? `${accentColor}14` : themeColors.defaultFilter_backgroundColor),
-  activeIconBackgroundColor:
-    themeColors.defaultFilter_activeIconBackgroundColor || (accentColor ? `${accentColor}24` : themeColors.defaultFilter_iconBackgroundColor),
-  activeChevronColor:
-    themeColors.defaultFilter_activeChevronColor ||
-    themeColors.defaultFilter_activeIconColor ||
-    accentColor,
-  activeIconColor: themeColors.defaultFilter_activeIconColor || accentColor,
-  activeTextColor: themeColors.defaultFilter_activeTextColor || accentColor,
-  backgroundColor: themeColors.defaultFilter_backgroundColor || '#F8FAFC',
-  borderColor: themeColors.defaultFilter_borderColor || '#E2E8F0',
-  captionColor: themeColors.defaultFilter_captionColor || '#94A3B8',
-  chevronColor: themeColors.defaultFilter_chevronColor || '#94A3B8',
-  closeIconColor: themeColors.defaultFilter_closeIconColor || '#64748B',
-  iconBackgroundColor: themeColors.defaultFilter_iconBackgroundColor || '#E2E8F0',
-  iconColor: themeColors.defaultFilter_iconColor || '#64748B',
-  modalBackgroundColor: themeColors.defaultFilter_modalBackgroundColor || '#FFFFFF',
-  modalOverlayColor:
-    themeColors.defaultFilter_modalOverlayColor || 'rgba(15, 23, 42, 0.35)',
-  modalTitleColor: themeColors.defaultFilter_modalTitleColor || '#0F172A',
-  optionBackgroundColor: themeColors.defaultFilter_optionBackgroundColor || '#F8FAFC',
-  optionBorderColor: themeColors.defaultFilter_optionBorderColor || '#E2E8F0',
-  optionSelectedTextColor:
-    themeColors.defaultFilter_optionSelectedTextColor || accentColor,
-  textColor: themeColors.defaultFilter_textColor || '#0F172A',
+// Every value comes from the DOMAIN theme (no literal colors, no accent math).
+const buildTheme = ({ themeColors = {} }) => ({
+  accentColor: themeColors.defaultFilter_buttonPressedBorder,
+  activeBackgroundColor: themeColors.defaultFilter_chipSelectedBackground,
+  activeIconBackgroundColor: themeColors.defaultFilter_chipSelectedBackground,
+  activeChevronColor: themeColors.defaultFilter_buttonPressedIcon,
+  activeIconColor: themeColors.defaultFilter_buttonPressedIcon,
+  activeTextColor: themeColors.defaultFilter_chipSelectedText,
+  backgroundColor: themeColors.defaultFilter_inputBackground,
+  borderColor: themeColors.defaultFilter_inputBorder,
+  captionColor: themeColors.defaultFilter_textSecondary,
+  chevronColor: themeColors.defaultFilter_inputIcon,
+  closeIconColor: themeColors.defaultFilter_modalCloseIcon,
+  iconBackgroundColor: themeColors.defaultFilter_chipBackground,
+  iconColor: themeColors.defaultFilter_inputIcon,
+  modalBackgroundColor: themeColors.defaultFilter_modalBackground,
+  modalOverlayColor: themeColors.defaultFilter_modalOverlay,
+  modalTitleColor: themeColors.defaultFilter_modalHeaderText,
+  optionBackgroundColor: themeColors.defaultFilter_listItemBackground,
+  optionBorderColor: themeColors.defaultFilter_listItemBorder,
+  optionSelectedTextColor: themeColors.defaultFilter_chipSelectedText,
+  textColor: themeColors.defaultFilter_inputText,
 });
 
 const noop = () => {};
@@ -112,22 +106,14 @@ const CompactFilterSelector = ({
   const [searchText, setSearchText] = useState('');
   const { width: windowWidth } = useWindowDimensions();
   const themeStoreColors = themeStore?.getters?.colors || {};
-  const resolvedAccentColor =
-    accentColor ||
-    themeColors.defaultFilter_primary ||
-    themeColors.defaultFilter_accent ||
-    themeStoreColors.defaultFilter_primary ||
-    themeStoreColors.defaultFilter_accent ||
-    '';
   const resolvedTheme = useMemo(
     () => buildTheme({
-      accentColor: resolvedAccentColor,
       themeColors: {
         ...themeStoreColors,
         ...themeColors,
       },
     }),
-    [resolvedAccentColor, themeColors, themeStoreColors],
+    [themeColors, themeStoreColors],
   );
   const styles = useMemo(
     () => createStyles(resolvedTheme, dense, windowWidth),

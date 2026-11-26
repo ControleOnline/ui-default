@@ -139,7 +139,7 @@ const DefaultTableCards = ({ storeName }) => {
             hasRowActions ? styles.cardItemWithActions : null,
             rowStyleValue,
             compact ? [compactStyles.cardItem, {flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: compactCardWidth, maxWidth: compactCardWidth, backgroundColor: palette.defaultTable_cardBackground, borderColor: palette.defaultTable_cardBorder}] : null,
-            unframedCards ? {borderWidth:0,backgroundColor:'transparent',shadowOpacity:0,elevation:0} : null,
+            unframedCards ? {borderWidth:0,backgroundColor:palette.defaultTable_containerTransparentBackground,shadowOpacity:0,elevation:0} : null,
           ]}
         >
           <View style={[styles.cardContent, hasRowActions ? null : intrinsicHeight, compact ? {flex: 0, flexBasis: 'auto', flexGrow: 0} : null]}>

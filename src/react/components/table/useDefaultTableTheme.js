@@ -19,11 +19,9 @@ const useDefaultTableTheme = (accentColor = null, appearance = 'default') => {
     [themeColors],
   );
   const palette = themeColors;
-  const resolvedAccentColor = appearance === 'compact' || inheritedColors ? themeColors.defaultTable_primary : accentColor ?? themeColors.defaultTable_primary;
+  const resolvedAccentColor = appearance === 'compact' || inheritedColors ? themeColors.primary : accentColor ?? themeColors.primary;
   const tableBorderColors = {
     containerBorderColor: firstThemeToken(themeColors, [
-      'defaultTable_tableContainerBorder',
-      'defaultTable_tableBorder',
       'defaultTable_tableHeaderBorder',
       'defaultTable_tableToolbarBorder',
       'defaultTable_cardBorder',
@@ -32,33 +30,26 @@ const useDefaultTableTheme = (accentColor = null, appearance = 'default') => {
       'defaultTable_dividerBackground',
       'defaultTable_inputBorder',
       'defaultTable_panelBorder',
-      'defaultTable_border',
     ]),
     headerBorderColor: firstThemeToken(themeColors, [
       'defaultTable_tableHeaderBorder',
       'defaultTable_tableToolbarBorder',
-      'defaultTable_tableBorder',
       'defaultTable_dividerBorder',
       'defaultTable_dividerBackground',
       'defaultTable_listItemBorder',
-      'defaultTable_border',
     ]),
     rowBorderColor: firstThemeToken(themeColors, [
       'defaultTable_tableRowBorder',
       'defaultTable_listItemBorder',
       'defaultTable_dividerBorder',
       'defaultTable_dividerBackground',
-      'defaultTable_tableBorder',
-      'defaultTable_border',
     ]),
     toolbarBorderColor: firstThemeToken(themeColors, [
       'defaultTable_tableToolbarBorder',
       'defaultTable_tableHeaderBorder',
       'defaultTable_toolbarBorder',
-      'defaultTable_tableBorder',
       'defaultTable_dividerBorder',
       'defaultTable_dividerBackground',
-      'defaultTable_border',
     ]),
   };
 
